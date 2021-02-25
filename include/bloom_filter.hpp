@@ -8,4 +8,5 @@ class BloomFilter
         ~BloomFilter();
         void setBit(unsigned int n);
         bool getBit(unsigned int n);
+        const unsigned int numBits;
 };

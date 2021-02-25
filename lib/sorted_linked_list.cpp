@@ -4,7 +4,7 @@ SortedLinkedList::SortedLinkedList(): LinkedList() {
     //this->head = new ListNode();
     //this->head->data = 0;
     //this->head->next = 0;
-    //All seem to work fine
+    //All seems to work fine
 }
 
 SortedLinkedList::~SortedLinkedList() {}
