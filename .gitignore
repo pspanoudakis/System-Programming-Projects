@@ -3,3 +3,5 @@
 *.code-workspace
 test.cpp
 test
+test.*
+*.txt
