@@ -43,9 +43,14 @@ while [ "$lineCount" != "$numLines" ]; do
     let "id %= $MAX_CITIZENS"
     if [ "${citizens[id]}" == "" ]; then
         # Creating new citizen info
-        #--------------------------
-        # TODO: Create random name & surname
-        #--------------------------
+        len=$RANDOM
+        let "len %= 10"
+        let "len+=2"
+        name=$(tr -dc A-Za-z </dev/urandom | head -c $len)
+        len=$RANDOM
+        let "len %= 10"
+        let "len+=2"
+        surname=$(tr -dc A-Za-z </dev/urandom | head -c $len)
         country_id=$RANDOM
         let "country_id %= $numCountries"
         age=$RANDOM
