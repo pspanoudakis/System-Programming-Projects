@@ -1,5 +1,5 @@
 #!/bin/bash
-MAX_CITIZENS=10
+MAX_CITIZENS=20
 numLines=$3
 
 if (( $numLines > $MAX_CITIZENS )); then
@@ -12,7 +12,7 @@ if (( $numLines > $MAX_CITIZENS )); then
     fi
 fi
 
-for ((i=0; i <= MAX_CITIZENS; i++)) do
+for ((i=0; i < MAX_CITIZENS; i++)) do
     citizens[i]=""
 done
 
@@ -41,17 +41,19 @@ while [ "$lineCount" != "$numLines" ]; do
     if [ "${citizens[id]}" == "" ]; then
         # Creating new citizen info
         len=$RANDOM
-        let "len %= 10"
+        let "len %= 11"
         let "len+=2"
-        name=$(tr -dc A-Za-z </dev/urandom | head -c $len)
+        name=$(tr -dc A-Z </dev/urandom | head -c 1)
+        name="$name$(tr -dc a-z </dev/urandom | head -c $len)"
         len=$RANDOM
-        let "len %= 10"
+        let "len %= 11"
         let "len+=2"
-        surname=$(tr -dc A-Za-z </dev/urandom | head -c $len)
+        surname=$(tr -dc A-Z </dev/urandom | head -c 1)
+        surname="$surname$(tr -dc a-z </dev/urandom | head -c $len)"
         country_id=$RANDOM
         let "country_id %= $numCountries"
         age=$RANDOM
-        let "age %= 120"
+        let "age %= 121"
         citizens[id]="${id} ${name}_${id} ${surname}_${id} ${countries[country_id]} ${age}"
     else
         if [ "$4" != "duplicatesAllowed" ]; then
@@ -64,6 +66,17 @@ while [ "$lineCount" != "$numLines" ]; do
     let "vaccinated %= 2"
     printf '%s %s ' "${citizens[id]}" "${viruses[virus_id]}"
     if [ "$vaccinated" == "0" ]; then
+        # Generate random date
+        day=$RANDOM
+        let "day %= 30"
+        let "day++"
+        month=$RANDOM
+        let "month %= 12"
+        let "month++"
+        year=$RANDOM
+        let "year %= 22"
+        let "year+=2000"
+        date="${day}-${month}-${year}"
         printf "YES %s\n" "$date"
     else
         printf "NO\n"
