@@ -32,11 +32,8 @@ done < "$2"
 
 
 lineCount=0
-name="name"
-surname="surname"
+# TODO: Generate Random Dates
 date="3-2-2021"
-
-vaccinate=("YES", "NO")
 
 while [ "$lineCount" != "$numLines" ]; do
     id=$RANDOM
