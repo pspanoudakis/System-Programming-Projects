@@ -1,0 +1,1 @@
+typedef int (*CompareFunc)(void *a, void *b);
