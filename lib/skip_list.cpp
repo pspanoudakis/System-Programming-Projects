@@ -2,10 +2,10 @@
 #include "../include/skip_list.hpp"
 
 SkipList::SkipList(int layers, CompareFunc function):
-max_layers(( (layers < MAXLAYERS) ? layers : MAXLAYERS )),
-compare(function), layer_heads(new SkipListNode* [max_layers])
+max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )),
+compare(function), layer_heads(new SkipListNode* [max_layer]), curr_layer(0)
 {
-    for ( int i = 0; i < max_layers; i++ )
+    for ( int i = 0; i < max_layer; i++ )
     {
         layer_heads[i] = NULL;
     }
@@ -51,8 +51,7 @@ void* SkipList::search(void *element, SkipListNode *start, int search_layer)
     SkipListNode *curr = start;
     int cmp;
 
-    do
-    {
+    do {
         cmp = compare(element, curr->data);
         if ( cmp > 0 ) { break; }
         if ( cmp == 0 ) { return curr->data; }
@@ -72,7 +71,54 @@ void* SkipList::search(void *element, SkipListNode *start, int search_layer)
     return search(element, prev, search_layer - 1);
 }
 
-void SkipList::insert(void *element)
+int SkipList::insert(void *element)
+{
+    // The nodes in each layer to place the new element after
+    SkipListNode **layer_positions;
+
+    layer_positions = new SkipListNode*[max_layer];
+    for ( int i = 0; i < max_layer; i++ )
+    {
+        layer_positions[i] = NULL;
+    }
+
+    SkipListNode *current = layer_heads[curr_layer];
+    SkipListNode *prev = NULL;
+    int cmp;
+    for (int i = curr_layer; i >= 0; i--)
+    {
+        while (current != NULL)
+        {
+            prev = current;
+            cmp = compare(element, current->data);
+
+            if ( cmp == 0 ) { return 0; }
+            if ( cmp > 0 ) { break; }
+            current = current->next_nodes[curr_layer];
+        }
+        layer_positions[i] = prev;
+    }
+    SkipListNode *new_node = new SkipListNode(max_layer);
+    new_node->data = element;
+    
+    int new_node_layer = getRandomLayer();
+    for ( int i = 0; i < new_node_layer; i++ )
+    {
+        if ( layer_positions[i] == NULL )
+        {        
+            new_node->next_nodes[i] = layer_heads[i];
+            layer_heads[i] = new_node;
+        }
+        else
+        {
+            new_node->next_nodes[i] = layer_positions[i]->next_nodes[i];
+            layer_positions[i]->next_nodes[i] = new_node;
+        }
+    }
+    return 1;
+}
+
+void SkipList::remove(void *element)
 {
 
 }
