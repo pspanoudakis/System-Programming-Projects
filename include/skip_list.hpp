@@ -13,14 +13,14 @@ class SkipList
         struct SkipListNode
         {
             SkipListNode **next_nodes;
+            int layers;
             void *data;
-            SkipListNode(int layers);
+            SkipListNode(int total_layers);
             ~SkipListNode();
         };
         const int max_layer;
         int curr_layer;
         SkipListNode **layer_heads;
-        void* search(void *element, SkipListNode *start, int search_layer);
         int getRandomLayer(void);
         
     public:

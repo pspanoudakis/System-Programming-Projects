@@ -28,7 +28,7 @@ SkipList::~SkipList()
     delete [] layer_heads;
 }
 
-SkipList::SkipListNode::SkipListNode(int layers): next_nodes(new SkipListNode* [layers])
+SkipList::SkipListNode::SkipListNode(int total_layers): next_nodes(new SkipListNode* [layers]), layers(total_layers)
 {
     for ( int i = 0; i < layers; i++ )
     {
@@ -43,35 +43,37 @@ SkipList::SkipListNode::~SkipListNode()
 
 void* SkipList::find(void *element)
 {
-    return search(element, layer_heads[curr_layer], curr_layer);
-}
-
-void* SkipList::search(void *element, SkipListNode *start, int search_layer)
-{
-    if (start == NULL) { return NULL; }
-
+    SkipListNode *current;
     SkipListNode *prev = NULL;
-    SkipListNode *curr = start;
     int cmp;
-
-    do {
-        cmp = compare(element, curr->data);
-        if ( cmp > 0 ) { break; }
-        if ( cmp == 0 ) { return curr->data; }
-
-        prev = curr;
-        curr = curr->next_nodes[search_layer];
-    } while (curr != NULL);
-    
-    if (prev == NULL )
-    // Start Node has value greater than target element
+    for (int i = curr_layer; i >= 0; i--)
     {
-        // So the element does not exist
-        return NULL;
+        if ( prev == NULL )
+        {
+            current = layer_heads[i];
+        }
+        else
+        {
+            current = prev->next_nodes[i];
+        }
+        while (current != NULL)
+        {
+            cmp = compare(element, current->data);
+
+            if ( cmp == 0 )
+            {
+                return current->data;
+            }
+            if ( cmp > 0 )
+            {
+                prev = current;
+                current = current->next_nodes[i];
+                continue;
+            }
+            break;
+        }
     }
-    // Continue search one layer down
-    if ( search_layer == 0 ) { return NULL; }
-    return search(element, prev, search_layer - 1);
+    return NULL;
 }
 
 int SkipList::insert(void *element)
@@ -144,7 +146,64 @@ int SkipList::insert(void *element)
 
 void SkipList::remove(void *element)
 {
+    // The nodes in each layer that are before the element node
+    SkipListNode **layer_prevs;
 
+    layer_prevs = new SkipListNode*[max_layer];
+    for ( int i = 0; i < max_layer; i++ )
+    {
+        layer_prevs[i] = NULL;
+    }
+
+    SkipListNode *current;
+    SkipListNode *prev = NULL;
+    SkipListNode *target = NULL;
+    int cmp;
+    for (int i = curr_layer; i >= 0; i--)
+    {
+        if ( prev == NULL )
+        {
+            current = layer_heads[i];
+        }
+        else
+        {
+            current = prev->next_nodes[i];
+        }
+        while (current != NULL)
+        {
+            cmp = compare(element, current->data);
+
+            if ( cmp == 0 )
+            { 
+                target = current;
+                break;
+            }
+            if ( cmp > 0 )
+            {
+                prev = current;
+                current = current->next_nodes[i];
+                continue;
+            }
+            break;
+        }
+        layer_prevs[i] = prev;
+    }
+    if ( target == NULL ) { return; }
+
+    for ( int i = 0; i < target->layers; i++ )
+    {
+        if ( layer_prevs[i] == NULL )
+        {
+            layer_heads[i] = target->next_nodes[i];
+        }
+        else
+        {
+            layer_prevs[i]->next_nodes[i] = target->next_nodes[i];
+        }
+    }
+    destroyElement(target->data);
+    delete target;
+    delete [] layer_prevs;
 }
 
 int SkipList::getRandomLayer(void)
