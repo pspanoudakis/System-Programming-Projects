@@ -1,9 +1,11 @@
+#include <cstdlib>
+#include <cstdio>
 #include <cstddef>
 #include "../include/skip_list.hpp"
 
-SkipList::SkipList(int layers, CompareFunc function):
+SkipList::SkipList(int layers, CompareFunc comp, DestroyFunc dest):
 max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )),
-compare(function), layer_heads(new SkipListNode* [max_layer]), curr_layer(0)
+compare(comp), layer_heads(new SkipListNode* [max_layer]), curr_layer(0), destroyElement(dest)
 {
     for ( int i = 0; i < max_layer; i++ )
     {
@@ -20,6 +22,7 @@ SkipList::~SkipList()
     {
         prev = current;
         current = current->next_nodes[0];
+        destroyElement(prev->data);
         delete prev;
     }
     delete [] layer_heads;
@@ -82,19 +85,35 @@ int SkipList::insert(void *element)
         layer_positions[i] = NULL;
     }
 
-    SkipListNode *current = layer_heads[curr_layer];
+    SkipListNode *current;
     SkipListNode *prev = NULL;
     int cmp;
     for (int i = curr_layer; i >= 0; i--)
     {
+        if ( prev == NULL )
+        {
+            current = layer_heads[i];
+        }
+        else
+        {
+            current = prev->next_nodes[i];
+        }
         while (current != NULL)
         {
-            prev = current;
             cmp = compare(element, current->data);
 
-            if ( cmp == 0 ) { return 0; }
-            if ( cmp > 0 ) { break; }
-            current = current->next_nodes[curr_layer];
+            if ( cmp == 0 )
+            { 
+                delete [] layer_positions;
+                return 0;
+            }
+            if ( cmp > 0 )
+            {
+                prev = current;
+                current = current->next_nodes[i];
+                continue;
+            }
+            break;
         }
         layer_positions[i] = prev;
     }
@@ -102,7 +121,7 @@ int SkipList::insert(void *element)
     new_node->data = element;
     
     int new_node_layer = getRandomLayer();
-    for ( int i = 0; i < new_node_layer; i++ )
+    for ( int i = 0; i <= new_node_layer; i++ )
     {
         if ( layer_positions[i] == NULL )
         {        
@@ -115,10 +134,41 @@ int SkipList::insert(void *element)
             layer_positions[i]->next_nodes[i] = new_node;
         }
     }
+    if ( curr_layer < new_node_layer )
+    {
+        curr_layer = new_node_layer;
+    }
+    delete [] layer_positions;
     return 1;
 }
 
 void SkipList::remove(void *element)
 {
 
+}
+
+int SkipList::getRandomLayer(void)
+{
+    int limit = ( ( (curr_layer + 1) < max_layer) ? (curr_layer + 1) : max_layer );
+    for ( int i = 0; i <= limit; i++ )
+    {
+        if ( rand() % 2 == 1 ) { return i; }
+    }
+    return limit;
+}
+
+void SkipList::display(DisplayFunc f)
+{
+    SkipListNode *current;
+    for (int i = curr_layer; i >= 0; i--)
+    {
+        current = layer_heads[i];
+        while (current != NULL)
+        {
+            f(current->data);
+            printf(" -> ");
+            current = current->next_nodes[i];
+        }
+        printf("\n");
+    }
 }

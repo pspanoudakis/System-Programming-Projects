@@ -1,3 +1,6 @@
+#ifndef BLOOM_FILTER_HPP
+#define BLOOM_FILTER_HPP
+
 class BloomFilter
 {
     private:
@@ -10,3 +13,5 @@ class BloomFilter
         bool getBit(unsigned int n);
         const unsigned int numBits;
 };
+
+#endif
