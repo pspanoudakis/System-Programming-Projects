@@ -2,6 +2,18 @@
 MAX_CITIZENS=20
 numLines=$3
 
+if [[ ! -f $1 ]]; then
+    echo "Invalid viruses file specified."
+    echo "Execution: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed]"
+    exit 1
+fi
+
+if [[ ! -f $2 ]]; then
+    echo "Invalid countries file specified."
+    echo "Execution: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed]"
+    exit 1
+fi
+
 if (( $numLines > $MAX_CITIZENS )); then
     if [ "$4" != "duplicatesAllowed" ]; then
         echo "Cannot create $numLines records without duplicates."
@@ -42,12 +54,12 @@ while [ "$lineCount" != "$numLines" ]; do
         # Creating new citizen info
         len=$RANDOM
         let "len %= 11"
-        let "len+=2"
+        let "len+=1"
         name=$(tr -dc A-Z </dev/urandom | head -c 1)
         name="$name$(tr -dc a-z </dev/urandom | head -c $len)"
         len=$RANDOM
         let "len %= 11"
-        let "len+=2"
+        let "len+=1"
         surname=$(tr -dc A-Z </dev/urandom | head -c 1)
         surname="$surname$(tr -dc a-z </dev/urandom | head -c $len)"
         country_id=$RANDOM
