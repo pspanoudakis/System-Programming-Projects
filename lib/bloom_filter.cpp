@@ -1,6 +1,7 @@
 #include "../include/bloom_filter.hpp"
+#include "../include/hash_functions.hpp"
 
-BloomFilter::BloomFilter(unsigned int n):bits(new unsigned char[n]), numBits(n*8)
+BloomFilter::BloomFilter(unsigned long n): numBits(n*8), bits(new unsigned char[n])
 {
     for (int i = 0; i < n; i++)
     {
@@ -13,7 +14,7 @@ BloomFilter::~BloomFilter()
     delete bits;
 }
 
-void BloomFilter::setBit(unsigned int n)
+void BloomFilter::setBit(unsigned long n)
 {  
     if (n >= this->numBits) { return; }
 
@@ -28,7 +29,7 @@ void BloomFilter::setBit(unsigned int n)
     this->bits[target_byte] = this->bits[target_byte] | mask;
 }
 
-bool BloomFilter::getBit(unsigned int n)
+bool BloomFilter::getBit(unsigned long n)
 {
     if (n >= this->numBits) { return false; }
 
@@ -40,4 +41,23 @@ bool BloomFilter::getBit(unsigned int n)
     temp_byte = temp_byte >> 7;
 
     return (temp_byte == 1);
+}
+
+bool BloomFilter::isPresent(void *data)
+{
+    unsigned long bit_num;
+    for (int i = 0; i < K_MAX; i++)
+    {
+        bit_num = hash_i((unsigned char*)data, i) % this->numBits;
+        if ( !getBit(bit_num) ) { return false; }
+    }
+    return true;
+}
+
+void BloomFilter::markAsPresent(void *data)
+{
+    for (int i = 0; i < K_MAX; i++)
+    {
+        setBit(hash_i((unsigned char*)data, i) % this->numBits);
+    }
 }
