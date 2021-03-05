@@ -4,8 +4,8 @@
 #include "../include/skip_list.hpp"
 
 SkipList::SkipList(int layers, CompareFunc comp, DestroyFunc dest):
-max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )),
-compare(comp), layer_heads(new SkipListNode* [max_layer]), curr_layer(0), destroyElement(dest)
+max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )), curr_layer(0), 
+layer_heads(new SkipListNode* [max_layer]), compare(comp), destroyElement(dest)
 {
     for ( int i = 0; i < max_layer; i++ )
     {
@@ -28,7 +28,8 @@ SkipList::~SkipList()
     delete [] layer_heads;
 }
 
-SkipList::SkipListNode::SkipListNode(int total_layers): next_nodes(new SkipListNode* [layers]), layers(total_layers)
+SkipList::SkipListNode::SkipListNode(int total_layers): 
+layers(total_layers), next_nodes(new SkipListNode* [layers]), data(NULL)
 {
     for ( int i = 0; i < layers; i++ )
     {
@@ -119,10 +120,11 @@ int SkipList::insert(void *element)
         }
         layer_positions[i] = prev;
     }
-    SkipListNode *new_node = new SkipListNode(max_layer);
+    int new_node_layer = getRandomLayer();
+
+    SkipListNode *new_node = new SkipListNode(new_node_layer + 1);
     new_node->data = element;
     
-    int new_node_layer = getRandomLayer();
     for ( int i = 0; i <= new_node_layer; i++ )
     {
         if ( layer_positions[i] == NULL )

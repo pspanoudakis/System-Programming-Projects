@@ -8,12 +8,10 @@
 class SkipList
 {
     private:
-        CompareFunc compare;
-        DestroyFunc destroyElement;
         struct SkipListNode
         {
+            const int layers;
             SkipListNode **next_nodes;
-            int layers;
             void *data;
             SkipListNode(int total_layers);
             ~SkipListNode();
@@ -21,6 +19,8 @@ class SkipList
         const int max_layer;
         int curr_layer;
         SkipListNode **layer_heads;
+        CompareFunc compare;
+        DestroyFunc destroyElement;
         int getRandomLayer(void);
         
     public:
