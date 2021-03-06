@@ -248,7 +248,7 @@ void SkipList::display(DisplayFunc f)
 }
 
 /**
- * Displays all the elements of the Skip List, by simply
+ * Displays all the elements of the Skip List, by simply 
  * iterating over the nodes of layer 0.
  * @param print The function used for printing the node data.
  */
