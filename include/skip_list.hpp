@@ -19,17 +19,18 @@ class SkipList
         const int max_layer;
         int curr_layer;
         SkipListNode **layer_heads;
-        CompareFunc compare;
+        //CompareFunc compare;
         DestroyFunc destroyElement;
         int getRandomLayer(void);
         
     public:
-        SkipList(int layers, CompareFunc comp, DestroyFunc dest);
+        SkipList(int layers, DestroyFunc dest);
         ~SkipList();
-        void* find(void *element);
-        int insert(void *element);
-        void remove(void *element);
+        void* find(void *element, CompareFunc compare);
+        int insert(void *element, void **present, CompareFunc compare);
+        void remove(void *element, CompareFunc compare);
         void display(DisplayFunc f);
+        void displayElements(DisplayFunc print);
 };
 
 #endif

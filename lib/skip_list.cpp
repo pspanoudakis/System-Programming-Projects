@@ -3,9 +3,9 @@
 #include <cstddef>
 #include "../include/skip_list.hpp"
 
-SkipList::SkipList(int layers, CompareFunc comp, DestroyFunc dest):
+SkipList::SkipList(int layers, DestroyFunc dest):
 max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )), curr_layer(0), 
-layer_heads(new SkipListNode* [max_layer]), compare(comp), destroyElement(dest)
+layer_heads(new SkipListNode* [max_layer]), destroyElement(dest)
 {
     for ( int i = 0; i < max_layer; i++ )
     {
@@ -42,7 +42,7 @@ SkipList::SkipListNode::~SkipListNode()
     delete [] next_nodes;
 }
 
-void* SkipList::find(void *element)
+void* SkipList::find(void *element, CompareFunc compare)
 {
     SkipListNode *current;
     SkipListNode *prev = NULL;
@@ -77,7 +77,18 @@ void* SkipList::find(void *element)
     return NULL;
 }
 
-int SkipList::insert(void *element)
+/**
+ * Inserts the specified element in the Skip List.
+ * 
+ * @param element The element to be inserted.
+ * @param present If the element was already present in the Skip List,
+ * this will point to the existing data after the end of the execution.
+ * @param compare The function used for comparing the specified element
+ * and the existing elements.
+ * 
+ * @return 1 if the element was inserted, 0 otherwise.
+ */
+int SkipList::insert(void *element, void **present, CompareFunc compare)
 {
     // The nodes in each layer to place the new element after
     SkipListNode **layer_positions;
@@ -106,7 +117,8 @@ int SkipList::insert(void *element)
             cmp = compare(element, current->data);
 
             if ( cmp == 0 )
-            { 
+            {
+                *present = current->data; 
                 delete [] layer_positions;
                 return 0;
             }
@@ -143,10 +155,11 @@ int SkipList::insert(void *element)
         curr_layer = new_node_layer;
     }
     delete [] layer_positions;
+    *present = NULL;
     return 1;
 }
 
-void SkipList::remove(void *element)
+void SkipList::remove(void *element, CompareFunc compare)
 {
     // The nodes in each layer that are before the element node
     SkipListNode **layer_prevs;
@@ -232,4 +245,21 @@ void SkipList::display(DisplayFunc f)
         }
         printf("\n");
     }
+}
+
+/**
+ * Displays all the elements of the Skip List, by simply
+ * iterating over the nodes of layer 0.
+ * @param print The function used for printing the node data.
+ */
+void SkipList::displayElements(DisplayFunc print)
+{
+    SkipListNode *current = layer_heads[0];
+
+    while (current != NULL)
+    {
+        print(current->data);
+        //printf("\n");
+        current = current->next_nodes[0];
+    }    
 }
