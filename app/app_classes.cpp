@@ -12,6 +12,9 @@ char* copyString(const char *str)
     return copy;
 }
 
+Date::Date(int d, int m, int y):
+day(d), month(m), year(y) { }
+
 CitizenRecord::CitizenRecord(int citizenID, const char *name, int citizenAge, Country *citizenCountry):
 id(citizenID), fullname(copyString(name)), age(citizenAge), country(citizenCountry) { }
 
