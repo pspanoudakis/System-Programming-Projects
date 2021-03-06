@@ -9,6 +9,8 @@ struct Date
     int day;
     int month;
     int year;
+
+    Date(int d = 0, int m = 0, int y = 0);
 };
 
 /*
@@ -40,9 +42,10 @@ class VaccinationRecord
     private:
         CitizenRecord *citizen;
         Virus virus;
+        bool vaccinated;
         Date date;        
     public:
-        VaccinationRecord(CitizenRecord *person, Virus v, Date d);
+        VaccinationRecord(CitizenRecord *person, bool is_vaccinated, Virus v, Date d = Date());
         ~VaccinationRecord();
 };
 

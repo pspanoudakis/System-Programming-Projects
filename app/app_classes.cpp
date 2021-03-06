@@ -20,7 +20,7 @@ CitizenRecord::~CitizenRecord()
     delete [] fullname;
 }
 
-VaccinationRecord::VaccinationRecord(CitizenRecord *person, Virus v, Date d):
-citizen(person), virus(v), date(d) { }
+VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, Virus v, Date d = Date()):
+citizen(person), vaccinated(is_vaccinated), virus(v), date(d) { }
 
 VaccinationRecord::~VaccinationRecord() { }
