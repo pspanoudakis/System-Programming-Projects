@@ -1,8 +1,10 @@
 #ifndef APP_CLASSES_HPP
 #define APP_CLASSES_HPP
 
-typedef char *Country;
-typedef char *Virus;
+#include "../include/linked_list.hpp"
+#include "../include/rb_tree.hpp"
+#include "../include/skip_list.hpp"
+#include "../include/bloom_filter.hpp"
 
 struct Date
 {
@@ -14,31 +16,26 @@ struct Date
     void set(int d, int m, int y);
 };
 
-struct VirusStatus
+struct VirusRecords
 {
-    Virus *name;
+    char *virus_name;
+    SkipList *vaccinated;
+    SkipList *non_vaccinated;
+    BloomFilter *filter;
+};
 
+struct VirusCountryStatus
+{
+    char *virus_name;
+    RedBlackTree *record_tree;
 };
 
 struct CountryStatus
 {
-    Country *name;
+    char *country_name;
     int population;
-    
-
+    LinkedList *virus_status;
 };
-
-/*
-struct Country
-{
-    char *name;
-};
-
-struct Virus
-{
-    char *name;
-};
-*/
 
 class CitizenRecord
 {
@@ -46,9 +43,9 @@ class CitizenRecord
         const int id;
         char *fullname;
         int age;
-        Country *country;
+        char *country;
     public:
-        CitizenRecord(int citizenID, const char *name, int citizenAge, Country *citizenCountry);
+        CitizenRecord(int citizen_id, const char *name, int citizen_age, char *country_name);
         ~CitizenRecord();
 };
 
@@ -56,11 +53,11 @@ class VaccinationRecord
 {
     private:
         CitizenRecord *citizen;
-        Virus virus;
+        char* virus_name;
         bool vaccinated;
         Date date;        
     public:
-        VaccinationRecord(CitizenRecord *person, bool is_vaccinated, Virus v, Date d = Date());
+        VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
         ~VaccinationRecord();
 };
 

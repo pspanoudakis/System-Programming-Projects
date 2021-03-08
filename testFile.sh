@@ -1,5 +1,5 @@
 #!/bin/bash
-MAX_CITIZENS=20
+MAX_CITIZENS=10000
 numLines=$3
 
 if [[ ! -f $1 ]]; then

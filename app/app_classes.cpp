@@ -42,15 +42,15 @@ int compareDates(void *a, void *b)
     return 0;
 }
 
-CitizenRecord::CitizenRecord(int citizenID, const char *name, int citizenAge, Country *citizenCountry):
-id(citizenID), fullname(copyString(name)), age(citizenAge), country(citizenCountry) { }
+CitizenRecord::CitizenRecord(int citizen_id, const char *name, int citizen_age, char *country_name):
+id(citizen_id), fullname(copyString(name)), age(citizen_age), country(country_name) { }
 
 CitizenRecord::~CitizenRecord()
 {
     delete [] fullname;
 }
 
-VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, Virus v, Date d = Date()):
-citizen(person), vaccinated(is_vaccinated), virus(v), date(d) { }
+VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date()):
+citizen(person), vaccinated(is_vaccinated), virus_name(virus), date(d) { }
 
 VaccinationRecord::~VaccinationRecord() { }
