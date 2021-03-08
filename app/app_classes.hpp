@@ -11,6 +11,21 @@ struct Date
     int year;
 
     Date(int d = 0, int m = 0, int y = 0);
+    void set(int d, int m, int y);
+};
+
+struct VirusStatus
+{
+    Virus *name;
+
+};
+
+struct CountryStatus
+{
+    Country *name;
+    int population;
+    
+
 };
 
 /*
