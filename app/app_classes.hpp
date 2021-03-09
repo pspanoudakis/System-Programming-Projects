@@ -16,25 +16,34 @@ struct Date
     void set(int d, int m, int y);
 };
 
-struct VirusRecords
+class VirusRecords
 {
-    char *virus_name;
-    SkipList *vaccinated;
-    SkipList *non_vaccinated;
-    BloomFilter *filter;
+    public:
+        char *virus_name;
+        SkipList *vaccinated;
+        SkipList *non_vaccinated;
+        BloomFilter *filter;
+        VirusRecords(const char *name, int skip_list_layers, DestroyFunc dest);
+        ~VirusRecords();
 };
 
-struct VirusCountryStatus
+class VirusCountryStatus
 {
-    char *virus_name;
-    RedBlackTree *record_tree;
+    public:
+        char *virus_name;
+        RedBlackTree *record_tree;
+        VirusCountryStatus(char *name, CompareFunc tree_func);
+        ~VirusCountryStatus();
 };
 
-struct CountryStatus
+class CountryStatus
 {
-    char *country_name;
-    int population;
-    LinkedList *virus_status;
+    public:
+        char *country_name;
+        int population;
+        LinkedList *virus_status;
+        CountryStatus();
+        ~CountryStatus();
 };
 
 class CitizenRecord

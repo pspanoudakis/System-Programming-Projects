@@ -42,6 +42,26 @@ int compareDates(void *a, void *b)
     return 0;
 }
 
+VirusRecords::VirusRecords(const char *name, int skip_list_layers, DestroyFunc dest):
+virus_name(copyString(name)),
+vaccinated(new SkipList(skip_list_layers, dest)),
+non_vaccinated(new SkipList(skip_list_layers, dest)) { }
+
+VirusRecords::~VirusRecords()
+{
+    delete non_vaccinated;
+    delete vaccinated;
+    delete virus_name;
+}
+
+VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
+virus_name(name), record_tree(new RedBlackTree(tree_func)) { }
+
+VirusCountryStatus::~VirusCountryStatus()
+{
+    delete record_tree;
+}
+
 CitizenRecord::CitizenRecord(int citizen_id, const char *name, int citizen_age, char *country_name):
 id(citizen_id), fullname(copyString(name)), age(citizen_age), country(country_name) { }
 
