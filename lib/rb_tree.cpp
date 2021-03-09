@@ -1,8 +1,8 @@
 #include <cstddef>
 #include "../include/rb_tree.hpp"
 
-RBTreeNode::RBTreeNode(Color c, void *element):
-color(c), data(element) { }
+RBTreeNode::RBTreeNode(Color c, void *element, RBTreeNode *parent_node):
+color(c), data(element), left(NULL), right(NULL), parent(parent_node) { }
 
 RBTreeNode* RBTreeNode::sibling()
 {
@@ -178,8 +178,7 @@ void RedBlackTree::recursiveInsert(RBTreeNode *start, void *element)
     {
         if (start->right == NULL)
         {
-            start->right = new RBTreeNode(RED, element);
-            start->right->data = element;
+            start->right = new RBTreeNode(RED, element, start);
             fixRedRedViolation(start->right);
             return;
         }
@@ -189,8 +188,7 @@ void RedBlackTree::recursiveInsert(RBTreeNode *start, void *element)
     {
         if (start->left == NULL)
         {
-            start->left = new RBTreeNode(RED, element);
-            start->left->data = element;
+            start->left = new RBTreeNode(RED, element, start);
             fixRedRedViolation(start->left);
             return;
         }
@@ -202,8 +200,7 @@ void RedBlackTree::insert(void *element)
 {
     if (root == NULL)
     {
-        root = new RBTreeNode(BLACK, element);
-        root->data = element;
+        root = new RBTreeNode(BLACK, element, NULL);
         return;
     }
     recursiveInsert(root, element);

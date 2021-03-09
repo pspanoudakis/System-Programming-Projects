@@ -14,7 +14,7 @@ class RBTreeNode
         RBTreeNode *right;
         RBTreeNode *parent;
 
-        RBTreeNode(Color c, void *element);
+        RBTreeNode(Color c, void *element, RBTreeNode *parent_node);
         void destroyDescendants();
         RBTreeNode *sibling();
         bool isLeftChild();
