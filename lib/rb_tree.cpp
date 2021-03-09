@@ -4,6 +4,12 @@
 RBTreeNode::RBTreeNode(Color c, void *element, RBTreeNode *parent_node):
 color(c), data(element), left(NULL), right(NULL), parent(parent_node) { }
 
+// To be deleted
+RBTreeNode::~RBTreeNode()
+{
+    //delete (int*)data;
+}
+
 RBTreeNode* RBTreeNode::sibling()
 {
     if (this->parent == NULL) { return NULL; }
@@ -204,4 +210,29 @@ void RedBlackTree::insert(void *element)
         return;
     }
     recursiveInsert(root, element);
+}
+
+void* RedBlackTree::search(void *element)
+{
+    int cmp;
+    RBTreeNode *current;
+    current = this->root;
+
+    while (current != NULL)
+    {
+        cmp = compare(element, current->data);
+        if (cmp == 0)
+        {
+            return current->data;
+        }
+        else if(cmp > 0)
+        {
+            current = current->right;
+        }
+        else
+        {
+            current = current->left;   
+        }
+    }
+    return NULL;
 }
