@@ -47,3 +47,11 @@ unsigned int HashTable::getHashCode(void *data, unsigned int mod)
     result = hash_num;
     return result;
 }
+
+bool HashTable::insert(void *element)
+{
+    int hash_object = this->get_hash_object(element);
+    unsigned int hash_code = getHashCode(&hash_object, this->size);
+
+    return(buckets[hash_code]->insert(element));
+}

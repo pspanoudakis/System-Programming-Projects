@@ -47,3 +47,24 @@ void LinkedList::append(void *element)
     head->data = element;
     last = head;    
 }
+
+bool LinkedList::insert(void *element)
+{
+    if ( this->head == NULL )
+    {
+        this->head = new ListNode();
+        this->head->data = element;
+        return true;
+    }
+    ListNode* current = this->head;
+    while (current->next != NULL)
+    {
+        if ( compare(element, current->data) == 0 )
+        {
+            return false;
+        }
+        current = current->next;
+    }
+    current->next = new ListNode();
+    current->next->data = element;
+    return true;

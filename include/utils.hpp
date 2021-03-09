@@ -4,5 +4,6 @@
 typedef int (*CompareFunc)(void *a, void *b);
 typedef void (*DisplayFunc)(void *a);
 typedef void (*DestroyFunc)(void *a);
+typedef int (*HashObjectFunc)(void *a);
 
 #endif

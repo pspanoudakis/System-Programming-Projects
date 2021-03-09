@@ -47,9 +47,7 @@ void RBTreeNode::replaceWithNewParent(RBTreeNode *new_parent)
 }
 
 RedBlackTree::RedBlackTree(CompareFunc comp):
-root(NULL), compare(comp)
-{
-}
+compare(comp), root(NULL) { }
 
 RedBlackTree::~RedBlackTree()
 {
@@ -94,6 +92,16 @@ void RedBlackTree::rightRotation(RBTreeNode *target)
         target->left->parent = target;
     }
     new_parent->right = target;
+}
+
+void RedBlackTree::fixRedRedViolation(RBTreeNode *target)
+{
+    if ( this->root == target )
+    {
+        target->color = BLACK;
+        return;
+    }
+    
 }
 
 void* RedBlackTree::insert(void *element)

@@ -25,6 +25,7 @@ class LinkedList {
         ~LinkedList();
         void append(void *element);
         void* getElement(void *element);
+        bool insert(void *element);
 };
 
 #endif

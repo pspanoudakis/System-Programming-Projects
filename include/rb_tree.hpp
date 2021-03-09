@@ -19,7 +19,6 @@ class RBTreeNode
         RBTreeNode *uncle();
         RBTreeNode *sibling();
         bool isLeftChild();
-        //bool hasRedChild();
         void replaceWithNewParent(RBTreeNode *new_parent);
         void swapColor(RBTreeNode *other);
         
@@ -28,13 +27,13 @@ class RBTreeNode
 class RedBlackTree
 {
     private:
+        CompareFunc compare;
         void leftRotation(RBTreeNode *target);
         void rightRotation(RBTreeNode *target);
+        void fixRedRedViolation(RBTreeNode *target);
         RBTreeNode *find(void *element);
-    public:
-        
-        RBTreeNode *root;
-        CompareFunc compare;
+    public:        
+        RBTreeNode *root;        
         RedBlackTree(CompareFunc comp);
         ~RedBlackTree();        
         void *insert(void *element);
