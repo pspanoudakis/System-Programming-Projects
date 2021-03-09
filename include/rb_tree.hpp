@@ -14,9 +14,8 @@ class RBTreeNode
         RBTreeNode *right;
         RBTreeNode *parent;
 
-        RBTreeNode(Color c);
+        RBTreeNode(Color c, void *element);
         void destroyDescendants();
-        RBTreeNode *uncle();
         RBTreeNode *sibling();
         bool isLeftChild();
         void replaceWithNewParent(RBTreeNode *new_parent);
@@ -31,12 +30,13 @@ class RedBlackTree
         void leftRotation(RBTreeNode *target);
         void rightRotation(RBTreeNode *target);
         void fixRedRedViolation(RBTreeNode *target);
-        RBTreeNode *find(void *element);
+        RBTreeNode* find(void *element);
+        void recursiveInsert(RBTreeNode *start, void *element);
     public:        
         RBTreeNode *root;        
         RedBlackTree(CompareFunc comp);
         ~RedBlackTree();        
-        void *insert(void *element);
+        void insert(void *element);
 };
 
 #endif

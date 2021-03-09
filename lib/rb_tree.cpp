@@ -1,6 +1,19 @@
 #include <cstddef>
 #include "../include/rb_tree.hpp"
 
+RBTreeNode::RBTreeNode(Color c, void *element):
+color(c), data(element) { }
+
+RBTreeNode* RBTreeNode::sibling()
+{
+    if (this->parent == NULL) { return NULL; }
+    if (this->isLeftChild())
+    {
+        return this->parent->right;
+    }
+    return this->parent->left;
+}
+
 void RBTreeNode::destroyDescendants()
 {
     if (this->left != NULL)
@@ -101,10 +114,97 @@ void RedBlackTree::fixRedRedViolation(RBTreeNode *target)
         target->color = BLACK;
         return;
     }
-    
+    RBTreeNode *parent = target->parent;
+    if (parent->color == BLACK) { return; }
+
+    RBTreeNode *uncle = parent->sibling();
+
+    // We know that parent is not BLACK 
+    // (so it's not the root), so grandparent exists
+    RBTreeNode *grandparent = parent->parent;
+
+    if (uncle == NULL || (uncle->color == BLACK))
+    {
+        if (parent->isLeftChild())
+        {
+            if (target->isLeftChild())
+            // Left-Left case
+            {
+                rightRotation(grandparent);
+                parent->swapColor(grandparent);
+            }
+            else
+            // Left-Right case
+            {
+                leftRotation(parent);
+                rightRotation(grandparent);
+                target->swapColor(grandparent);
+            }            
+        }
+        else
+        {
+            if (target->isLeftChild())
+            // Right-Left case
+            {
+                rightRotation(parent);
+                leftRotation(grandparent);
+                target->swapColor(grandparent);
+            }
+            else
+            // Right-Right case
+            {
+                leftRotation(grandparent);
+                parent->swapColor(grandparent);
+            }            
+        }        
+    }
+    else
+    // uncle is RED
+    {
+        parent->color = BLACK;
+        uncle->color = BLACK;
+        grandparent->color = RED;
+        fixRedRedViolation(grandparent);
+    }
 }
 
-void* RedBlackTree::insert(void *element)
+void RedBlackTree::recursiveInsert(RBTreeNode *start, void *element)
 {
+    int cmp = compare(element, start->data);
 
+    if (cmp == 0) { return; }
+    
+    if (cmp > 0)
+    {
+        if (start->right == NULL)
+        {
+            start->right = new RBTreeNode(RED, element);
+            start->right->data = element;
+            fixRedRedViolation(start->right);
+            return;
+        }
+        recursiveInsert(start->right, element);
+    }
+    else
+    {
+        if (start->left == NULL)
+        {
+            start->left = new RBTreeNode(RED, element);
+            start->left->data = element;
+            fixRedRedViolation(start->left);
+            return;
+        }
+        recursiveInsert(start->left, element);
+    }
+}
+
+void RedBlackTree::insert(void *element)
+{
+    if (root == NULL)
+    {
+        root = new RBTreeNode(BLACK, element);
+        root->data = element;
+        return;
+    }
+    recursiveInsert(root, element);
 }
