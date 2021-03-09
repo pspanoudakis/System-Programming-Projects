@@ -1,5 +1,5 @@
 #include <cstring>
-#include "app_classes.hpp"
+#include "app_utils.hpp"
 
 char* copyString(const char *str)
 {
@@ -42,8 +42,8 @@ int compareDates(void *a, void *b)
     return 0;
 }
 
-VirusRecords::VirusRecords(const char *name, int skip_list_layers, DestroyFunc dest):
-virus_name(copyString(name)),
+VirusRecords::VirusRecords(char *name, int skip_list_layers, DestroyFunc dest):
+virus_name(name),
 vaccinated(new SkipList(skip_list_layers, dest)),
 non_vaccinated(new SkipList(skip_list_layers, dest)) { }
 
@@ -62,8 +62,27 @@ VirusCountryStatus::~VirusCountryStatus()
     delete record_tree;
 }
 
-CitizenRecord::CitizenRecord(int citizen_id, const char *name, int citizen_age, char *country_name):
-id(citizen_id), fullname(copyString(name)), age(citizen_age), country(country_name) { }
+int compareVirusCountryStatus(void *a, void *b)
+{
+
+}
+
+void destroyVirusCountryStatus(void *status)
+{
+    delete status;
+}
+
+CountryStatus::CountryStatus(char *name, CompareFunc comp, DestroyFunc dest):
+country_name(name), population(0), virus_status(new LinkedList(comp, dest)) { }
+
+CountryStatus::~CountryStatus()
+{
+    delete [] country_name;
+    delete virus_status;
+}
+
+CitizenRecord::CitizenRecord(int citizen_id, char *name, int citizen_age, char *country_name):
+id(citizen_id), fullname(name), age(citizen_age), country(country_name) { }
 
 CitizenRecord::~CitizenRecord()
 {

@@ -23,7 +23,7 @@ class VirusRecords
         SkipList *vaccinated;
         SkipList *non_vaccinated;
         BloomFilter *filter;
-        VirusRecords(const char *name, int skip_list_layers, DestroyFunc dest);
+        VirusRecords(char *name, int skip_list_layers, DestroyFunc dest);
         ~VirusRecords();
 };
 
@@ -42,7 +42,7 @@ class CountryStatus
         char *country_name;
         int population;
         LinkedList *virus_status;
-        CountryStatus();
+        CountryStatus(char *name, CompareFunc comp, DestroyFunc dest);
         ~CountryStatus();
 };
 
@@ -54,7 +54,7 @@ class CitizenRecord
         int age;
         char *country;
     public:
-        CitizenRecord(int citizen_id, const char *name, int citizen_age, char *country_name);
+        CitizenRecord(int citizen_id, char *name, int citizen_age, char *country_name);
         ~CitizenRecord();
 };
 
