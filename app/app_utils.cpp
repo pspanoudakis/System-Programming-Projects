@@ -13,6 +13,10 @@ char* copyString(const char *str)
     return copy;
 }
 
+/**
+ * Date class functions ---------------------------------------------------------------------------
+ */
+
 Date::Date(int d, int m, int y):
 day(d), month(m), year(y) { }
 
@@ -54,6 +58,10 @@ int compareDates(void *a, void *b)
     }
     return 0;
 }
+
+/**
+ * Citizen Record functions -----------------------------------------------------------------------
+ */
 
 CitizenRecord::CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c):
 id(citizen_id), fullname(name), age(citizen_age), country(c) { }
@@ -101,15 +109,19 @@ int compareCitizens(void *a, void *b)
     return 0;
 }
 
-int compareVaccinationRecords(void *a, void *b)
-{
-    return compareCitizens( ((VaccinationRecord*)a)->citizen, ((VaccinationRecord*)b)->citizen);
-}
+/**
+ * Vaccination Record functions -------------------------------------------------------------------
+ */
 
 VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date()):
 citizen(person), vaccinated(is_vaccinated), virus_name(virus), date(d) { }
 
 VaccinationRecord::~VaccinationRecord() { }
+
+int compareVaccinationRecords(void *a, void *b)
+{
+    return compareCitizens( ((VaccinationRecord*)a)->citizen, ((VaccinationRecord*)b)->citizen);
+}
 
 /**
  * Displays the Citizen Information of the given Vaccination Record.
@@ -121,6 +133,10 @@ void displayVaccinationCitizen(void *record)
     printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
 }
 
+/**
+ * Virus Country Status functions -----------------------------------------------------------------
+ */
+
 VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
 virus_name(name), record_tree(new RedBlackTree(tree_func)) { }
 
@@ -130,7 +146,7 @@ VirusCountryStatus::~VirusCountryStatus()
 }
 
 /**
- * Virus Records Methods-Functions -----------------------------------------------------------------
+ * Virus Records Methods-Functions ----------------------------------------------------------------
  */
 
 VirusRecords::VirusRecords(char *name, int skip_list_layers, DestroyFunc dest):
@@ -210,15 +226,9 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
     
 }
 
-int compareVirusCountryStatus(void *a, void *b)
-{
-
-}
-
-void destroyVirusCountryStatus(void *status)
-{
-    delete status;
-}
+/**
+ * Country Status functions -----------------------------------------------------------------------
+ */
 
 CountryStatus::CountryStatus(char *name, CompareFunc comp, DestroyFunc dest):
 country_name(name), total_population(0), population_20_40(0), population_40_60(0),
@@ -228,4 +238,14 @@ CountryStatus::~CountryStatus()
 {
     delete [] country_name;
     delete virus_status;
+}
+
+int compareVirusCountryStatus(void *a, void *b)
+{
+
+}
+
+void destroyVirusCountryStatus(void *status)
+{
+    delete status;
 }

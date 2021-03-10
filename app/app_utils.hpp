@@ -18,6 +18,28 @@ struct Date
     bool isValidDate();
 };
 
+class CitizenRecord
+{
+    public:
+        const int id;
+        char *fullname;
+        int age;
+        CountryStatus *country;
+        CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c);
+        ~CitizenRecord();
+};
+
+class VaccinationRecord
+{
+    public:
+        CitizenRecord *citizen;
+        char* virus_name;
+        bool vaccinated;
+        Date date; 
+        VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
+        ~VaccinationRecord();
+};
+
 class VirusRecords
 {
     public:
@@ -65,28 +87,6 @@ class CountryStatus
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
         void updatePopulation(int new_citizen_age);
-};
-
-class CitizenRecord
-{
-    public:
-        const int id;
-        char *fullname;
-        int age;
-        CountryStatus *country;
-        CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c);
-        ~CitizenRecord();
-};
-
-class VaccinationRecord
-{
-    public:
-        CitizenRecord *citizen;
-        char* virus_name;
-        bool vaccinated;
-        Date date; 
-        VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
-        ~VaccinationRecord();
 };
 
 #endif
