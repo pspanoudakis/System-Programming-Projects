@@ -332,10 +332,10 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  
     }
 
     printf("%s\n", this->country_name);
-    printf("0-20 %d %f\%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20);
-    printf("20-40 %d %f\%\n", between_20_40, (float)bellow_20/(float)this->population_20_40);
-    printf("40-60 %d %f\%\n", between_40_60, (float)bellow_20/(float)this->population_40_60);
-    printf("60+ %d %f\%\n", plus_60, (float)bellow_20/(float)this->population_60_plus);
+    printf("0-20 %d %.2f%%\n", bellow_20, ((float)bellow_20/(float)this->population_bellow_20)*100);
+    printf("20-40 %d %.2f%%\n", between_20_40, ((float)bellow_20/(float)this->population_20_40)*100);
+    printf("40-60 %d %.2f%%\n", between_40_60, ((float)bellow_20/(float)this->population_40_60)*100);
+    printf("60+ %d %.2f%%\n", plus_60, ((float)bellow_20/(float)this->population_60_plus)*100);
 }
 
 void CountryStatus::displayStatusByAge(char *virus_name, Date start,  Date end)
@@ -355,7 +355,7 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start,  Date end)
         }        
     }
 
-    printf("%s %d %f\%\n", this->country_name, vaccinated_citizens, (float)vaccinated_citizens/(float)total_population);
+    printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, ((float)vaccinated_citizens/(float)total_population)*100);
 }
 
 /**
