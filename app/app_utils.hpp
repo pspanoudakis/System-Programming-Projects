@@ -49,7 +49,7 @@ class VirusRecords
         SkipList *vaccinated;
         SkipList *non_vaccinated;
         BloomFilter *filter;
-        VirusRecords(char *name, int skip_list_layers, DestroyFunc dest);
+        VirusRecords(char *name, int skip_list_layers);
         ~VirusRecords();
         void insertRecordOrShowExisted(VaccinationRecord *record);
         bool checkBloomFilter(char *citizenID);
@@ -85,7 +85,7 @@ class CountryStatus
         int population_60_plus;
 
         LinkedList *virus_status;
-        CountryStatus(char *name, CompareFunc comp, DestroyFunc dest);
+        CountryStatus(char *name);
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
         void updatePopulation(VaccinationRecord *record);

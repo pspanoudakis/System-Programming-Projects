@@ -129,6 +129,11 @@ int compareVaccinationRecords(void *a, void *b)
     return compareCitizens( ((VaccinationRecord*)a)->citizen, ((VaccinationRecord*)b)->citizen);
 }
 
+void destroyVaccinationRecord(void *record)
+{
+    delete (VaccinationRecord*)record;
+}
+
 /**
  * Displays the Citizen Information of the given Vaccination Record.
  * @param record A pointer to a VaccinationRecord (void* for internal compatibility purposes)
@@ -143,10 +148,10 @@ void displayVaccinationCitizen(void *record)
  * Virus Records Methods-Functions ----------------------------------------------------------------
  */
 
-VirusRecords::VirusRecords(char *name, int skip_list_layers, DestroyFunc dest):
+VirusRecords::VirusRecords(char *name, int skip_list_layers):
 virus_name(name),
-vaccinated(new SkipList(skip_list_layers, dest)),
-non_vaccinated(new SkipList(skip_list_layers, dest)) { }
+vaccinated(new SkipList(skip_list_layers, destroyVaccinationRecord)),
+non_vaccinated(new SkipList(skip_list_layers, destroyVaccinationRecord)) { }
 
 VirusRecords::~VirusRecords()
 {
@@ -263,9 +268,9 @@ int compareVaccinationsDateFirst(void *a, void *b)
  * Country Status functions -----------------------------------------------------------------------
  */
 
-CountryStatus::CountryStatus(char *name, CompareFunc comp, DestroyFunc dest):
-country_name(name), total_population(0), population_20_40(0), population_40_60(0),
-population_60_plus(0), virus_status(new LinkedList(comp, dest)) { }
+CountryStatus::CountryStatus(char *name):
+country_name(name), total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+ virus_status(new LinkedList(compareNameVirusCountryStatus, destroyVirusCountryStatus)) { }
 
 CountryStatus::~CountryStatus()
 {
