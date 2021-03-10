@@ -1,10 +1,12 @@
 #ifndef APP_CLASSES_HPP
 #define APP_CLASSES_HPP
 
-#include "../include/linked_list.hpp"
-#include "../include/rb_tree.hpp"
-#include "../include/skip_list.hpp"
-#include "../include/bloom_filter.hpp"
+#include "../include/utils.hpp"
+
+class LinkedList;
+class RedBlackTree;
+class SkipList;
+class BloomFilter;
 
 struct Date
 {
@@ -86,7 +88,9 @@ class CountryStatus
         CountryStatus(char *name, CompareFunc comp, DestroyFunc dest);
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
-        void updatePopulation(int new_citizen_age);
+        void updatePopulation(VaccinationRecord *record);
+        void displayTotalPopulationStatus(char *virus_name, Date start,  Date end);
+        void displayStatusByAge(char *virus_name, Date start,  Date end);
 };
 
 #endif

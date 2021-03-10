@@ -1,6 +1,12 @@
 #include <cstring>
-#include "app_utils.hpp"
 #include <cstdio>
+
+#include "app_utils.hpp"
+#include "../include/linked_list.hpp"
+#include "../include/rb_tree.hpp"
+#include "../include/skip_list.hpp"
+#include "../include/bloom_filter.hpp"
+
 
 char* copyString(const char *str)
 {
@@ -134,18 +140,6 @@ void displayVaccinationCitizen(void *record)
 }
 
 /**
- * Virus Country Status functions -----------------------------------------------------------------
- */
-
-VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
-virus_name(name), record_tree(new RedBlackTree(tree_func)) { }
-
-VirusCountryStatus::~VirusCountryStatus()
-{
-    delete record_tree;
-}
-
-/**
  * Virus Records Methods-Functions ----------------------------------------------------------------
  */
 
@@ -227,6 +221,45 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
 }
 
 /**
+ * Virus Country Status functions -----------------------------------------------------------------
+ */
+
+VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
+virus_name(name), record_tree(new RedBlackTree(tree_func)) { }
+
+VirusCountryStatus::~VirusCountryStatus()
+{
+    delete record_tree;
+}
+
+void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
+{
+    this->record_tree->insert(record);
+}
+
+
+int compareVaccinationsDateFirst(void *a, void *b)
+{
+    VaccinationRecord *rec1 = (VaccinationRecord*)a;
+    VaccinationRecord *rec2 = (VaccinationRecord*)b;
+
+    int cmp = compareDates(&(rec1->date), &(rec2->date));
+
+    if (cmp != 0)
+    {
+        return cmp;
+    }
+
+    cmp = strcmp(rec1->virus_name, rec2->virus_name);
+    if (cmp != 0)
+    {
+        return cmp;
+    }
+
+    return compareCitizens(rec1->citizen, rec2->citizen);
+}
+
+/**
  * Country Status functions -----------------------------------------------------------------------
  */
 
@@ -240,9 +273,96 @@ CountryStatus::~CountryStatus()
     delete virus_status;
 }
 
-int compareVirusCountryStatus(void *a, void *b)
+void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 {
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(record->virus_name);
+    if (virus_tree == NULL)
+    {
+        this->virus_status->append(new VirusCountryStatus(record->virus_name, compareVaccinationsDateFirst));
+        virus_tree = (VirusCountryStatus*)this->virus_status->getLast();
+    }
+    virus_tree->storeVaccinationRecord(record);   
+}
 
+void CountryStatus::updatePopulation(VaccinationRecord *record)
+{
+    this->total_population++;
+    if (record->citizen->age < 20)
+    {
+        this->population_bellow_20++;
+    }
+    else if(record->citizen->age < 40)
+    {
+        this->population_20_40++;
+    }
+    else if(record->citizen->age < 60)
+    {
+        this->population_40_60++;
+    }
+    else
+    {
+        this->population_60_plus++;
+    }
+}
+
+void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  Date end)
+{
+    int bellow_20 = 0;
+    int between_20_40 = 0;
+    int between_40_60 = 0;
+    int plus_60 = 0;
+
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name);
+
+    if (virus_tree != NULL)
+    {
+        if (start.isNullDate())
+        {
+            virus_tree->getVaccinationStatsByAge(bellow_20, between_20_40, between_40_60, plus_60);
+        }
+        else
+        {
+            virus_tree->getVaccinationStatsByAge(bellow_20, between_20_40, between_40_60, plus_60, start, end);
+        }        
+    }
+
+    printf("%s\n", this->country_name);
+    printf("0-20 %d %f\%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20);
+    printf("20-40 %d %f\%\n", between_20_40, (float)bellow_20/(float)this->population_20_40);
+    printf("40-60 %d %f\%\n", between_40_60, (float)bellow_20/(float)this->population_40_60);
+    printf("60+ %d %f\%\n", plus_60, (float)bellow_20/(float)this->population_60_plus);
+}
+
+void CountryStatus::displayStatusByAge(char *virus_name, Date start,  Date end)
+{
+    int vaccinated_citizens = 0;
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name);
+
+    if (virus_tree != NULL)
+    {
+        if (start.isNullDate())
+        {
+            virus_tree->getTotalVaccinationStats(vaccinated_citizens);
+        }
+        else
+        {
+            virus_tree->getTotalVaccinationStats(vaccinated_citizens, start, end);
+        }        
+    }
+
+    printf("%s %d %f\%\n", this->country_name, vaccinated_citizens, (float)vaccinated_citizens/(float)total_population);
+}
+
+/**
+ * Compares the given virus name to the virus name of the
+ * specified VirusCountryStatus.
+ * @param name A char* string with a virus name
+ * @param virus_status A pointer to a VirusCountryStatus
+ * @return 0 if names are equal, otherwise returns a non-zero number.
+ */
+int compareNameVirusCountryStatus(void *name, void *virus_status)
+{
+    return strcmp((char*)name, ((VirusCountryStatus*)virus_status)->virus_name);
 }
 
 void destroyVirusCountryStatus(void *status)
