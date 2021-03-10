@@ -54,6 +54,7 @@ bool LinkedList::insert(void *element)
     {
         this->head = new ListNode();
         this->head->data = element;
+        this->last = this->head;
         return true;
     }
     ListNode* current = this->head;
@@ -67,5 +68,11 @@ bool LinkedList::insert(void *element)
     }
     current->next = new ListNode();
     current->next->data = element;
+    this->last = current->next;
     return true;
+}
+
+void* LinkedList::getLast()
+{
+    return last;
 }
