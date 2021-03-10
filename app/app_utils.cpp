@@ -22,6 +22,18 @@ void Date::set(int d, int m, int y)
     this->year = y;
 }
 
+bool Date::isValidDate()
+{
+    return ( (day >= 1) && (day <= 30) && 
+             (month >= 1) && (month <= 12) &&
+             (year >= 1990) && (year <= 2100));
+}
+
+bool Date::isNullDate()
+{
+    return (day == 0) && (month == 0) && (year == 0);
+}
+
 int compareDates(void *a, void *b)
 {
     Date *d1 = (Date*)a;
@@ -73,7 +85,8 @@ void destroyVirusCountryStatus(void *status)
 }
 
 CountryStatus::CountryStatus(char *name, CompareFunc comp, DestroyFunc dest):
-country_name(name), population(0), virus_status(new LinkedList(comp, dest)) { }
+country_name(name), total_population(0), population_20_40(0), population_40_60(0),
+population_60_plus(0), virus_status(new LinkedList(comp, dest)) { }
 
 CountryStatus::~CountryStatus()
 {

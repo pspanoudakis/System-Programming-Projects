@@ -14,6 +14,8 @@ struct Date
 
     Date(int d = 0, int m = 0, int y = 0);
     void set(int d, int m, int y);
+    bool isNullDate();
+    bool isValidDate();
 };
 
 class VirusRecords
@@ -25,6 +27,11 @@ class VirusRecords
         BloomFilter *filter;
         VirusRecords(char *name, int skip_list_layers, DestroyFunc dest);
         ~VirusRecords();
+        bool insertRecord(VaccinationRecord *record, VaccinationRecord **present);
+        bool checkBloomFilter(char *citizenID);
+        VaccinationRecord* vaccinationCheck(int citizenID);
+        void displayVaccinationStatus(int citizenID);
+        void displayNonVaccinated();
 };
 
 class VirusCountryStatus
@@ -34,16 +41,30 @@ class VirusCountryStatus
         RedBlackTree *record_tree;
         VirusCountryStatus(char *name, CompareFunc tree_func);
         ~VirusCountryStatus();
+        void storeVaccinationRecord(VaccinationRecord *record);
+        void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
+                                      int plus60, Date start, Date end);
+        void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
+                                      int &plus60);                                      
+        void getTotalVaccinationStats(int &total, Date start,  Date end);
+        void getTotalVaccinationStats(int &total);
 };
 
 class CountryStatus
 {
     public:
         char *country_name;
-        int population;
+        int total_population;
+        int population_bellow_20;
+        int population_20_40;
+        int population_40_60;
+        int population_60_plus;
+
         LinkedList *virus_status;
         CountryStatus(char *name, CompareFunc comp, DestroyFunc dest);
         ~CountryStatus();
+        void storeCitizenVaccinationRecord(VaccinationRecord *record);
+        void updatePopulation(int new_citizen_age);
 };
 
 class CitizenRecord
