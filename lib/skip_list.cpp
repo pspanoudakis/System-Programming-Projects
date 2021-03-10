@@ -86,9 +86,9 @@ void* SkipList::find(void *element, CompareFunc compare)
  * @param compare The function used for comparing the specified element
  * and the existing elements.
  * 
- * @return 1 if the element was inserted, 0 otherwise.
+ * @return TRUE if the element was inserted, FALSE otherwise.
  */
-int SkipList::insert(void *element, void **present, CompareFunc compare)
+bool SkipList::insert(void *element, void **present, CompareFunc compare)
 {
     // The nodes in each layer to place the new element after
     SkipListNode **layer_positions;
@@ -120,7 +120,7 @@ int SkipList::insert(void *element, void **present, CompareFunc compare)
             {
                 *present = current->data; 
                 delete [] layer_positions;
-                return 0;
+                return false;
             }
             if ( cmp > 0 )
             {
@@ -156,7 +156,7 @@ int SkipList::insert(void *element, void **present, CompareFunc compare)
     }
     delete [] layer_positions;
     *present = NULL;
-    return 1;
+    return true;
 }
 
 void SkipList::remove(void *element, CompareFunc compare)

@@ -27,7 +27,7 @@ class SkipList
         SkipList(int layers, DestroyFunc dest);
         ~SkipList();
         void* find(void *element, CompareFunc compare);
-        int insert(void *element, void **present, CompareFunc compare);
+        bool insert(void *element, void **present, CompareFunc compare);
         void remove(void *element, CompareFunc compare);
         void display(DisplayFunc f);
         void displayElements(DisplayFunc print);
