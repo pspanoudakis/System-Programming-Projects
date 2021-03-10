@@ -27,10 +27,10 @@ class VirusRecords
         BloomFilter *filter;
         VirusRecords(char *name, int skip_list_layers, DestroyFunc dest);
         ~VirusRecords();
-        bool insertRecord(VaccinationRecord *record, VaccinationRecord **present);
+        void insertRecordOrShowExisted(VaccinationRecord *record);
         bool checkBloomFilter(char *citizenID);
-        VaccinationRecord* vaccinationCheck(int citizenID);
         void displayVaccinationStatus(int citizenID);
+        void displayWhetherVaccinated(int citizenID);
         void displayNonVaccinated();
 };
 
@@ -69,24 +69,22 @@ class CountryStatus
 
 class CitizenRecord
 {
-    private:
+    public:
         const int id;
         char *fullname;
         int age;
-        char *country;
-    public:
-        CitizenRecord(int citizen_id, char *name, int citizen_age, char *country_name);
+        CountryStatus *country;
+        CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c);
         ~CitizenRecord();
 };
 
 class VaccinationRecord
 {
-    private:
+    public:
         CitizenRecord *citizen;
         char* virus_name;
         bool vaccinated;
-        Date date;        
-    public:
+        Date date; 
         VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
         ~VaccinationRecord();
 };

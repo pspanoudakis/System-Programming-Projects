@@ -68,3 +68,4 @@ bool LinkedList::insert(void *element)
     current->next = new ListNode();
     current->next->data = element;
     return true;
+}
