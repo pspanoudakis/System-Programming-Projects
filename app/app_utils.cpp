@@ -119,14 +119,35 @@ int compareCitizens(void *a, void *b)
  * Vaccination Record functions -------------------------------------------------------------------
  */
 
-VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date()):
+VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d):
 citizen(person), vaccinated(is_vaccinated), virus_name(virus), date(d) { }
 
 VaccinationRecord::~VaccinationRecord() { }
 
-int compareVaccinationRecords(void *a, void *b)
+int compareVaccinationRecordsByCitizen(void *a, void *b)
 {
     return compareCitizens( ((VaccinationRecord*)a)->citizen, ((VaccinationRecord*)b)->citizen);
+}
+
+int compareVaccinationsDateFirst(void *a, void *b)
+{
+    VaccinationRecord *rec1 = (VaccinationRecord*)a;
+    VaccinationRecord *rec2 = (VaccinationRecord*)b;
+
+    int cmp = compareDates(&(rec1->date), &(rec2->date));
+
+    if (cmp != 0)
+    {
+        return cmp;
+    }
+
+    cmp = strcmp(rec1->virus_name, rec2->virus_name);
+    if (cmp != 0)
+    {
+        return cmp;
+    }
+
+    return compareCitizens(rec1->citizen, rec2->citizen);
 }
 
 void destroyVaccinationRecord(void *record)
@@ -201,7 +222,7 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
     VaccinationRecord *present;
     if (record->vaccinated)
     {
-        if ( this->vaccinated->insert(record, (void**)&present, compareVaccinationRecords) )
+        if ( this->vaccinated->insert(record, (void**)&present, compareVaccinationRecordsByCitizen) )
         {
             printf("SUCCESSFULLY VACCINATED\n");
         }
@@ -213,7 +234,7 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
     }
     else
     {
-        if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecords) )
+        if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         {
             printf("SUCCESSFULLY MARKED AS NON VACCINATED\n");
         }
@@ -242,26 +263,95 @@ void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
     this->record_tree->insert(record);
 }
 
-
-int compareVaccinationsDateFirst(void *a, void *b)
+void VirusCountryStatus::getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root)
 {
-    VaccinationRecord *rec1 = (VaccinationRecord*)a;
-    VaccinationRecord *rec2 = (VaccinationRecord*)b;
+    if (root == NULL) { return; }
+    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
 
-    int cmp = compareDates(&(rec1->date), &(rec2->date));
-
-    if (cmp != 0)
+    if (compareDates(&root_data->date, &start) >= 0)
     {
-        return cmp;
+        getTotalStatsRec(total, start, end, root->left);
+        if (compareDates(&root_data->date, &end) <= 0)
+        {
+            total++;    // root is in range
+            getTotalStatsRec(total, start, end, root->right);
+        }
     }
+    // root is smaller than start, so just search to the right
+    getTotalStatsRec(total, start, end, root->right);
+}
 
-    cmp = strcmp(rec1->virus_name, rec2->virus_name);
-    if (cmp != 0)
+void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
+                                        int &plus60, Date start, Date end, RBTreeNode *root)
+{
+    if (root == NULL) { return; }
+    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
+
+    if (compareDates(&root_data->date, &start) >= 0)
     {
-        return cmp;
+        getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->left);
+        if (compareDates(&root_data->date, &end) <= 0)
+        {
+            updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
+            getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->right);
+        }
     }
+    // root is smaller than start, so just search to the right
+    getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->right);
+}
 
-    return compareCitizens(rec1->citizen, rec2->citizen);
+void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
+                                        int &plus60, RBTreeNode *root)
+{
+    if (root == NULL) { return; }
+    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
+
+    updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
+    getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, root->left);
+    getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, root->right);
+}
+
+void VirusCountryStatus::getTotalVaccinationStats(int &total, Date start, Date end)
+{
+    this->getTotalStatsRec(total, start, end, this->record_tree->root);
+}
+
+void VirusCountryStatus::getTotalVaccinationStats(int &total)
+{
+    total = this->record_tree->getNumElements();
+}
+
+void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
+                                                   int &plus60, Date start, Date end)
+{
+    this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, this->record_tree->root);
+}
+
+void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
+                                                   int &plus60)
+{
+    this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, this->record_tree->root);
+}
+
+void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between20_40, 
+                                          int &between40_60, int &plus60)
+{
+    if (age < 20)
+    {
+        bellow_20++;
+    }
+    else if (age < 40)
+    {
+        between20_40++;
+    }
+    else if (age < 60)
+    {
+        between40_60++;
+    }
+    else
+    {
+        plus60++;
+    }
 }
 
 /**
@@ -332,10 +422,10 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  
     }
 
     printf("%s\n", this->country_name);
-    printf("0-20 %d %.2f%%\n", bellow_20, ((float)bellow_20/(float)this->population_bellow_20)*100);
-    printf("20-40 %d %.2f%%\n", between_20_40, ((float)bellow_20/(float)this->population_20_40)*100);
-    printf("40-60 %d %.2f%%\n", between_40_60, ((float)bellow_20/(float)this->population_40_60)*100);
-    printf("60+ %d %.2f%%\n", plus_60, ((float)bellow_20/(float)this->population_60_plus)*100);
+    printf("0-20 %d %.2f%%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20*100);
+    printf("20-40 %d %.2f%%\n", between_20_40, (float)bellow_20/(float)this->population_20_40*100);
+    printf("40-60 %d %.2f%%\n", between_40_60, (float)bellow_20/(float)this->population_40_60*100);
+    printf("60+ %d %.2f%%\n", plus_60, (float)bellow_20/(float)this->population_60_plus*100);
 }
 
 void CountryStatus::displayStatusByAge(char *virus_name, Date start,  Date end)
@@ -372,5 +462,5 @@ int compareNameVirusCountryStatus(void *name, void *virus_status)
 
 void destroyVirusCountryStatus(void *status)
 {
-    delete status;
+    delete (VirusCountryStatus*)status;
 }

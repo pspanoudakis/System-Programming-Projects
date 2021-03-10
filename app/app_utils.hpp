@@ -5,6 +5,7 @@
 
 class LinkedList;
 class RedBlackTree;
+class RBTreeNode;
 class SkipList;
 class BloomFilter;
 
@@ -20,9 +21,10 @@ struct Date
     bool isValidDate();
 };
 
+class CountryStatus;
 class CitizenRecord
 {
-    public:
+    public:        
         const int id;
         char *fullname;
         int age;
@@ -60,6 +62,14 @@ class VirusRecords
 
 class VirusCountryStatus
 {
+    private:
+        void getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root);
+        void getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
+                            int &plus60, Date start, Date end, RBTreeNode *root);
+        void getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
+                            int &plus60, RBTreeNode *root);
+        void updateAgeCounter(int age, int &bellow_20, int &between20_40, 
+                              int &between40_60, int &plus60);
     public:
         char *virus_name;
         RedBlackTree *record_tree;
@@ -67,7 +77,7 @@ class VirusCountryStatus
         ~VirusCountryStatus();
         void storeVaccinationRecord(VaccinationRecord *record);
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
-                                      int plus60, Date start, Date end);
+                                      int &plus60, Date start, Date end);
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
                                       int &plus60);                                      
         void getTotalVaccinationStats(int &total, Date start,  Date end);
@@ -92,5 +102,16 @@ class CountryStatus
         void displayTotalPopulationStatus(char *virus_name, Date start,  Date end);
         void displayStatusByAge(char *virus_name, Date start,  Date end);
 };
+
+int compareDates(void *a, void *b);
+int compareIdToVaccinationRecord(void *id, void *record);
+int compareCitizens(void *a, void *b);
+int compareVaccinationRecordsByCitizen(void *a, void *b);
+int compareVaccinationsDateFirst(void *a, void *b);
+int compareNameVirusCountryStatus(void *name, void *virus_status);
+
+void destroyVaccinationRecord(void *record);
+void destroyVirusCountryStatus(void *status);
+
 
 #endif

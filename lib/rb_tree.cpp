@@ -66,7 +66,7 @@ void RBTreeNode::replaceWithNewParent(RBTreeNode *new_parent)
 }
 
 RedBlackTree::RedBlackTree(CompareFunc comp):
-compare(comp), root(NULL) { }
+num_elements(0), compare(comp), root(NULL) { }
 
 RedBlackTree::~RedBlackTree()
 {
@@ -186,6 +186,7 @@ void RedBlackTree::recursiveInsert(RBTreeNode *start, void *element)
         {
             start->right = new RBTreeNode(RED, element, start);
             fixRedRedViolation(start->right);
+            this->num_elements++;
             return;
         }
         recursiveInsert(start->right, element);
@@ -196,6 +197,7 @@ void RedBlackTree::recursiveInsert(RBTreeNode *start, void *element)
         {
             start->left = new RBTreeNode(RED, element, start);
             fixRedRedViolation(start->left);
+            this->num_elements++;
             return;
         }
         recursiveInsert(start->left, element);
@@ -235,4 +237,9 @@ void* RedBlackTree::search(void *element)
         }
     }
     return NULL;
+}
+
+unsigned int RedBlackTree::getNumElements()
+{
+    return this->num_elements;
 }

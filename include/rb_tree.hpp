@@ -27,6 +27,7 @@ class RBTreeNode
 class RedBlackTree
 {
     private:
+        unsigned int num_elements;
         CompareFunc compare;
         void leftRotation(RBTreeNode *target);
         void rightRotation(RBTreeNode *target);
@@ -39,6 +40,7 @@ class RedBlackTree
         ~RedBlackTree();        
         void insert(void *element);
         void *search(void *element);
+        unsigned int getNumElements();
 };
 
 #endif
