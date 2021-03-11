@@ -9,7 +9,7 @@
 #include "utils.hpp"
 
 class LinkedList {
-    protected:
+    private:
         struct ListNode {
             ListNode* next;
             void* data;
@@ -20,11 +20,23 @@ class LinkedList {
         DestroyFunc destroy;
 
     public:
+        class ListIterator
+        {
+            private:
+                ListNode *node;
+            public:
+                ListIterator(ListNode *list_node);
+                void* getData();
+                void forward();
+                bool isNull();
+        };
+        
         LinkedList(DestroyFunc dest);
         ~LinkedList();
         void append(void *element);
         void* getElement(void *element, CompareFunc compare);
         void *getLast();
+        ListIterator listHead();
 };
 
 #endif

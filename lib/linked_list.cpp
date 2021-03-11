@@ -52,3 +52,37 @@ void* LinkedList::getLast()
 {
     return last;
 }
+
+/**
+ * List Iterator methods --------------------------------------------------------------------------
+ */
+
+LinkedList::ListIterator LinkedList::listHead()
+{
+    return ListIterator(this->head);
+}
+
+LinkedList::ListIterator::ListIterator(LinkedList::ListNode *list_node):
+node(list_node) { }
+
+void* LinkedList::ListIterator::getData()
+{
+    if (this->node == NULL)
+    {
+        return NULL;
+    }
+    return this->node->data;
+}
+
+void LinkedList::ListIterator::forward()
+{
+    if (this->node != NULL)
+    {
+        this->node = this->node->next;
+    }
+}
+
+bool LinkedList::ListIterator::isNull()
+{
+    return (this->node == NULL);
+}

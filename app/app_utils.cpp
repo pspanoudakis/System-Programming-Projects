@@ -208,7 +208,7 @@ void displayVaccinationCitizen(void *record)
 VirusRecords::VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits):
 vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
 non_vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
-filter(new BloomFilter(filter_bits)), virus_name(name) { }
+filter(new BloomFilter(filter_bits)), virus_name(copyString(name)) { }
 
 VirusRecords::~VirusRecords()
 {
@@ -262,6 +262,8 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
     {
         if ( this->vaccinated->insert(record, (void**)&present, compareVaccinationRecordsByCitizen) )
         {
+            // TODO: insert in bloom filter
+            //this->filter->markAsPresent()
             printf("SUCCESSFULLY VACCINATED\n");
             return true;
         }
@@ -522,6 +524,7 @@ void destroyVirusCountryStatus(void *status)
     delete (VirusCountryStatus*)status;
 }
 */
+
 /**
  * Functions to be used by main -------------------------------------------------------------------
  */
@@ -548,7 +551,8 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
     else
     // There is no citizen with the specified ID, so a new one will be made
     {
-        CountryStatus *target_country = (CountryStatus*)countries->getElement(country_name, compareNameCountryStatus);
+        CountryStatus *target_country;
+        target_country =  static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
         if (target_country == NULL)
         {
             target_country = new CountryStatus(country_name);
@@ -578,4 +582,63 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
     {
         record->citizen->country->storeCitizenVaccinationRecord(record);
     }    
+}
+
+void vaccineStatus(int citizen_id, LinkedList *viruses)
+{
+    LinkedList::ListIterator itr = viruses->listHead();
+
+    while( !itr.isNull() )
+    {
+        static_cast<VirusRecords*>(itr.getData())->displayVaccinationStatus(citizen_id);
+        itr.forward();
+    }
+}
+
+void vaccineStatus(int citizen_id, LinkedList *viruses, char *virus_name)
+{
+    VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
+    if (target_virus != NULL)
+    {
+        target_virus->displayWhetherVaccinated(citizen_id);
+    }
+    else
+    {
+        printf("ERROR: The specified virus was not found.");
+    }    
+}
+
+void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
+{
+    VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
+    // TODO: int id to char id
+    char *char_id;
+    if (target_virus != NULL)
+    {
+        if (target_virus->checkBloomFilter(char_id))
+        {
+            printf("MAYBE\n");
+        }
+        else
+        {
+            printf("NOT VACCINATED\n");
+        }
+    }
+    else
+    {
+        printf("ERROR: The specified virus was not found.");
+    }
+}
+
+void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses)
+{
+    VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
+    if (target_virus != NULL)
+    {
+        target_virus->displayNonVaccinated();
+    }
+    else
+    {
+        printf("ERROR: The specified virus was not found.");
+    }
 }
