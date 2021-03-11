@@ -78,22 +78,31 @@ CitizenRecord::~CitizenRecord()
     delete [] fullname;
 }
 
-/**
- * Compares the given ID with the citizen ID of the specified Vaccination Record.
- * @return 0 if the ID's are equal, a positive number if
- * ID > citizen ID, or a negative number if ID < citizen ID.
- */
-int compareIdToVaccinationRecord(void *id, void *record)
+bool CitizenRecord::hasInfo(int citizen_id, char *citizen_name, int citizen_age, char *country_name)
 {
-    int target_id = *(int*)id;
-    VaccinationRecord *vaccination_record = (VaccinationRecord*)record;
-    return (target_id - vaccination_record->citizen->id);
+    if (this->id != citizen_id)
+    {
+        return false;
+    }
+    if (strcmp(this->fullname, citizen_name) != 0)
+    {
+        return false;
+    }
+    if (this->age != citizen_age)
+    {
+        return false;
+    }
+    if (strcmp(this->country->country_name, country_name) != 0)
+    {
+        return false;
+    }
+    return true;
 }
 
 int compareCitizens(void *a, void *b)
 {
-    CitizenRecord *c1 = (CitizenRecord*)a;
-    CitizenRecord *c2 = (CitizenRecord*)b;
+    CitizenRecord *c1 = static_cast<CitizenRecord*>(a);
+    CitizenRecord *c2 = static_cast<CitizenRecord*>(b);
 
     if (c1->id != c2->id)
     {
@@ -116,9 +125,14 @@ int compareCitizens(void *a, void *b)
     return 0;
 }
 
+int compareIdToCitizen(void *id, void *citizen_record)
+{
+    return *(static_cast<int*>(id)) - (static_cast<CitizenRecord*>(citizen_record)->id);
+}
+
 void displayCitizen(void *record)
 {
-    CitizenRecord *citizen = (CitizenRecord*)record;
+    CitizenRecord *citizen = static_cast<CitizenRecord*>(record);
     printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
 }
 
@@ -133,13 +147,15 @@ VaccinationRecord::~VaccinationRecord() { }
 
 int compareVaccinationRecordsByCitizen(void *a, void *b)
 {
-    return compareCitizens( ((VaccinationRecord*)a)->citizen, ((VaccinationRecord*)b)->citizen);
+    CitizenRecord *citizen1 = static_cast<VaccinationRecord*>(a)->citizen;
+    CitizenRecord *citizen2 = static_cast<VaccinationRecord*>(b)->citizen;
+    return compareCitizens(citizen1, citizen2);
 }
 
 int compareVaccinationsDateFirst(void *a, void *b)
 {
-    VaccinationRecord *rec1 = (VaccinationRecord*)a;
-    VaccinationRecord *rec2 = (VaccinationRecord*)b;
+    VaccinationRecord *rec1 = static_cast<VaccinationRecord*>(a);
+    VaccinationRecord *rec2 = static_cast<VaccinationRecord*>(b);
 
     int cmp = compareDates(&(rec1->date), &(rec2->date));
 
@@ -157,6 +173,18 @@ int compareVaccinationsDateFirst(void *a, void *b)
     return compareCitizens(rec1->citizen, rec2->citizen);
 }
 
+/**
+ * Compares the given ID with the citizen ID of the specified Vaccination Record.
+ * @return 0 if the ID's are equal, a positive number if
+ * ID > citizen ID, or a negative number if ID < citizen ID.
+ */
+int compareIdToVaccinationRecord(void *id, void *record)
+{
+    int target_id = *(int*)id;
+    VaccinationRecord *vaccination_record = static_cast<VaccinationRecord*>(record);
+    return (target_id - vaccination_record->citizen->id);
+}
+
 /*
 void destroyVaccinationRecord(void *record)
 {
@@ -169,7 +197,7 @@ void destroyVaccinationRecord(void *record)
  */
 void displayVaccinationCitizen(void *record)
 {
-    CitizenRecord *citizen = ((VaccinationRecord*)record)->citizen;
+    CitizenRecord *citizen = static_cast<VaccinationRecord*>(record)->citizen;
     printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
 }
 
@@ -191,7 +219,8 @@ VirusRecords::~VirusRecords()
 
 void VirusRecords::displayVaccinationStatus(int citizenID)
 {
-    VaccinationRecord *record = (VaccinationRecord*)this->vaccinated->find(&citizenID, compareIdToVaccinationRecord);
+    VaccinationRecord *record;
+    record =  static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
     if (record == NULL)
     {
         printf("%s NO\n", this->virus_name);
@@ -204,7 +233,8 @@ void VirusRecords::displayVaccinationStatus(int citizenID)
 
 void VirusRecords::displayWhetherVaccinated(int citizenID)
 {
-    VaccinationRecord *record = (VaccinationRecord*)this->vaccinated->find(&citizenID, compareIdToVaccinationRecord);
+    VaccinationRecord *record;
+    record =  static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
     if (record == NULL)
     {
         printf("NOT VACCINATED\n");
@@ -259,8 +289,8 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
 
 int compareNameVirusRecord(void *name, void *virus_record)
 {
-    char *target_name = (char*)name;
-    VirusRecords *target_record = (VirusRecords*)virus_record;
+    char *target_name = static_cast<char*>(name);
+    VirusRecords *target_record = static_cast<VirusRecords*>(virus_record);
     return strcmp(target_name, target_record->virus_name);
 }
 
@@ -284,7 +314,7 @@ void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
 void VirusCountryStatus::getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root)
 {
     if (root == NULL) { return; }
-    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
+    VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
     if (compareDates(&root_data->date, &start) >= 0)
     {
@@ -303,7 +333,7 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
                                         int &plus60, Date start, Date end, RBTreeNode *root)
 {
     if (root == NULL) { return; }
-    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
+    VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
     if (compareDates(&root_data->date, &start) >= 0)
     {
@@ -322,7 +352,7 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
                                         int &plus60, RBTreeNode *root)
 {
     if (root == NULL) { return; }
-    VaccinationRecord *root_data = (VaccinationRecord*)root->data;
+    VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
     updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
     getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, root->left);
@@ -389,11 +419,12 @@ CountryStatus::~CountryStatus()
 
 void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 {
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(record->virus_name, compareVirusNames);
+    VirusCountryStatus *virus_tree;
+    virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(record->virus_name, compareNameVirusRecord));
     if (virus_tree == NULL)
     {
         this->virus_status->append(new VirusCountryStatus(record->virus_name, compareVaccinationsDateFirst));
-        virus_tree = (VirusCountryStatus*)this->virus_status->getLast();
+        virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getLast());
     }
     virus_tree->storeVaccinationRecord(record);   
 }
@@ -426,7 +457,8 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     int between_40_60 = 0;
     int plus_60 = 0;
 
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name, compareVirusNames);
+    VirusCountryStatus *virus_tree;
+    virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusRecord));
 
     if (virus_tree != NULL)
     {
@@ -450,8 +482,8 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
 void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  Date end)
 {
     int vaccinated_citizens = 0;
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name, compareVirusNames);
-
+    VirusCountryStatus *virus_tree;
+    virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusRecord));
     if (virus_tree != NULL)
     {
         if (start.isNullDate())
@@ -476,7 +508,12 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  
  */
 int compareNameVirusCountryStatus(void *name, void *virus_status)
 {
-    return strcmp((char*)name, ((VirusCountryStatus*)virus_status)->virus_name);
+    return strcmp((char*)name, (static_cast<VirusCountryStatus*>(virus_status))->virus_name);
+}
+
+int compareNameCountryStatus(void *name, void *country_status)
+{
+    return strcmp((char*)name, static_cast<CountryStatus*>(country_status)->country_name);
 }
 
 /*
@@ -494,7 +531,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes)
 {
     CitizenRecord *target_citizen;
-    CitizenRecord *present = (CitizenRecord*)citizens->getElement(&citizen_id, compareIdToCitizen);
+    CitizenRecord *present = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
     if (present != NULL)
     // There is already a citizen with the specified ID
     {

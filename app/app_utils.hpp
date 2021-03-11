@@ -113,7 +113,7 @@ int compareNameVirusRecord(void *name, void *virus_record);
 int compareVaccinationRecordsByCitizen(void *a, void *b);
 int compareVaccinationsDateFirst(void *a, void *b);
 int compareNameVirusCountryStatus(void *name, void *virus_status);
-int compareVirusNames(void *a, void *b);
+//int compareVirusNames(void *a, void *b);
 int compareNameCountryStatus(void *name, void *country_status);
 
 //void destroyVaccinationRecord(void *record);
