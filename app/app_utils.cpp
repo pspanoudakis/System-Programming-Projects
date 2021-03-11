@@ -6,6 +6,7 @@
 #include "../include/rb_tree.hpp"
 #include "../include/skip_list.hpp"
 #include "../include/bloom_filter.hpp"
+#include "../include/hash_table.hpp"
 
 
 char* copyString(const char *str)
@@ -70,7 +71,7 @@ int compareDates(void *a, void *b)
  */
 
 CitizenRecord::CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c):
-id(citizen_id), fullname(name), age(citizen_age), country(c) { }
+id(citizen_id), fullname(copyString(name)), age(citizen_age), country(c) { }
 
 CitizenRecord::~CitizenRecord()
 {
@@ -115,6 +116,12 @@ int compareCitizens(void *a, void *b)
     return 0;
 }
 
+void displayCitizen(void *record)
+{
+    CitizenRecord *citizen = (CitizenRecord*)record;
+    printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
+}
+
 /**
  * Vaccination Record functions -------------------------------------------------------------------
  */
@@ -150,11 +157,12 @@ int compareVaccinationsDateFirst(void *a, void *b)
     return compareCitizens(rec1->citizen, rec2->citizen);
 }
 
+/*
 void destroyVaccinationRecord(void *record)
 {
     delete (VaccinationRecord*)record;
 }
-
+*/
 /**
  * Displays the Citizen Information of the given Vaccination Record.
  * @param record A pointer to a VaccinationRecord (void* for internal compatibility purposes)
@@ -169,10 +177,10 @@ void displayVaccinationCitizen(void *record)
  * Virus Records Methods-Functions ----------------------------------------------------------------
  */
 
-VirusRecords::VirusRecords(char *name, int skip_list_layers):
-virus_name(name),
-vaccinated(new SkipList(skip_list_layers, destroyVaccinationRecord)),
-non_vaccinated(new SkipList(skip_list_layers, destroyVaccinationRecord)) { }
+VirusRecords::VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits):
+vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
+non_vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
+filter(new BloomFilter(filter_bits)), virus_name(name) { }
 
 VirusRecords::~VirusRecords()
 {
@@ -217,7 +225,7 @@ bool VirusRecords::checkBloomFilter(char *citizen_id)
     return this->filter->isPresent(citizen_id);
 }
 
-void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
+bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
 {
     VaccinationRecord *present;
     if (record->vaccinated)
@@ -225,11 +233,13 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
         if ( this->vaccinated->insert(record, (void**)&present, compareVaccinationRecordsByCitizen) )
         {
             printf("SUCCESSFULLY VACCINATED\n");
+            return true;
         }
         else
         {            
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     present->citizen->id, present->date.day, present->date.month, present->date.year);
+            return false;
         }
     }
     else
@@ -237,13 +247,21 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
         if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         {
             printf("SUCCESSFULLY MARKED AS NON VACCINATED\n");
+            return true;
         }
         else
         {
             printf("ERROR: ALREADY MARKED AS NON VACCINATED\n");
+            return false;
         }
-    }
-    
+    }    
+}
+
+int compareNameVirusRecord(void *name, void *virus_record)
+{
+    char *target_name = (char*)name;
+    VirusRecords *target_record = (VirusRecords*)virus_record;
+    return strcmp(target_name, target_record->virus_name);
 }
 
 /**
@@ -251,7 +269,7 @@ void VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
  */
 
 VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
-virus_name(name), record_tree(new RedBlackTree(tree_func)) { }
+record_tree(new RedBlackTree(tree_func)), virus_name(name) { }
 
 VirusCountryStatus::~VirusCountryStatus()
 {
@@ -359,8 +377,9 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
  */
 
 CountryStatus::CountryStatus(char *name):
-country_name(name), total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
- virus_status(new LinkedList(compareNameVirusCountryStatus, destroyVirusCountryStatus)) { }
+virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
+total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+country_name(name) { }
 
 CountryStatus::~CountryStatus()
 {
@@ -370,7 +389,7 @@ CountryStatus::~CountryStatus()
 
 void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 {
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(record->virus_name);
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(record->virus_name, compareVirusNames);
     if (virus_tree == NULL)
     {
         this->virus_status->append(new VirusCountryStatus(record->virus_name, compareVaccinationsDateFirst));
@@ -379,18 +398,18 @@ void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
     virus_tree->storeVaccinationRecord(record);   
 }
 
-void CountryStatus::updatePopulation(VaccinationRecord *record)
+void CountryStatus::updatePopulation(CitizenRecord *citizen)
 {
     this->total_population++;
-    if (record->citizen->age < 20)
+    if (citizen->age < 20)
     {
         this->population_bellow_20++;
     }
-    else if(record->citizen->age < 40)
+    else if(citizen->age < 40)
     {
         this->population_20_40++;
     }
-    else if(record->citizen->age < 60)
+    else if(citizen->age < 60)
     {
         this->population_40_60++;
     }
@@ -400,14 +419,14 @@ void CountryStatus::updatePopulation(VaccinationRecord *record)
     }
 }
 
-void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  Date end)
+void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
 {
     int bellow_20 = 0;
     int between_20_40 = 0;
     int between_40_60 = 0;
     int plus_60 = 0;
 
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name);
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name, compareVirusNames);
 
     if (virus_tree != NULL)
     {
@@ -428,10 +447,10 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  
     printf("60+ %d %.2f%%\n", plus_60, (float)bellow_20/(float)this->population_60_plus*100);
 }
 
-void CountryStatus::displayStatusByAge(char *virus_name, Date start,  Date end)
+void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  Date end)
 {
     int vaccinated_citizens = 0;
-    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name);
+    VirusCountryStatus *virus_tree = (VirusCountryStatus*)this->virus_status->getElement(virus_name, compareVirusNames);
 
     if (virus_tree != NULL)
     {
@@ -460,7 +479,66 @@ int compareNameVirusCountryStatus(void *name, void *virus_status)
     return strcmp((char*)name, ((VirusCountryStatus*)virus_status)->virus_name);
 }
 
+/*
 void destroyVirusCountryStatus(void *status)
 {
     delete (VirusCountryStatus*)status;
+}
+*/
+/**
+ * Functions to be used by main -------------------------------------------------------------------
+ */
+
+void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
+                             char *virus_name, bool vaccinated, Date date,
+                             LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes)
+{
+    CitizenRecord *target_citizen;
+    CitizenRecord *present = (CitizenRecord*)citizens->getElement(&citizen_id, compareIdToCitizen);
+    if (present != NULL)
+    // There is already a citizen with the specified ID
+    {
+        if ( !present->hasInfo(citizen_id, full_name, age, country_name) )
+        // The provided info is not valid, so the request is rejected
+        {
+            printf("ERROR: A citizen with the same ID, but different info already exists:\n");
+            displayCitizen(present);
+            return;
+        }
+        // The provided info is valid, so the existed citizen record will be used
+        target_citizen = present;
+    }
+    else
+    // There is no citizen with the specified ID, so a new one will be made
+    {
+        CountryStatus *target_country = (CountryStatus*)countries->getElement(country_name, compareNameCountryStatus);
+        if (target_country == NULL)
+        {
+            target_country = new CountryStatus(country_name);
+            countries->append(target_country);
+        }
+        target_citizen = new CitizenRecord(citizen_id, full_name, age, target_country);
+        target_country->updatePopulation(target_citizen);
+        citizens->insert(target_citizen);
+    }
+    VirusRecords *target_virus = (VirusRecords*)viruses->getElement(virus_name, compareNameVirusRecord);
+    if (target_virus == NULL)
+    {
+        target_virus = new VirusRecords(virus_name, SKIP_LIST_MAX_LAYERS, bloom_bytes);
+        viruses->append(target_virus);
+    }
+    VaccinationRecord *record;
+    if (vaccinated)
+    {
+        record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name, date);
+    }
+    else
+    {
+        record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name);
+    }
+    if (target_virus->insertRecordOrShowExisted(record))
+    // The vaccination record was successfully stored
+    {
+        record->citizen->country->storeCitizenVaccinationRecord(record);
+    }    
 }

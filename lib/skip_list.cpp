@@ -4,7 +4,7 @@
 #include "../include/skip_list.hpp"
 
 SkipList::SkipList(int layers, DestroyFunc dest):
-max_layer(( (layers < MAXLAYERS) ? layers : MAXLAYERS )), curr_layer(0), 
+max_layer(( (layers < SKIP_LIST_MAX_LAYERS) ? layers : SKIP_LIST_MAX_LAYERS )), curr_layer(0), 
 layer_heads(new SkipListNode* [max_layer]), destroyElement(dest)
 {
     for ( int i = 0; i < max_layer; i++ )

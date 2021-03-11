@@ -3,8 +3,8 @@
 
 LinkedList::ListNode::ListNode(): next(NULL), data(NULL) {}
 
-LinkedList::LinkedList(CompareFunc comp, DestroyFunc dest):
- head(NULL), last(NULL), compare(comp), destroy(dest) { }
+LinkedList::LinkedList(DestroyFunc dest):
+ head(NULL), last(NULL), destroy(dest) { }
 
 LinkedList::~LinkedList()
 {
@@ -18,7 +18,7 @@ LinkedList::~LinkedList()
     }    
 }
 
-void* LinkedList::getElement(void *element)
+void* LinkedList::getElement(void *element, CompareFunc compare)
 {
     ListNode* current = this->head;
     while (current != NULL)
@@ -46,30 +46,6 @@ void LinkedList::append(void *element)
     head = new ListNode();
     head->data = element;
     last = head;    
-}
-
-bool LinkedList::insert(void *element)
-{
-    if ( this->head == NULL )
-    {
-        this->head = new ListNode();
-        this->head->data = element;
-        this->last = this->head;
-        return true;
-    }
-    ListNode* current = this->head;
-    while (current->next != NULL)
-    {
-        if ( compare(element, current->data) == 0 )
-        {
-            return false;
-        }
-        current = current->next;
-    }
-    current->next = new ListNode();
-    current->next->data = element;
-    this->last = current->next;
-    return true;
 }
 
 void* LinkedList::getLast()

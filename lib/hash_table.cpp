@@ -6,7 +6,7 @@
 #include "../include/linked_list.hpp"
 
 HashTable::HashTable(int num_buckets, CompareFunc comp, DestroyFunc dest):
-size(num_buckets), buckets(new LinkedList* [num_buckets]), compare(comp), destroy(dest)
+size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest)
 {
     for (int i = 0; i < size; i++)
     {
@@ -48,10 +48,27 @@ unsigned int HashTable::getHashCode(void *data, unsigned int mod)
     return result;
 }
 
-bool HashTable::insert(void *element)
+void HashTable::insert(void *element)
 {
     int hash_object = this->get_hash_object(element);
     unsigned int hash_code = getHashCode(&hash_object, this->size);
 
-    return(buckets[hash_code]->insert(element));
+    if (buckets[hash_code] == NULL)
+    {
+        buckets[hash_code] = new LinkedList(this->destroy);
+    }
+
+    buckets[hash_code]->append(element);
+}
+
+void* HashTable::getElement(void *key, CompareFunc compare_func)
+{
+    int hash_object = this->get_hash_object(key);
+    unsigned int hash_code = getHashCode(&hash_object, this->size);
+
+    if (buckets[hash_code] == NULL)
+    {
+        return NULL;
+    }
+    return buckets[hash_code]->getElement(key, compare_func);
 }

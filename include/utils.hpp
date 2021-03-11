@@ -6,4 +6,10 @@ typedef void (*DisplayFunc)(void *a);
 typedef void (*DestroyFunc)(void *a);
 typedef int (*HashObjectFunc)(void *a);
 
+template <class T>
+void delete_object(void *object)
+{
+    delete (T*)object;
+}
+
 #endif

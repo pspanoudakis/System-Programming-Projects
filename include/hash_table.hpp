@@ -10,7 +10,6 @@ class HashTable
     private:
         unsigned int size;
         LinkedList **buckets;
-        CompareFunc compare;
         DestroyFunc destroy;
         HashObjectFunc get_hash_object;
         unsigned int getHashCode(void *data, unsigned int mod);
@@ -18,7 +17,8 @@ class HashTable
     public:
         HashTable(int num_buckets, CompareFunc comp, DestroyFunc dest);
         ~HashTable();
-        bool insert(void *element);
+        void insert(void *element);
+        void* getElement(void *key, CompareFunc compare_func);
 };
 
 #endif

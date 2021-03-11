@@ -17,15 +17,13 @@ class LinkedList {
         };
         ListNode* head;
         ListNode* last;
-        CompareFunc compare;
         DestroyFunc destroy;
 
     public:
-        LinkedList(CompareFunc comp, DestroyFunc dest);
+        LinkedList(DestroyFunc dest);
         ~LinkedList();
         void append(void *element);
-        void* getElement(void *element);
-        bool insert(void *element);
+        void* getElement(void *element, CompareFunc compare);
         void *getLast();
 };
 
