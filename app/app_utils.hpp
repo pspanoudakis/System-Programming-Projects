@@ -43,6 +43,7 @@ class VaccinationRecord
         Date date; 
         VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
         ~VaccinationRecord();
+        void vaccinate(Date d);
 };
 
 class VirusRecords
@@ -115,6 +116,7 @@ int compareVaccinationsDateFirst(void *a, void *b);
 int compareNameVirusCountryStatus(void *name, void *virus_status);
 //int compareVirusNames(void *a, void *b);
 int compareNameCountryStatus(void *name, void *country_status);
+//int compareCitizenToVaccinationRecord(void *citizen, void *vaccination);
 
 //void destroyVaccinationRecord(void *record);
 //void destroyVirusCountryStatus(void *status);

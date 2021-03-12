@@ -28,7 +28,7 @@ class SkipList
         ~SkipList();
         void* find(void *element, CompareFunc compare);
         bool insert(void *element, void **present, CompareFunc compare);
-        void remove(void *element, CompareFunc compare);
+        void remove(void *element, void **present, CompareFunc compare);
         void display(DisplayFunc f);
         void displayElements(DisplayFunc print);
 };

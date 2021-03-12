@@ -9,7 +9,7 @@ typedef int (*HashObjectFunc)(void *a);
 template <class T>
 void delete_object(void *object)
 {
-    delete (T*)object;
+    delete static_cast<T*>(object);
 }
 
 #endif

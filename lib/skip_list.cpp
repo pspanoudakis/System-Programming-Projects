@@ -159,7 +159,7 @@ bool SkipList::insert(void *element, void **present, CompareFunc compare)
     return true;
 }
 
-void SkipList::remove(void *element, CompareFunc compare)
+void SkipList::remove(void *element, void **present, CompareFunc compare)
 {
     // The nodes in each layer that are before the element node
     SkipListNode **layer_prevs;
@@ -173,6 +173,7 @@ void SkipList::remove(void *element, CompareFunc compare)
     SkipListNode *current;
     SkipListNode *prev = NULL;
     SkipListNode *target = NULL;
+    *present = NULL;
     int cmp;
     for (int i = curr_layer; i >= 0; i--)
     {
@@ -216,7 +217,8 @@ void SkipList::remove(void *element, CompareFunc compare)
             layer_prevs[i]->next_nodes[i] = target->next_nodes[i];
         }
     }
-    destroyElement(target->data);
+    //destroyElement(target->data);
+    *present = target->data;
     delete target;
     delete [] layer_prevs;
 }
