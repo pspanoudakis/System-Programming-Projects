@@ -8,7 +8,7 @@
 HashTable::HashTable(int num_buckets, DestroyFunc dest):
 size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest)
 {
-    for (int i = 0; i < size; i++)
+    for (unsigned int i = 0; i < size; i++)
     {
         buckets[i] = NULL;
     }
@@ -16,7 +16,7 @@ size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest)
 
 HashTable::~HashTable()
 {
-    for (int i = 0; i < size; i++)
+    for (unsigned int i = 0; i < size; i++)
     {
         if ( buckets[i] != NULL )
         {

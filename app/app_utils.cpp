@@ -144,7 +144,7 @@ void displayCitizen(void *record)
  */
 
 VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d):
-citizen(person), vaccinated(is_vaccinated), virus_name(virus), date(d) { }
+citizen(person), virus_name(virus), vaccinated(is_vaccinated), date(d) { }
 
 VaccinationRecord::~VaccinationRecord() { }
 
@@ -452,8 +452,8 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
  */
 
 CountryStatus::CountryStatus(char *name):
-virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
 total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
 country_name(name) { }
 
 CountryStatus::~CountryStatus()

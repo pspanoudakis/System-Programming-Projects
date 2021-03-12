@@ -3,7 +3,7 @@
 
 BloomFilter::BloomFilter(unsigned long n): numBits(n*8), bits(new unsigned char[n])
 {
-    for (int i = 0; i < n; i++)
+    for (unsigned long i = 0; i < n; i++)
     {
         bits[i] = 0;
     }
