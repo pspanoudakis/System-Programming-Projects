@@ -264,26 +264,29 @@ bool VirusRecords::checkBloomFilter(char *citizen_id)
     return this->filter->isPresent(citizen_id);
 }
 
-bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
+bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified)
 {
-    VaccinationRecord *present;
+    VaccinationRecord *temp;
     char char_id[5]; // max 4 digits + \0
     if (record->vaccinated)
     {
         // If there is already a Non-Vaccinated record for this citizen,
         // remove it from the non-vaccinated skip list
-        this->non_vaccinated->remove(record, (void**)&present, compareVaccinationRecordsByCitizen);
+        this->non_vaccinated->remove(record, (void**)present, compareVaccinationRecordsByCitizen);
         if (present != NULL)
         {
             // Mark as vaccinated
-            present->vaccinate(record->date);
+            (*present)->vaccinate(record->date);
             // Insert to vaccinated skip list
-            this->vaccinated->insert(present, (void**)&present, compareVaccinationRecordsByCitizen);
+            this->vaccinated->insert(present, (void**)&temp, compareVaccinationRecordsByCitizen);
             // Inserting in bloom filter as well
-            sprintf(char_id, "%d", present->citizen->id);
+            sprintf(char_id, "%d", (*present)->citizen->id);
             this->filter->markAsPresent(char_id);
 
             printf("SUCCESSFULLY VACCINATED\n");
+            // Indicate that the existing record was previously marked
+            // as "non vaccinated" and has changed
+            modified = true;
             // Return false to indicate that the given record must be deleted
             return false;
         }
@@ -292,7 +295,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
         // The insertion was successful
         {
             // Inserting in bloom filter as well
-            sprintf(char_id, "%d", present->citizen->id);
+            sprintf(char_id, "%d", (*present)->citizen->id);
             this->filter->markAsPresent(char_id);
 
             printf("SUCCESSFULLY VACCINATED\n");
@@ -302,19 +305,19 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record)
         // The insertion failed because the citizen has already been vaccinated
         {            
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
-                    present->citizen->id, present->date.day, present->date.month, present->date.year);
+                    (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             return false;
         }
     }
     else
     {
         // Try to find if the citizen has actually been vaccinated
-        present = static_cast<VaccinationRecord*>(this->vaccinated->find(record, compareVaccinationRecordsByCitizen));
+        *present = static_cast<VaccinationRecord*>(this->vaccinated->find(record, compareVaccinationRecordsByCitizen));
         if (present != NULL)
         // If so, inform the user
         {
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
-                    present->citizen->id, present->date.day, present->date.month, present->date.year);
+                    (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             // Return false to indicate that the given record must be deleted
             return false;
         }
@@ -356,7 +359,7 @@ void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
     this->record_tree->insert(record);
 }
 
-void VirusCountryStatus::getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root)
+void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTreeNode *root)
 {
     if (root == NULL) { return; }
     VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
@@ -454,7 +457,7 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
 CountryStatus::CountryStatus(char *name):
 total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
 virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
-country_name(name) { }
+country_name(copyString(name)) { }
 
 CountryStatus::~CountryStatus()
 {
@@ -645,7 +648,10 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         target_virus = new VirusRecords(virus_name, SKIP_LIST_MAX_LAYERS, bloom_bytes);
         viruses->append(target_virus);
     }
+    
     VaccinationRecord *new_record;
+    VaccinationRecord *existing;
+    bool status_changed = false;
     if (vaccinated)
     {
         new_record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name, date);
@@ -654,14 +660,25 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
     {
         new_record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name);
     }
-    if (target_virus->insertRecordOrShowExisted(new_record))
+    if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed))
     // The vaccination record was successfully stored
     {
-        new_record->citizen->country->storeCitizenVaccinationRecord(new_record);
+        if (new_record->vaccinated)
+        // The citizen has been vaccinated, so store this record
+        {
+            new_record->citizen->country->storeCitizenVaccinationRecord(new_record);
+        }
     }
     else
+    // The record was not inserted (was already present)
     {
         delete new_record;
+        if (status_changed)
+        // If the status of the existing record changed from "non vaccinated"
+        // to "vaccinated", it must be stored now
+        {
+            new_record->citizen->country->storeCitizenVaccinationRecord(existing);
+        }
     }    
 }
 

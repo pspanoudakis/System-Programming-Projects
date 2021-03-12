@@ -58,7 +58,7 @@ class VirusRecords
         char *virus_name;        
         VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits);
         ~VirusRecords();
-        bool insertRecordOrShowExisted(VaccinationRecord *record);
+        bool insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified);
         bool checkBloomFilter(char *citizenID);
         void displayVaccinationStatus(int citizenID);
         void displayWhetherVaccinated(int citizenID);
