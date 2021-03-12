@@ -27,6 +27,9 @@ char* copyString(const char *str)
 Date::Date(int d, int m, int y):
 day(d), month(m), year(y) { }
 
+Date::Date(const Date &date):
+day(date.day), month(date.month), year(date.year) { }
+
 void Date::set(int d, int m, int y)
 {
     this->day = d;
@@ -515,16 +518,50 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     }
 
     printf("%s\n", this->country_name);
-    printf("0-20 %d %.2f%%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20*100);
-    printf("20-40 %d %.2f%%\n", between_20_40, (float)bellow_20/(float)this->population_20_40*100);
-    printf("40-60 %d %.2f%%\n", between_40_60, (float)bellow_20/(float)this->population_40_60*100);
-    printf("60+ %d %.2f%%\n", plus_60, (float)bellow_20/(float)this->population_60_plus*100);
+    if (this->population_bellow_20 == 0)
+    {
+        printf("0-20 %d %.2f%%\n", bellow_20, (float)0);
+    }
+    else
+    {
+        printf("0-20 %d %.2f%%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20*100);
+    }
+    if (this->population_20_40 == 0)
+    {
+        printf("20-40 %d %.2f%%\n", between_20_40, (float)0);
+    }
+    else
+    {
+        printf("20-40 %d %.2f%%\n", between_20_40, (float)bellow_20/(float)this->population_20_40*100);
+    }
+    if (this->population_40_60 == 0)
+    {
+        printf("40-60 %d %.2f%%\n", between_40_60, (float)0);
+    }
+    else
+    {
+        printf("40-60 %d %.2f%%\n", between_40_60, (float)bellow_20/(float)this->population_40_60*100);
+    }
+    if (this->population_60_plus == 0)
+    {
+        printf("60+ %d %.2f%%\n", plus_60, (float)0);
+    }
+    else
+    {
+        printf("60+ %d %.2f%%\n", plus_60, (float)bellow_20/(float)this->population_60_plus*100);
+    }
 }
 
-void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  Date end)
+void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, Date end)
 {
     int vaccinated_citizens = 0;
     VirusCountryStatus *virus_tree;
+
+    if (this->total_population == 0)
+    {
+        printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, (float)0);
+        return;
+    }
     virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusCountryStatus));
     if (virus_tree != NULL)
     {
@@ -537,7 +574,6 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start,  
             virus_tree->getTotalVaccinationStats(vaccinated_citizens, start, end);
         }        
     }
-
     printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, ((float)vaccinated_citizens/(float)total_population)*100);
 }
 
@@ -687,4 +723,40 @@ void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses)
     {
         printf("ERROR: The specified virus was not found.");
     }
+}
+
+void populationStatus(char *virus_name, LinkedList *countries, Date start, Date end)
+{
+    LinkedList::ListIterator itr = countries->listHead();
+
+    while( !itr.isNull() )
+    {
+        static_cast<CountryStatus*>(itr.getData())->displayTotalPopulationStatus(virus_name, start, end);
+    }
+}
+
+void populationStatus(char *virus_name, char *country_name, LinkedList *countries, Date start, Date end)
+{
+    CountryStatus* target_country;
+    target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
+
+    target_country->displayTotalPopulationStatus(virus_name, start, end);
+}
+
+void popStatusByAge(char *virus_name, LinkedList *countries, Date start, Date end)
+{
+    LinkedList::ListIterator itr = countries->listHead();
+
+    while ( !itr.isNull() )
+    {
+        static_cast<CountryStatus*>(itr.getData())->displayStatusByAge(virus_name, start, end);   
+    }    
+}
+
+void popStatusByAge(char *virus_name, char *country_name, LinkedList *countries, Date start, Date end)
+{
+    CountryStatus* target_country;
+    target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
+
+    target_country->displayStatusByAge(virus_name, start, end);
 }

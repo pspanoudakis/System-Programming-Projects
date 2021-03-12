@@ -65,6 +65,9 @@ LinkedList::ListIterator LinkedList::listHead()
 LinkedList::ListIterator::ListIterator(LinkedList::ListNode *list_node):
 node(list_node) { }
 
+LinkedList::ListIterator::ListIterator(const ListIterator &itr):
+node(itr.node) { }
+
 void* LinkedList::ListIterator::getData()
 {
     if (this->node == NULL)

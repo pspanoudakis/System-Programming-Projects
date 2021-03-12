@@ -9,16 +9,18 @@ class RBTreeNode;
 class SkipList;
 class BloomFilter;
 
-struct Date
+class Date
 {
-    int day;
-    int month;
-    int year;
+    public:
+        int day;
+        int month;
+        int year;
 
-    Date(int d = 0, int m = 0, int y = 0);
-    void set(int d, int m, int y);
-    bool isNullDate();
-    bool isValidDate();
+        Date(int d = 0, int m = 0, int y = 0);
+        Date(const Date &date);
+        void set(int d, int m, int y);
+        bool isNullDate();
+        bool isValidDate();
 };
 
 class CountryStatus;
@@ -102,9 +104,13 @@ class CountryStatus
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
         void updatePopulation(CitizenRecord *citizen);
-        void displayTotalPopulationStatus(char *virus_name, Date start,  Date end);
+        void displayTotalPopulationStatus(char *virus_name, Date start = Date(),  Date end = Date());
         void displayStatusByAge(char *virus_name, Date start,  Date end);
 };
+
+/**
+ * "Generic" Functions to be used internally by container structures ------------------------------ 
+ */
 
 int compareDates(void *a, void *b);
 int compareIdToVaccinationRecord(void *id, void *record);
@@ -122,5 +128,14 @@ int compareNameCountryStatus(void *name, void *country_status);
 //void destroyVirusCountryStatus(void *status);
 
 void displayVaccinationCitizen(void *record);
+
+/**
+ * Functions used directly by main ----------------------------------------------------------------
+ */
+
+void populationStatus(char *virus_name, LinkedList *countries, Date start=Date(), Date end=Date());
+void populationStatus(char *virus_name, char *country_name, LinkedList *countries, Date start=Date(), Date end=Date());
+void popStatusByAge(char *virus_name, LinkedList *countries, Date start=Date(), Date end=Date());
+void popStatusByAge(char *virus_name, char *country_name, LinkedList *countries, Date start=Date(), Date end=Date());
 
 #endif

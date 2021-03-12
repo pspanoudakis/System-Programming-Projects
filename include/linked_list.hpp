@@ -26,6 +26,7 @@ class LinkedList {
                 ListNode *node;
             public:
                 ListIterator(ListNode *list_node);
+                ListIterator(const ListIterator &itr);
                 void* getData();
                 void forward();
                 bool isNull();
