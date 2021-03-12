@@ -5,7 +5,7 @@
 #include "../include/hash_table.hpp"
 #include "../include/linked_list.hpp"
 
-HashTable::HashTable(int num_buckets, CompareFunc comp, DestroyFunc dest):
+HashTable::HashTable(int num_buckets, DestroyFunc dest):
 size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest)
 {
     for (int i = 0; i < size; i++)
