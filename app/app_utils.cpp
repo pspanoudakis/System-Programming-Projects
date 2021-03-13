@@ -693,7 +693,7 @@ void vaccineStatus(int citizen_id, LinkedList *viruses)
 {
     LinkedList::ListIterator itr = viruses->listHead();
 
-    while( !itr.isNull() )
+    while ( !itr.isNull() )
     {
         static_cast<VirusRecords*>(itr.getData())->displayVaccinationStatus(citizen_id);
         itr.forward();
@@ -753,9 +753,10 @@ void populationStatus(char *virus_name, LinkedList *countries, Date start, Date 
 {
     LinkedList::ListIterator itr = countries->listHead();
 
-    while( !itr.isNull() )
+    while ( !itr.isNull() )
     {
         static_cast<CountryStatus*>(itr.getData())->displayTotalPopulationStatus(virus_name, start, end);
+        itr.forward();
     }
 }
 
@@ -773,7 +774,8 @@ void popStatusByAge(char *virus_name, LinkedList *countries, Date start, Date en
 
     while ( !itr.isNull() )
     {
-        static_cast<CountryStatus*>(itr.getData())->displayStatusByAge(virus_name, start, end);   
+        static_cast<CountryStatus*>(itr.getData())->displayStatusByAge(virus_name, start, end);
+        itr.forward();
     }    
 }
 

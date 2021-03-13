@@ -123,18 +123,14 @@ int compareNameVirusRecord(void *name, void *virus_record);
 int compareVaccinationRecordsByCitizen(void *a, void *b);
 int compareVaccinationsDateFirst(void *a, void *b);
 int compareNameVirusCountryStatus(void *name, void *virus_status);
-//int compareVirusNames(void *a, void *b);
 int compareNameCountryStatus(void *name, void *country_status);
-//int compareCitizenToVaccinationRecord(void *citizen, void *vaccination);
-
-//void destroyVaccinationRecord(void *record);
-//void destroyVirusCountryStatus(void *status);
 
 void displayVaccinationCitizen(void *record);
 
 /**
  * Functions used directly by main ----------------------------------------------------------------
  */
+
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes);
