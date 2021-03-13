@@ -285,7 +285,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             // Mark as vaccinated
             (*present)->vaccinate(record->date);
             // Insert to vaccinated skip list
-            this->vaccinated->insert(present, (void**)&temp, compareVaccinationRecordsByCitizen);
+            this->vaccinated->insert(*present, (void**)&temp, compareVaccinationRecordsByCitizen);
             // Inserting in bloom filter as well
             sprintf(char_id, "%d", (*present)->citizen->id);
             this->filter->markAsPresent(char_id);
@@ -320,7 +320,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
     {
         // Try to find if the citizen has actually been vaccinated
         *present = static_cast<VaccinationRecord*>(this->vaccinated->find(record, compareVaccinationRecordsByCitizen));
-        if (present != NULL)
+        if (*present != NULL)
         // If so, inform the user
         {
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
@@ -684,7 +684,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         // If the status of the existing record changed from "non vaccinated"
         // to "vaccinated", it must be stored now
         {
-            new_record->citizen->country->storeCitizenVaccinationRecord(existing);
+            existing->citizen->country->storeCitizenVaccinationRecord(existing);
         }
     }    
 }
