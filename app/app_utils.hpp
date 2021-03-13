@@ -13,13 +13,13 @@ class HashTable;
 class Date
 {
     public:
-        int day;
-        int month;
-        int year;
+        unsigned short int day;
+        unsigned short int month;
+        unsigned short int year;
 
-        Date(int d = 0, int m = 0, int y = 0);
+        Date(unsigned short int d = 0, unsigned short int m = 0, unsigned short int y = 0);
         Date(const Date &date);
-        void set(int d, int m, int y);
+        void set(unsigned short int d, unsigned short int m, unsigned short int y);
         bool isNullDate();
         bool isValidDate();
 };

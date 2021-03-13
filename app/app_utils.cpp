@@ -25,13 +25,13 @@ char* copyString(const char *str)
  * Date class functions ---------------------------------------------------------------------------
  */
 
-Date::Date(int d, int m, int y):
+Date::Date(unsigned short int d, unsigned short int m, unsigned short int y):
 day(d), month(m), year(y) { }
 
 Date::Date(const Date &date):
 day(date.day), month(date.month), year(date.year) { }
 
-void Date::set(int d, int m, int y)
+void Date::set(unsigned short int d, unsigned short int m, unsigned short int y)
 {
     this->day = d;
     this->month = m;
