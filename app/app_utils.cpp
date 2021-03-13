@@ -298,7 +298,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             return false;
         }
         // Now try to insert to vaccinated skip list
-        if ( this->vaccinated->insert(record, (void**)&present, compareVaccinationRecordsByCitizen) )
+        if ( this->vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         // The insertion was successful
         {
             // Inserting in bloom filter as well
@@ -378,10 +378,14 @@ void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTr
         {
             total++;    // root is in range
             getTotalStatsRec(total, start, end, root->right);
+            return;
         }
     }
     // root is smaller than start, so just search to the right
-    getTotalStatsRec(total, start, end, root->right);
+    if (compareDates(&root_data->date, &end) <= 0)
+    {
+        getTotalStatsRec(total, start, end, root->right);
+    }
 }
 
 void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
