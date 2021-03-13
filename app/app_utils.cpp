@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdio>
+#include <ctime>
 
 #include "app_utils.hpp"
 #include "../include/linked_list.hpp"
@@ -7,7 +8,6 @@
 #include "../include/skip_list.hpp"
 #include "../include/bloom_filter.hpp"
 #include "../include/hash_table.hpp"
-
 
 char* copyString(const char *str)
 {
@@ -68,6 +68,14 @@ int compareDates(void *a, void *b)
         return d1->day - d2->day;
     }
     return 0;
+}
+
+Date currentDate()
+{
+    time_t timer = time(NULL);
+    struct tm time_info;
+	time_info = *localtime(&timer);
+    return Date(time_info.tm_mday, time_info.tm_mon + 1, time_info.tm_year + 1900);
 }
 
 /**
