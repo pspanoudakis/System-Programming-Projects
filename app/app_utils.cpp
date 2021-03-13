@@ -765,7 +765,14 @@ void populationStatus(char *virus_name, char *country_name, LinkedList *countrie
     CountryStatus* target_country;
     target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
 
-    target_country->displayTotalPopulationStatus(virus_name, start, end);
+    if (target_country != NULL)
+    {
+        target_country->displayTotalPopulationStatus(virus_name, start, end);
+    }
+    else
+    {
+        printf("ERROR: The specified country was not found.\n");
+    }
 }
 
 void popStatusByAge(char *virus_name, LinkedList *countries, Date start, Date end)
@@ -784,5 +791,12 @@ void popStatusByAge(char *virus_name, char *country_name, LinkedList *countries,
     CountryStatus* target_country;
     target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
 
-    target_country->displayStatusByAge(virus_name, start, end);
+    if (target_country != NULL)
+    {
+        target_country->displayStatusByAge(virus_name, start, end);
+    }
+    else
+    {
+        printf("ERROR: The specified country was not found.\n");
+    }
 }
