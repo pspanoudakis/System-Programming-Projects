@@ -401,6 +401,7 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
         {
             updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
             getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->right);
+            return;
         }
     }
     // root is smaller than start, so just search to the right
@@ -466,7 +467,7 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
  */
 
 CountryStatus::CountryStatus(char *name):
-total_population(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+total_population(0), population_bellow_20(0), population_20_40(0), population_40_60(0), population_60_plus(0),
 virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
 country_name(copyString(name)) { }
 
@@ -546,7 +547,7 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     }
     else
     {
-        printf("20-40 %d %.2f%%\n", between_20_40, (float)bellow_20/(float)this->population_20_40*100);
+        printf("20-40 %d %.2f%%\n", between_20_40, (float)between_20_40/(float)this->population_20_40*100);
     }
     if (this->population_40_60 == 0)
     {
@@ -554,7 +555,7 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     }
     else
     {
-        printf("40-60 %d %.2f%%\n", between_40_60, (float)bellow_20/(float)this->population_40_60*100);
+        printf("40-60 %d %.2f%%\n", between_40_60, (float)between_40_60/(float)this->population_40_60*100);
     }
     if (this->population_60_plus == 0)
     {
@@ -562,7 +563,7 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     }
     else
     {
-        printf("60+ %d %.2f%%\n", plus_60, (float)bellow_20/(float)this->population_60_plus*100);
+        printf("60+ %d %.2f%%\n", plus_60, (float)plus_60/(float)this->population_60_plus*100);
     }
 }
 
