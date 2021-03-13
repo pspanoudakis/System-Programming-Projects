@@ -15,7 +15,7 @@ class HashTable
         unsigned int getHashCode(void *data, unsigned int mod);
         
     public:
-        HashTable(int num_buckets, DestroyFunc dest);
+        HashTable(int num_buckets, DestroyFunc dest, HashObjectFunc hash);
         ~HashTable();
         void insert(void *element);
         void* getElement(void *key, CompareFunc compare_func);

@@ -7,3 +7,5 @@ test.*
 *.txt
 inputFile
 todos.txt
+testmain.cpp
+testmain

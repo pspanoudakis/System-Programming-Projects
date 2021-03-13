@@ -11,7 +11,7 @@ BloomFilter::BloomFilter(unsigned long n): numBits(n*8), bits(new unsigned char[
 
 BloomFilter::~BloomFilter()
 {
-    delete bits;
+    delete [] bits;
 }
 
 void BloomFilter::setBit(unsigned long n)

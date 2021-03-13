@@ -8,6 +8,7 @@ class RedBlackTree;
 class RBTreeNode;
 class SkipList;
 class BloomFilter;
+class HashTable;
 
 class Date
 {
@@ -112,6 +113,8 @@ class CountryStatus
  * "Generic" Functions to be used internally by container structures ------------------------------ 
  */
 
+char* copyString(const char *str);
+int citizenHashObject(void *citizen);
 int compareDates(void *a, void *b);
 int compareIdToVaccinationRecord(void *id, void *record);
 int compareIdToCitizen(void *id, void *citizen_record);
@@ -132,7 +135,13 @@ void displayVaccinationCitizen(void *record);
 /**
  * Functions used directly by main ----------------------------------------------------------------
  */
-
+void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
+                             char *virus_name, bool vaccinated, Date date,
+                             LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes);
+void vaccineStatus(int citizen_id, LinkedList *viruses);
+void vaccineStatus(int citizen_id, LinkedList *viruses, char *virus_name);
+void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name);
+void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses);
 void populationStatus(char *virus_name, LinkedList *countries, Date start=Date(), Date end=Date());
 void populationStatus(char *virus_name, char *country_name, LinkedList *countries, Date start=Date(), Date end=Date());
 void popStatusByAge(char *virus_name, LinkedList *countries, Date start=Date(), Date end=Date());

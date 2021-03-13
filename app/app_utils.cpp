@@ -12,11 +12,12 @@
 char* copyString(const char *str)
 {
     int len = strlen(str);
-    char *copy = new char [len];
-    for (int i = 0; i <= len; i++)
+    char *copy = new char[len + 1];
+    for (int i = 0; i < len; i++)
     {
         copy[i] = str[i];
     }
+    copy[len] = '\0';
     return copy;
 }
 
@@ -139,6 +140,11 @@ void displayCitizen(void *record)
     printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
 }
 
+int citizenHashObject(void *citizen)
+{
+    return static_cast<CitizenRecord*>(citizen)->id;
+}
+
 /**
  * Vaccination Record functions -------------------------------------------------------------------
  */
@@ -223,7 +229,8 @@ VirusRecords::~VirusRecords()
 {
     delete non_vaccinated;
     delete vaccinated;
-    delete virus_name;
+    delete [] virus_name;
+    delete filter;
 }
 
 void VirusRecords::displayVaccinationStatus(int citizenID)
@@ -273,7 +280,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // If there is already a Non-Vaccinated record for this citizen,
         // remove it from the non-vaccinated skip list
         this->non_vaccinated->remove(record, (void**)present, compareVaccinationRecordsByCitizen);
-        if (present != NULL)
+        if (*present != NULL)
         {
             // Mark as vaccinated
             (*present)->vaccinate(record->date);
@@ -295,7 +302,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // The insertion was successful
         {
             // Inserting in bloom filter as well
-            sprintf(char_id, "%d", (*present)->citizen->id);
+            sprintf(char_id, "%d", record->citizen->id);
             this->filter->markAsPresent(char_id);
 
             printf("SUCCESSFULLY VACCINATED\n");
@@ -725,7 +732,7 @@ void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
     }
     else
     {
-        printf("ERROR: The specified virus was not found.");
+        printf("ERROR: The specified virus was not found.\n");
     }
 }
 

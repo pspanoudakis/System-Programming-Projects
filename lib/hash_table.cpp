@@ -5,8 +5,8 @@
 #include "../include/hash_table.hpp"
 #include "../include/linked_list.hpp"
 
-HashTable::HashTable(int num_buckets, DestroyFunc dest):
-size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest)
+HashTable::HashTable(int num_buckets, DestroyFunc dest, HashObjectFunc hash):
+size(num_buckets), buckets(new LinkedList* [num_buckets]), destroy(dest), get_hash_object(hash)
 {
     for (unsigned int i = 0; i < size; i++)
     {
@@ -22,23 +22,24 @@ HashTable::~HashTable()
         {
             delete buckets[i];
         }
-        delete[] buckets;
     }
+    delete[] buckets;
 }
 
 unsigned int HashTable::getHashCode(void *data, unsigned int mod)
 {
-    int result;
+    unsigned int result;
 
     // Initial hashcode is stored here
+    const unsigned char *byte_data = (const unsigned char*)data;
     unsigned char *hash = (unsigned char*)malloc(SHA_DIGEST_LENGTH);
     unsigned long int hash_num;
 
     // Getting the hashcode
-    SHA1((unsigned char*)data, sizeof(int), hash);
+    SHA1(byte_data, sizeof(unsigned int), hash);
 
     // Copying part of it and storing it
-    memcpy(&hash_num, hash, sizeof(unsigned int));
+    memcpy(&hash_num, hash, sizeof(unsigned long int));
 
     free(hash);
 
@@ -63,8 +64,8 @@ void HashTable::insert(void *element)
 
 void* HashTable::getElement(void *key, CompareFunc compare_func)
 {
-    int hash_object = this->get_hash_object(key);
-    unsigned int hash_code = getHashCode(&hash_object, this->size);
+    //int hash_object = this->get_hash_object(key);
+    unsigned int hash_code = getHashCode(key, this->size);
 
     if (buckets[hash_code] == NULL)
     {

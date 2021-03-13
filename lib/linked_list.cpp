@@ -50,7 +50,7 @@ void LinkedList::append(void *element)
 
 void* LinkedList::getLast()
 {
-    return last;
+    return last->data;
 }
 
 /**

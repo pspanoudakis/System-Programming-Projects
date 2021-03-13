@@ -204,7 +204,11 @@ void SkipList::remove(void *element, void **present, CompareFunc compare)
         }
         layer_prevs[i] = prev;
     }
-    if ( target == NULL ) { return; }
+    if ( target == NULL )
+    { 
+        delete [] layer_prevs;
+        return; 
+    }
 
     for ( int i = 0; i < target->layers; i++ )
     {

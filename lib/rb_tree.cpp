@@ -209,6 +209,7 @@ void RedBlackTree::insert(void *element)
     if (root == NULL)
     {
         root = new RBTreeNode(BLACK, element, NULL);
+        this->num_elements++;
         return;
     }
     recursiveInsert(root, element);
