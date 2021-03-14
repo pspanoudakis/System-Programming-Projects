@@ -133,8 +133,6 @@ void displayVaccinationCitizen(void *record);
  * Functions used directly by main ----------------------------------------------------------------
  */
 
-bool isPositiveNumber(const char* str);
-char* fgetline(FILE *stream);
 Date currentDate();
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date date,

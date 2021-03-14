@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <ctime>
 #include <cstdlib>
-#include <cassert>
 
 #include "app_utils.hpp"
 #include "../include/linked_list.hpp"
@@ -10,31 +9,6 @@
 #include "../include/skip_list.hpp"
 #include "../include/bloom_filter.hpp"
 #include "../include/hash_table.hpp"
-
-/**
- * Reads a character sequence up to a newline character or EOF from stream,
- * and returns a character buffer which contains the sequence.
- * Note that the returned pointer has to be free-ed after use.
- */
-char* fgetline(FILE *stream)
-{
-    int c;
-    int count = 1;
-    char *buffer = NULL;
-
-    c = fgetc(stream);
-    while ( (c != '\n') && (c != EOF) )
-    {  
-        buffer = (char*)realloc(buffer, count + 1);           // Increasing the space by 1 byte
-        assert(buffer != NULL);
-        buffer[count - 1] = c;                               // Storing the new letter
-        buffer[count] = '\0';
-        count++;
-        c = fgetc(stream);
-    }
-
-    return buffer;
-}
 
 char* copyString(const char *str)
 {
@@ -46,12 +20,6 @@ char* copyString(const char *str)
     }
     copy[len] = '\0';
     return copy;
-}
-
-bool isPositiveNumber(const char* str)
-{
-    char* endptr;    
-    return (strtol(str, &endptr, 10) > 0) && (*endptr == '\0');
 }
 
 /**
