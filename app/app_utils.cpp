@@ -1,6 +1,8 @@
 #include <cstring>
 #include <cstdio>
 #include <ctime>
+#include <cstdlib>
+#include <cassert>
 
 #include "app_utils.hpp"
 #include "../include/linked_list.hpp"
@@ -8,6 +10,31 @@
 #include "../include/skip_list.hpp"
 #include "../include/bloom_filter.hpp"
 #include "../include/hash_table.hpp"
+
+/**
+ * Reads a character sequence up to a newline character or EOF from stream,
+ * and returns a character buffer which contains the sequence.
+ * Note that the returned pointer has to be free-ed after use.
+ */
+char* fgetline(FILE *stream)
+{
+    int c;
+    int count = 1;
+    char *buffer = NULL;
+
+    c = fgetc(stream);
+    while ( (c != '\n') && (c != EOF) )
+    {  
+        buffer = (char*)realloc(buffer, count + 1);           // Increasing the space by 1 byte
+        assert(buffer != NULL);
+        buffer[count - 1] = c;                               // Storing the new letter
+        buffer[count] = '\0';
+        count++;
+        c = fgetc(stream);
+    }
+
+    return buffer;
+}
 
 char* copyString(const char *str)
 {
@@ -19,6 +46,12 @@ char* copyString(const char *str)
     }
     copy[len] = '\0';
     return copy;
+}
+
+bool isPositiveNumber(const char* str)
+{
+    char* endptr;    
+    return (strtol(str, &endptr, 10) > 0) && (*endptr == '\0');
 }
 
 /**
@@ -48,6 +81,19 @@ bool Date::isValidDate()
 bool Date::isNullDate()
 {
     return (day == 0) && (month == 0) && (year == 0);
+}
+
+void Date::setToCurrentDate()
+{
+    Date current = currentDate();
+    this->set(current.day, current.month, current.year);
+}
+
+void Date::set(Date &other)
+{
+    this->day = other.day;
+    this->month = other.day;
+    this->year = other.year;
 }
 
 int compareDates(void *a, void *b)
@@ -298,6 +344,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             sprintf(char_id, "%d", (*present)->citizen->id);
             this->filter->markAsPresent(char_id);
 
+            // TODO: fprintf (for dev/null) maybe?
             printf("SUCCESSFULLY VACCINATED\n");
             // Indicate that the existing record was previously marked
             // as "non vaccinated" and has changed
@@ -313,12 +360,14 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             sprintf(char_id, "%d", record->citizen->id);
             this->filter->markAsPresent(char_id);
 
+            // TODO: fprintf (for dev/null) maybe?
             printf("SUCCESSFULLY VACCINATED\n");
             return true;
         }
         else
         // The insertion failed because the citizen has already been vaccinated
-        {            
+        {   
+            // TODO: fprintf (for dev/null) maybe?         
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             return false;
@@ -331,6 +380,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         if (*present != NULL)
         // If so, inform the user
         {
+            // TODO: fprintf (for dev/null) maybe?
             printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             // Return false to indicate that the given record must be deleted
@@ -339,11 +389,13 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // Now try to insert to non-vaccinated skip list
         if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         {
+            // TODO: fprintf (for dev/null) maybe?
             printf("SUCCESSFULLY MARKED AS NON VACCINATED\n");
             return true;
         }
         else
         {
+            // TODO: fprintf (for dev/null) maybe?
             printf("ERROR: ALREADY MARKED AS NON VACCINATED\n");
             return false;
         }

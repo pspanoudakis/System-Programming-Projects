@@ -20,8 +20,10 @@ class Date
         Date(unsigned short int d = 0, unsigned short int m = 0, unsigned short int y = 0);
         Date(const Date &date);
         void set(unsigned short int d, unsigned short int m, unsigned short int y);
+        void set(Date &other);
         bool isNullDate();
         bool isValidDate();
+        void setToCurrentDate();
 };
 
 class CountryStatus;
@@ -131,6 +133,8 @@ void displayVaccinationCitizen(void *record);
  * Functions used directly by main ----------------------------------------------------------------
  */
 
+bool isPositiveNumber(const char* str);
+char* fgetline(FILE *stream);
 Date currentDate();
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date date,
