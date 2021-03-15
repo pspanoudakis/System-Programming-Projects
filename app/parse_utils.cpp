@@ -1,3 +1,9 @@
+/**
+ * File: parse_utils.cpp
+ * Contains implementations for several routines used in input parsing
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -27,6 +33,7 @@ char* fgetline(FILE *stream)
     while ( (c != '\n') && (c != EOF) )
     {  
         buffer = (char*)realloc(buffer, count + 1);           // Increasing the space by 1 byte
+        // TODO: maybe display something?
         assert(buffer != NULL);
         buffer[count - 1] = c;                               // Storing the new letter
         buffer[count] = '\0';
@@ -37,8 +44,12 @@ char* fgetline(FILE *stream)
     return buffer;
 }
 
+/**
+ * Routines used for command argument parsing-checking --------------------------------------------
+ */
+
 bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
-                              int &citizen_age, char *&virus_name, bool &vaccinated, Date &date)
+                              int &citizen_age, char *&virus_name, bool &vaccinated, Date &date, FILE *fstream)
 {
     short int curr_arg = 1;
     char *fname = NULL;
@@ -55,7 +66,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
             // token is citizen_id
             if (!isPositiveNumber(token) || strlen(token) > 4)
             {
-                printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                fprintf(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
                 return false;
             }
             citizen_id = atoi(token);
@@ -87,8 +98,8 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                     break;
                 }                
             }
-            printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-            printf("Rejecting command.\n");
+            fprintf(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
+            fprintf(fstream, "Rejecting command.\n");
             // TODO: release sources maybe?
             delete[] country_name;
             delete[] citizen_fullname;
@@ -109,7 +120,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 vaccinated = false;
                 if ((token = strtok(NULL, " "))!= NULL)
                 {
-                    printf("More than expected arguments have been detected. Rejecting command.\n");
+                    fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
                     // TODO: release sources maybe?
                     delete[] country_name;
                     delete[] citizen_fullname;
@@ -120,7 +131,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
             }
             else
             {
-                printf("Invalid YES/NO argument detected. Rejecting command.\n");
+                fprintf(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
                 // TODO: release sources maybe?
                 delete[] country_name;
                 delete[] citizen_fullname;
@@ -145,11 +156,11 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     }
     else if (curr_arg < 9)
     {
-        printf("Less than expected arguments have been detected. Rejecting command.\n");
+        fprintf(fstream, "Less than expected arguments have been detected. Rejecting command.\n");
     }
     else
     {
-        printf("More than expected arguments have been detected. Rejecting command.\n");
+        fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
     }
     // TODO: release sources maybe?
     if (citizen_fullname != NULL)
@@ -172,4 +183,85 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
         }
     }
     return false;
+}
+
+// TODO (copy from above most likely)
+bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
+                       int &citizen_age, char *&virus_name)
+{
+
+}
+
+bool vaccineStatusParse(int &citizen_id, char *&virus_name)
+{
+    char *arg1;
+    char *arg2;
+    virus_name = NULL;
+
+    arg1 = strtok(NULL, " ");
+    if (arg1 == NULL)
+    {
+        printf("Less than expected arguments found. Rejecting command.\n");
+        return false;
+    }
+    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 120) )
+    {
+        arg2 = strtok(NULL, " ");
+        if (arg2 != NULL)
+        {
+            virus_name = new char[strlen(arg2) + 1];
+            strcpy(virus_name, arg2);
+        }        
+        return true;
+    }
+    printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+    return false; 
+}
+
+bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
+{
+    char *arg1;
+    char *arg2;
+    virus_name = NULL;
+
+    arg1 = strtok(NULL, " ");
+    if (arg1 == NULL)
+    {
+        printf("Less than expected arguments found. Rejecting command.\n");
+        return false;
+    }
+    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 120) )
+    {
+        arg2 = strtok(NULL, " ");
+        if (arg2 != NULL)
+        {
+            virus_name = new char[strlen(arg2) + 1];
+            strcpy(virus_name, arg2);
+            return true;
+        }
+        printf("Expected a virus name. Rejecting command.\n"); 
+        return false;
+    }
+    printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+    return false; 
+}
+
+bool listNonVaccinatedParse(char *&virus_name)
+{
+    char *arg;
+    arg = strtok(NULL, " ");
+    if (arg == NULL)
+    {
+        printf("Expected a virus name. Rejecting command.\n");
+        return false;
+    }
+    virus_name = new char[strlen(arg) + 1];
+    strcpy(virus_name, arg);
+    return true;
+}
+
+// TODO
+bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end)
+{
+
 }
