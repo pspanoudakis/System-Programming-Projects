@@ -58,99 +58,99 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     country_name = NULL;
     virus_name = NULL;
 
-    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 9 )
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 8 )
     {
         switch (curr_arg)
         {
-        case 1:
-            // token is citizen_id
-            if (!isPositiveNumber(token) || strlen(token) > 4)
-            {
-                fprintf(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+            case 1:
+                // token is citizen_id
+                if (!isPositiveNumber(token) || strlen(token) > 4)
+                {
+                    fprintf(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                    return false;
+                }
+                citizen_id = atoi(token);
+                break;
+            case 2:
+                // token is first name
+                fname = new char [strlen(token)+1];
+                strcpy(fname, token);
+                break;
+            case 3:
+                // token is last name
+                citizen_fullname = new char[strlen(fname)+strlen(token) + 2]; // +2 for space + null char
+                sprintf(citizen_fullname, "%s %s", fname, token);
+                delete [] fname;
+                fname = NULL;
+                break;
+            case 4:
+                // token is country
+                country_name = new char [strlen(token)+1];
+                strcpy(country_name, token);
+                break;
+            case 5:
+                // token is age
+                if (isPositiveNumber(token))
+                {
+                    citizen_age = atoi(token);
+                    if (citizen_age <= 120 && citizen_age >= 0)
+                    {
+                        break;
+                    }                
+                }
+                fprintf(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
+                fprintf(fstream, "Rejecting command.\n");
+                delete[] country_name;
+                delete[] citizen_fullname;
                 return false;
-            }
-            citizen_id = atoi(token);
-            break;
-        case 2:
-            // token is first name
-            fname = new char [strlen(token)+1];
-            strcpy(fname, token);
-            break;
-        case 3:
-            // token is last name
-            citizen_fullname = new char[strlen(fname)+strlen(token) + 2]; // +2 for space + null char
-            sprintf(citizen_fullname, "%s %s", fname, token);
-            delete [] fname;
-            fname = NULL;
-            break;
-        case 4:
-            // token is country
-            country_name = new char [strlen(token)+1];
-            strcpy(country_name, token);
-            break;
-        case 5:
-            // token is age
-            if (isPositiveNumber(token))
-            {
-                citizen_age = atoi(token);
-                if (citizen_age <= 120 && citizen_age >= 0)
+            case 6:
+                // token is virus
+                virus_name = new char [strlen(token)+1];
+                strcpy(virus_name, token);
+                break;
+            case 7:
+                // token is YES/NO
+                if (strcmp(token, "YES") == 0)
                 {
-                    break;
-                }                
-            }
-            fprintf(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-            fprintf(fstream, "Rejecting command.\n");
-            delete[] country_name;
-            delete[] citizen_fullname;
-            return false;
-        case 6:
-            // token is virus
-            virus_name = new char [strlen(token)+1];
-            strcpy(virus_name, token);
-            break;
-        case 7:
-            // token is YES/NO
-            if (strcmp(token, "YES") == 0)
-            {
-                vaccinated = true;
-            }
-            else if (strcmp(token, "NO") == 0)
-            {
-                vaccinated = false;
-                if ((token = strtok(NULL, " "))!= NULL)
+                    vaccinated = true;
+                }
+                else if (strcmp(token, "NO") == 0)
                 {
-                    fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
+                    vaccinated = false;
+                    if ((token = strtok(NULL, " "))!= NULL)
+                    {
+                        fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
+                        delete[] country_name;
+                        delete[] citizen_fullname;
+                        delete[] virus_name;
+                        return false;
+                    }
+                    return true;
+                }
+                else
+                {
+                    fprintf(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
                     delete[] country_name;
                     delete[] citizen_fullname;
                     delete[] virus_name;
                     return false;
                 }
-                return true;
-            }
-            else
-            {
-                fprintf(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
-                delete[] country_name;
-                delete[] citizen_fullname;
-                delete[] virus_name;
-                return false;
-            }
-            break;
-        case 8:
-            // token is date
-            // TODO: this is temporary
-            sscanf(token, "%hu-%hu-%hu", &date.day, &date.month, &date.year);
-            break;        
-        default:
-            break;
+                break;
+            case 8:
+                // token is date
+                // TODO: this is temporary
+                sscanf(token, "%hu-%hu-%hu", &date.day, &date.month, &date.year);
+                break;        
+            default:
+                break;
         }
         curr_arg++;
     }
-    if (curr_arg == 9)
+    if (curr_arg == 8)
     {
         return true;
     }
-    else if (curr_arg < 9)
+    else if (curr_arg < 8)
     {
         fprintf(fstream, "Less than expected arguments have been detected. Rejecting command.\n");
     }
@@ -162,7 +162,6 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     delete[] country_name;
     delete[] virus_name;
     delete[] fname;
-    printf("Freeee\n");
     return false;
 }
 
@@ -176,66 +175,66 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
     country_name = NULL;
     virus_name = NULL;
 
-    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <=7 )
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 6 )
     {
         switch (curr_arg)
         {
-        case 1:
-            // token is citizen_id
-            if (!isPositiveNumber(token) || strlen(token) > 4)
-            {
-                printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
-                return false;
-            }
-            citizen_id = atoi(token);
-            break;
-        case 2:
-            // token is first name
-            fname = new char [strlen(token)+1];
-            strcpy(fname, token);
-            break;
-        case 3:
-            // token is last name
-            citizen_fullname = new char[strlen(fname)+strlen(token) + 2]; // +2 for space + null char
-            sprintf(citizen_fullname, "%s %s", fname, token);
-            delete [] fname;
-            fname = NULL;
-            break;
-        case 4:
-            // token is country
-            country_name = new char [strlen(token)+1];
-            strcpy(country_name, token);
-            break;
-        case 5:
-            // token is age
-            if (isPositiveNumber(token))
-            {
-                citizen_age = atoi(token);
-                if (citizen_age <= 120 && citizen_age >= 0)
+            case 1:
+                // token is citizen_id
+                if (!isPositiveNumber(token) || strlen(token) > 4)
                 {
-                    break;
-                }                
-            }
-            printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-            printf("Rejecting command.\n");
-            delete[] country_name;
-            delete[] citizen_fullname;
-            return false;
-        case 6:
-            // token is virus
-            virus_name = new char [strlen(token)+1];
-            strcpy(virus_name, token);
-            break;
-        default:
-            break;
+                    printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                    return false;
+                }
+                citizen_id = atoi(token);
+                break;
+            case 2:
+                // token is first name
+                fname = new char [strlen(token)+1];
+                strcpy(fname, token);
+                break;
+            case 3:
+                // token is last name
+                citizen_fullname = new char[strlen(fname)+strlen(token) + 2]; // +2 for space + null char
+                sprintf(citizen_fullname, "%s %s", fname, token);
+                delete [] fname;
+                fname = NULL;
+                break;
+            case 4:
+                // token is country
+                country_name = new char [strlen(token)+1];
+                strcpy(country_name, token);
+                break;
+            case 5:
+                // token is age
+                if (isPositiveNumber(token))
+                {
+                    citizen_age = atoi(token);
+                    if (citizen_age <= 120 && citizen_age >= 0)
+                    {
+                        break;
+                    }                
+                }
+                printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
+                printf("Rejecting command.\n");
+                delete[] country_name;
+                delete[] citizen_fullname;
+                return false;
+            case 6:
+                // token is virus
+                virus_name = new char [strlen(token)+1];
+                strcpy(virus_name, token);
+                break;
+            default:
+                break;
         }
         curr_arg++;
     }
-    if (curr_arg == 7)
+    if (curr_arg == 6)
     {
         return true;
     }
-    else if (curr_arg < 7)
+    else if (curr_arg < 6)
     {
         printf("Less than expected arguments have been detected. Rejecting command.\n");
     }
@@ -243,25 +242,10 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
     {
         printf("More than expected arguments have been detected. Rejecting command.\n");
     }
-    if (citizen_fullname != NULL)
-    {
-        delete[] citizen_fullname;
-        if (country_name != NULL)
-        {
-            delete[] country_name;
-            if (virus_name != NULL)
-            {
-                delete[] virus_name;
-            }
-        }
-    }
-    else
-    {
-        if (fname != NULL)
-        {
-            delete[] fname;
-        }
-    }
+    delete[] citizen_fullname;
+    delete[] country_name;
+    delete[] virus_name;
+    delete[] fname;
     return false;
 }
 
@@ -333,77 +317,90 @@ bool listNonVaccinatedParse(char *&virus_name)
     return true;
 }
 
-// TODO: needs fix, country arg is optional (and not last)
 bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end)
 {
-    short int curr_arg = 1;
+    char **args = new char*[4];
+
+    short int curr_arg = 0;
     char *token;
     country_name = NULL;
     virus_name = NULL;
-
-    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 5 )
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg < 4)
     {
-        switch (curr_arg)
-        {
-        case 1:
-            // token is country
-            country_name = new char [strlen(token)+1];
-            strcpy(country_name, token);
-            break;
-        case 2:
-            // token is virus
-            virus_name = new char [strlen(token)+1];
-            strcpy(virus_name, token);
-            break;
-        case 3:
-            // token is date
-            // TODO: this is temporary
-            sscanf(token, "%hu-%hu-%hu", &start.day, &start.month, &start.year);
-            curr_arg++;
-            if ( (token = strtok(NULL, " "))!= NULL )
-            {
-                sscanf(token, "%hu-%hu-%hu", &start.day, &start.month, &start.year);
-                // TODO: Def must test this
-                if (compareDates(&start, &end) > 0)
-                {
-                    printf("The first Date cannot be greater than the second one. Rejecting command.\n");
-                    delete[] country_name;
-                    delete[] virus_name;
-                    return false;
-                }
-            }
-            else
-            {
-                printf("Expected an upper limit Date. Rejecting command.\n");
-                delete[] country_name;
-                delete[] virus_name;
-                return false;
-            }
-            break;
-        default:
-            break;
-        }
+        args[curr_arg] = token;
         curr_arg++;
     }
-    if (curr_arg == 3)
+    if (token != NULL)
     {
-        return true;
-    }
-    else if (curr_arg < 3)
-    {
-        printf("Less than expected arguments have been detected. Rejecting command.\n");
+        printf("More than expected arguments have been detected. Rejecting command.\n");
+        delete[] args;
+        return false;
     }
     else
     {
-        printf("More than expected arguments have been detected. Rejecting command.\n");
-    }
-    if (country_name != NULL)
-    {
-        delete[] country_name;
-        if (virus_name != NULL)
+        if (curr_arg == 0)
         {
-            delete[] virus_name;
+            printf("Less than expected arguments have been detected. Rejecting command.\n");
+            delete[] args;
+            return false;
         }
     }
-    return false;
+    switch (curr_arg)
+    {
+        case 1:
+            virus_name = new char[strlen(args[0])+1];
+            strcpy(virus_name, args[0]);
+
+            delete[] args;
+            return true;
+        case 2:
+            // args are: country virus
+            country_name = new char[strlen(args[0])+1];
+            strcpy(country_name, args[0]);
+            virus_name = new char[strlen(args[1])+1];
+            strcpy(virus_name, args[1]);
+
+            delete[] args;
+            return true;
+        case 3:
+            // args are: virus date1 date2
+            virus_name = new char[strlen(args[0])+1];
+            strcpy(virus_name, args[0]);
+
+            sscanf(args[1], "%hu-%hu-%hu", &start.day, &start.month, &start.year);
+            sscanf(args[2], "%hu-%hu-%hu", &end.day, &end.month, &end.year);
+            if (compareDates(&start, &end) > 0)
+            {
+                printf("The first Date cannot be greater than the second one. Rejecting command.\n");
+                delete[] virus_name;
+                delete[] args;
+                return false;
+            }
+
+            delete[] args;
+            return true;
+        case 4:
+            // args are: country virus date1 date2
+            country_name = new char[strlen(args[0])+1];
+            strcpy(country_name, args[0]);
+            virus_name = new char[strlen(args[1])+1];
+            strcpy(virus_name, args[1]);
+
+            sscanf(args[2], "%hu-%hu-%hu", &start.day, &start.month, &start.year);
+            sscanf(args[3], "%hu-%hu-%hu", &end.day, &end.month, &end.year);
+            delete[] args;
+            if (compareDates(&start, &end) > 0)
+            {
+                printf("The first Date cannot be greater than the second one. Rejecting command.\n");
+                delete[] country_name;
+                delete[] virus_name;
+
+                return false;
+            }
+            return true;   
+        default:
+            // This point will never be reached but anyway...
+            return false;
+            break;
+    }
 }
