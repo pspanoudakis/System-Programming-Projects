@@ -1,3 +1,9 @@
+/**
+ * File: parse_utils.hpp
+ * Singnatures for several routines used in input parsing
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #ifndef PARSE_UTILS_HPP
 #define PARSE_UTILS_HPP
 

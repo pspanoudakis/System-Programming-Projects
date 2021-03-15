@@ -1,3 +1,10 @@
+/**
+ * File: app_utils.hpp
+ * Contains classes used by the app, routine signatures used by main,
+ * as well as several other function signatures used internally (but dependent on app classes)
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #ifndef APP_CLASSES_HPP
 #define APP_CLASSES_HPP
 

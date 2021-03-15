@@ -1,3 +1,10 @@
+/**
+ * File: app_utils.cpp
+ * Contains implementations for class methods, routines to be called by main
+ * and several other functions used internally (but dependent on app classes)
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstring>
 #include <cstdio>
 #include <ctime>
