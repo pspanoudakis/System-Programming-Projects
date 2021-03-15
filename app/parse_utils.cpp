@@ -158,25 +158,11 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     {
         fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
     }
-    if (citizen_fullname != NULL)
-    {
-        delete[] citizen_fullname;
-        if (country_name != NULL)
-        {
-            delete[] country_name;
-            if (virus_name != NULL)
-            {
-                delete[] virus_name;
-            }
-        }
-    }
-    else
-    {
-        if (fname != NULL)
-        {
-            delete[] fname;
-        }
-    }
+    delete[] citizen_fullname;
+    delete[] country_name;
+    delete[] virus_name;
+    delete[] fname;
+    printf("Freeee\n");
     return false;
 }
 
@@ -347,6 +333,7 @@ bool listNonVaccinatedParse(char *&virus_name)
     return true;
 }
 
+// TODO: needs fix, country arg is optional (and not last)
 bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end)
 {
     short int curr_arg = 1;
@@ -376,6 +363,7 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
             if ( (token = strtok(NULL, " "))!= NULL )
             {
                 sscanf(token, "%hu-%hu-%hu", &start.day, &start.month, &start.year);
+                // TODO: Def must test this
                 if (compareDates(&start, &end) > 0)
                 {
                     printf("The first Date cannot be greater than the second one. Rejecting command.\n");
