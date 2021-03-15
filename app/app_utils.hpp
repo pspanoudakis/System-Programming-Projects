@@ -68,7 +68,8 @@ class VirusRecords
         char *virus_name;        
         VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits);
         ~VirusRecords();
-        bool insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified);
+        bool insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified,
+                                       FILE *fstream);
         bool checkBloomFilter(char *citizenID);
         void displayVaccinationStatus(int citizenID);
         void displayWhetherVaccinated(int citizenID);
@@ -143,7 +144,8 @@ void displayVaccinationCitizen(void *record);
 Date currentDate();
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date date,
-                             LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes);
+                             LinkedList *countries, LinkedList *viruses, HashTable *citizens,
+                             unsigned long bloom_bytes, FILE *fstream);
 void vaccineStatus(int citizen_id, LinkedList *viruses);
 void vaccineStatus(int citizen_id, LinkedList *viruses, char *virus_name);
 void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name);

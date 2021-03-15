@@ -300,7 +300,8 @@ bool VirusRecords::checkBloomFilter(char *citizen_id)
     return this->filter->isPresent(citizen_id);
 }
 
-bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified)
+bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified,
+                                            FILE *fstream)
 {
     VaccinationRecord *temp;
     char char_id[5]; // max 4 digits + \0
@@ -320,7 +321,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             this->filter->markAsPresent(char_id);
 
             // TODO: fprintf (for dev/null) maybe?
-            printf("SUCCESSFULLY VACCINATED\n");
+            fprintf(fstream, "SUCCESSFULLY VACCINATED\n");
             // Indicate that the existing record was previously marked
             // as "non vaccinated" and has changed
             modified = true;
@@ -336,14 +337,14 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             this->filter->markAsPresent(char_id);
 
             // TODO: fprintf (for dev/null) maybe?
-            printf("SUCCESSFULLY VACCINATED\n");
+            fprintf(fstream, "SUCCESSFULLY VACCINATED\n");
             return true;
         }
         else
         // The insertion failed because the citizen has already been vaccinated
         {   
             // TODO: fprintf (for dev/null) maybe?         
-            printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
+            fprintf(fstream, "ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             return false;
         }
@@ -356,7 +357,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // If so, inform the user
         {
             // TODO: fprintf (for dev/null) maybe?
-            printf("ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
+            fprintf(fstream, "ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             // Return false to indicate that the given record must be deleted
             return false;
@@ -365,13 +366,13 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         {
             // TODO: fprintf (for dev/null) maybe?
-            printf("SUCCESSFULLY MARKED AS NON VACCINATED\n");
+            fprintf(fstream, "SUCCESSFULLY MARKED AS NON VACCINATED\n");
             return true;
         }
         else
         {
             // TODO: fprintf (for dev/null) maybe?
-            printf("ERROR: ALREADY MARKED AS NON VACCINATED\n");
+            fprintf(fstream, "ERROR: ALREADY MARKED AS NON VACCINATED\n");
             return false;
         }
     }    
@@ -657,7 +658,8 @@ void destroyVirusCountryStatus(void *status)
 
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date date,
-                             LinkedList *countries, LinkedList *viruses, HashTable *citizens, unsigned long bloom_bytes)
+                             LinkedList *countries, LinkedList *viruses, HashTable *citizens,
+                             unsigned long bloom_bytes, FILE *fstream)
 {
     CitizenRecord *target_citizen;
     CitizenRecord *present = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
@@ -668,7 +670,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         if ( !present->hasInfo(citizen_id, full_name, age, country_name) )
         // The provided info is not valid, so the request is rejected
         {
-            printf("ERROR: A citizen with the same ID, but different info already exists:\n");
+            fprintf(fstream, "ERROR: A citizen with the same ID, but different info already exists:\n");
             displayCitizen(present);
             return;
         }
@@ -707,7 +709,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
     {
         new_record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name);
     }
-    if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed))
+    if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed, fstream))
     // The vaccination record was successfully stored
     {
         if (new_record->vaccinated)

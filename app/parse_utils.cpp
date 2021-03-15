@@ -146,11 +146,11 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
         }
         curr_arg++;
     }
-    if (curr_arg == 8)
+    if (curr_arg == 9)
     {
         return true;
     }
-    else if (curr_arg < 8)
+    else if (curr_arg < 9)
     {
         fprintf(fstream, "Less than expected arguments have been detected. Rejecting command.\n");
     }
