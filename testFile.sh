@@ -65,7 +65,8 @@ while [ "$lineCount" != "$numLines" ]; do
         country_id=$RANDOM
         let "country_id %= $numCountries"
         age=$RANDOM
-        let "age %= 121"
+        let "age %= 120"
+        let "age+=1"
         citizens[id]="${id} ${name}_${id} ${surname}_${id} ${countries[country_id]} ${age}"
     else
         if [ "$4" != "duplicatesAllowed" ]; then

@@ -15,7 +15,7 @@
 bool isPositiveNumber(const char* str)
 {
     char* endptr;    
-    return (strtol(str, &endptr, 10) > 0) && (*endptr == '\0');
+    return (strtol(str, &endptr, 10) >= 0) && (*endptr == '\0');
 }
 
 /**

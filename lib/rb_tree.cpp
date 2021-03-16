@@ -1,4 +1,5 @@
 #include <cstddef>
+//#include <cassert>
 #include "../include/rb_tree.hpp"
 
 RBTreeNode::RBTreeNode(Color c, void *element, RBTreeNode *parent_node):
@@ -48,17 +49,19 @@ void RBTreeNode::swapColor(RBTreeNode *other)
     other->color = temp;
 }
 
+// TODO: DONT FORGET TO TEST THIS!
 void RBTreeNode::replaceWithNewParent(RBTreeNode *new_parent)
 {
-    if (this->parent == NULL) { return; }
-
-    if ( this->isLeftChild() )
+    if (this->parent != NULL)
     {
-        this->parent->left = new_parent;
-    }
-    else
-    {
-        this->parent->right = new_parent;
+        if ( this->isLeftChild() )
+        {
+            this->parent->left = new_parent;
+        }
+        else
+        {
+            this->parent->right = new_parent;
+        }
     }
     new_parent->parent = this->parent;
     this->parent = new_parent;
@@ -128,6 +131,8 @@ void RedBlackTree::fixRedRedViolation(RBTreeNode *target)
     // We know that parent is not BLACK 
     // (so it's not the root), so grandparent exists
     RBTreeNode *grandparent = parent->parent;
+    //assert( !((parent->color == RED) && (parent == this->root)) );
+    //assert(grandparent != NULL);
 
     if (uncle == NULL || (uncle->color == BLACK))
     {
