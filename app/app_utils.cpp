@@ -751,7 +751,7 @@ void vaccineStatus(int citizen_id, LinkedList *viruses, char *virus_name)
     }
     else
     {
-        printf("ERROR: The specified virus was not found.");
+        printf("ERROR: The specified virus was not found.\n");
     }    
 }
 
@@ -787,7 +787,7 @@ void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses)
     }
     else
     {
-        printf("ERROR: The specified virus was not found.");
+        printf("ERROR: The specified virus was not found.\n");
     }
 }
 

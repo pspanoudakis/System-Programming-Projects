@@ -261,7 +261,7 @@ bool vaccineStatusParse(int &citizen_id, char *&virus_name)
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 120) )
+    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 9999) )
     {
         arg2 = strtok(NULL, " ");
         if (arg2 != NULL)
@@ -287,7 +287,7 @@ bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 120) )
+    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 9999) )
     {
         arg2 = strtok(NULL, " ");
         if (arg2 != NULL)
@@ -323,6 +323,8 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
 
     short int curr_arg = 0;
     char *token;
+    start.set(0, 0, 0);
+    start.set(0, 0, 0);
     country_name = NULL;
     virus_name = NULL;
     while ( (token = strtok(NULL, " "))!= NULL && curr_arg < 4)
