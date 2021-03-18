@@ -42,10 +42,7 @@ while read -r country; do
     let "numCountries++"
 done < "$2"
 
-
 lineCount=0
-# TODO: Generate Random Dates
-date="3-2-2021"
 
 while [ "$lineCount" != "$numLines" ]; do
     id=$RANDOM

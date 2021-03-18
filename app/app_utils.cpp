@@ -657,7 +657,7 @@ void destroyVirusCountryStatus(void *status)
  */
 
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
-                             char *virus_name, bool vaccinated, Date date,
+                             char *virus_name, bool vaccinated, Date &date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens,
                              unsigned long bloom_bytes, FILE *fstream)
 {

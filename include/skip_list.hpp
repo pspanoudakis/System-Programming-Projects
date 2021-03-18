@@ -3,7 +3,7 @@
 
 #include "utils.hpp"
 
-#define SKIP_LIST_MAX_LAYERS 10
+#define SKIP_LIST_MAX_LAYERS 30
 
 class SkipList
 {
