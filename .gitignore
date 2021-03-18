@@ -1,6 +1,7 @@
 *.o
 .vscode/*
 *.code-workspace
+tests/*
 test.cpp
 test
 test.*
@@ -13,3 +14,4 @@ parse
 parse.cpp
 parsemain
 parsemain.cpp
+vaccineMonitor

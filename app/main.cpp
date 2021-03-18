@@ -3,11 +3,11 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "include/linked_list.hpp"
-#include "include/hash_table.hpp"
-#include "include/utils.hpp"
-#include "app/app_utils.hpp"
-#include "app/parse_utils.hpp"
+#include "../include/linked_list.hpp"
+#include "../include/hash_table.hpp"
+#include "../include/utils.hpp"
+#include "app_utils.hpp"
+#include "parse_utils.hpp"
 
 #define HASHTABLE_BUCKETS 1000
 #define BLOOM_BYTES 100000
@@ -58,7 +58,15 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
         {
             if (vaccineStatusParse(citizen_id, virus_name))
             {
-                vaccineStatus(citizen_id, viruses);
+                if (virus_name == NULL)
+                {
+                    vaccineStatus(citizen_id, viruses);
+                }
+                else
+                {
+                    vaccineStatus(citizen_id, viruses, virus_name);
+                }
+                
                 delete[] virus_name;
             }
         }
