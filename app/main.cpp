@@ -9,8 +9,8 @@
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 
-#define HASHTABLE_BUCKETS 1000
-//#define BLOOM_BYTES 100000
+#define HASHTABLE_BUCKETS 10000
+#define MAX_BLOOM_SIZE 1000000
 
 void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countries, LinkedList *viruses, unsigned long &bloom_size)
 {
@@ -144,6 +144,11 @@ bool checkParseArgs(int argc, char const *argv[], FILE *&input_file, unsigned lo
             return false;
         }
         bloom_size = atol(argv[2]);
+        if (bloom_size > MAX_BLOOM_SIZE)
+        {
+            printf("Bloom size too large. Using max size %d.\n", MAX_BLOOM_SIZE);
+            bloom_size = MAX_BLOOM_SIZE;
+        }
         input_file = fopen(argv[4], "r");
     }
     else
@@ -161,6 +166,11 @@ bool checkParseArgs(int argc, char const *argv[], FILE *&input_file, unsigned lo
             return false;
         }
         bloom_size = atol(argv[4]);
+        if (bloom_size > MAX_BLOOM_SIZE)
+        {
+            printf("Bloom size too large. Using max size %d.\n", MAX_BLOOM_SIZE);
+            bloom_size = MAX_BLOOM_SIZE;
+        }
         input_file = fopen(argv[2], "r");
     }
     
