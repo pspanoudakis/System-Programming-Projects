@@ -10,9 +10,9 @@
 #include "parse_utils.hpp"
 
 #define HASHTABLE_BUCKETS 1000
-#define BLOOM_BYTES 100000
+//#define BLOOM_BYTES 100000
 
-void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countries, LinkedList *viruses)
+void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countries, LinkedList *viruses, unsigned long &bloom_size)
 {
     int citizen_id, age;
     char *citizen_name, *country_name, *virus_name;
@@ -28,7 +28,7 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
                                                      vaccinated, date, stdout))
             {
                 insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
-                                    countries, viruses, citizens, BLOOM_BYTES, stdout);
+                                    countries, viruses, citizens, bloom_size, stdout);
                 delete[] citizen_name;
                 delete[] country_name;
                 delete[] virus_name;
@@ -40,7 +40,7 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
             {
                 date.setToCurrentDate();
                 insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, true, date,
-                                    countries, viruses, citizens, BLOOM_BYTES, stdout);
+                                    countries, viruses, citizens, bloom_size, stdout);
                 delete[] citizen_name;
                 delete[] country_name;
                 delete[] virus_name;
@@ -117,9 +117,81 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
     }
 }
 
+bool checkParseArgs(int argc, char const *argv[], FILE *&input_file, unsigned long &bloom_size)
+{
+    if (argc != 5)
+    {
+        perror("Insufficient number of arguments given.\n");
+        return false;
+    }
+    if ( strcmp(argv[1], "-c") != 0 )
+    {
+        if ( strcmp(argv[1], "-b") != 0 )
+        {
+            perror("Invalid argument detected.\n");
+            return false;
+        }
+        // argv1 is -b
+        if ( strcmp(argv[3], "-c") != 0 )
+        {
+            perror("Invalid argument detected.\n");
+            return false;
+        }
+        // argv3 is -c
+        if ( !isPositiveNumber(argv[2]) )
+        {
+            perror("Bloom Size must be a positive integer.\n");
+            return false;
+        }
+        bloom_size = atol(argv[2]);
+        input_file = fopen(argv[4], "r");
+    }
+    else
+    // argv1 is -c
+    {
+        if ( strcmp(argv[3], "-b") != 0 )
+        {
+            perror("Invalid argument detected.\n");
+            return false;
+        }
+        // argv3 is -b
+        if ( !isPositiveNumber(argv[4]) )
+        {
+            perror("Bloom Size must be a positive integer.\n");
+            return false;
+        }
+        bloom_size = atol(argv[4]);
+        input_file = fopen(argv[2], "r");
+    }
+    
+    return true;
+}
+
 int main(int argc, char const *argv[])
 {
     char *line_buf, *buf_copy, *temp;
+    FILE *input_file;
+    unsigned long bloom_size;
+
+    if ( !checkParseArgs(argc, argv, input_file, bloom_size) )
+    {
+        printf("Execution format: ./vaccineMonitor -c <citizenRecordsFile> -b <bloomSize>\n");
+        return 1;
+    }
+     
+    if (input_file == NULL)
+    {
+        printf("Unable to open the specified input file.\n");
+        return 1;
+    }
+
+    FILE *dump_output = fopen("/dev/null", "w");
+    if (dump_output == NULL)
+    {
+        printf("Cannot open /dev/null.\n");
+        return 1;
+    }
+
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
@@ -128,15 +200,6 @@ int main(int argc, char const *argv[])
     bool vaccinated;
     Date date;
 
-    FILE *input_file = fopen("inputFile", "r");
-    //FILE *input_file = stdin;
-    FILE *dump_output = fopen("/dev/null", "w");
-    if (dump_output == NULL)
-    {
-        printf("Oops.\n");
-        return 1;
-    }
-    //FILE *dump_output = stdout;
     srand(time(NULL));
 
     printf("Processing input from file...\n");
@@ -152,7 +215,7 @@ int main(int argc, char const *argv[])
         if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, dump_output))
         {
             insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
-                                    countries, viruses, citizens, BLOOM_BYTES, dump_output);
+                                    countries, viruses, citizens, bloom_size, dump_output);
             delete[] citizen_name;
             delete[] country_name;
             delete[] virus_name;
@@ -182,7 +245,7 @@ int main(int argc, char const *argv[])
             terminate = true;
             continue;
         }
-        parseExecuteCommand(line_buf, citizens, countries, viruses);
+        parseExecuteCommand(line_buf, citizens, countries, viruses, bloom_size);
         free(line_buf);
     }
     free(line_buf);
