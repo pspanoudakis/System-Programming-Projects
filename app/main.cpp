@@ -29,10 +29,10 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
             {
                 insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
                                     countries, viruses, citizens, bloom_size, stdout);
-                delete[] citizen_name;
-                delete[] country_name;
-                delete[] virus_name;
             }
+            delete[] citizen_name;
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/vaccinateNow") == 0)
         {
@@ -41,10 +41,10 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
                 date.setToCurrentDate();
                 insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, true, date,
                                     countries, viruses, citizens, bloom_size, stdout);
-                delete[] citizen_name;
-                delete[] country_name;
-                delete[] virus_name;
             }
+            delete[] citizen_name;
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/vaccineStatusBloom") == 0)
         {
@@ -66,9 +66,8 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
                 {
                     vaccineStatus(citizen_id, viruses, virus_name);
                 }
-                
-                delete[] virus_name;
             }
+            delete[] virus_name;
         }
         else if (strcmp(token, "/populationStatus") == 0 )
         {
@@ -82,9 +81,9 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
                 {
                     populationStatus(virus_name, country_name, countries, start, end);
                 }
-                delete[] country_name;
-                delete[] virus_name;
             }
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/popStatusByAge") == 0 )
         {
@@ -98,17 +97,17 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
                 {
                     popStatusByAge(virus_name, country_name, countries, start, end);
                 }
-                delete[] country_name;
-                delete[] virus_name;
             }
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/list-nonVaccinated-Persons") == 0)
         {
             if (listNonVaccinatedParse(virus_name))
             {
                 listNonVaccinatedPersons(virus_name, viruses);
-                delete[] virus_name;
             }
+            delete[] virus_name;
         }
         else
         {

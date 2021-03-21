@@ -7,8 +7,11 @@
 #ifndef PARSE_UTILS_HPP
 #define PARSE_UTILS_HPP
 
+class Date;
+
 bool isPositiveNumber(const char* str);
 char* fgetline(FILE *stream);
+bool parseDateString(const char *string, Date &date);
 
 /**
  * Routines used for command argument parsing-checking --------------------------------------------

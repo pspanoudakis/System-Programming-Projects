@@ -12,6 +12,17 @@
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 
+bool parseDateString(const char *string, Date &date)
+{
+    unsigned short int len = strlen(string);
+    if (len < 8 || len > 10)
+    {
+        return false;
+    }
+    sscanf(string, "%hu-%hu-%hu", &date.day, &date.month, &date.year);
+    return date.isValidDate();
+}
+
 bool isPositiveNumber(const char* str)
 {
     char* endptr;    
@@ -57,6 +68,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     citizen_fullname = NULL;
     country_name = NULL;
     virus_name = NULL;
+    date.set(0, 0, 0);
 
     while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 8 )
     {
@@ -100,8 +112,6 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 }
                 fprintf(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
                 fprintf(fstream, "Rejecting command.\n");
-                delete[] country_name;
-                delete[] citizen_fullname;
                 return false;
             case 6:
                 // token is virus
@@ -120,9 +130,6 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                     if ((token = strtok(NULL, " "))!= NULL)
                     {
                         fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
-                        delete[] country_name;
-                        delete[] citizen_fullname;
-                        delete[] virus_name;
                         return false;
                     }
                     return true;
@@ -130,16 +137,16 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 else
                 {
                     fprintf(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
-                    delete[] country_name;
-                    delete[] citizen_fullname;
-                    delete[] virus_name;
                     return false;
                 }
                 break;
             case 8:
                 // token is date
-                // TODO: this is temporary
-                sscanf(token, "%hu-%hu-%hu", &date.day, &date.month, &date.year);
+                if (!parseDateString(token, date))
+                {
+                    fprintf(fstream, "Invalid date argument detected. Rejecting command.\n");
+                    return false;
+                }
                 break;        
             default:
                 break;
@@ -158,10 +165,6 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     {
         fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
     }
-    delete[] citizen_fullname;
-    delete[] country_name;
-    delete[] virus_name;
-    delete[] fname;
     return false;
 }
 
@@ -217,8 +220,6 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
                 }
                 printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
                 printf("Rejecting command.\n");
-                delete[] country_name;
-                delete[] citizen_fullname;
                 return false;
             case 6:
                 // token is virus
@@ -242,10 +243,6 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
     {
         printf("More than expected arguments have been detected. Rejecting command.\n");
     }
-    delete[] citizen_fullname;
-    delete[] country_name;
-    delete[] virus_name;
-    delete[] fname;
     return false;
 }
 
@@ -306,6 +303,7 @@ bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
 bool listNonVaccinatedParse(char *&virus_name)
 {
     char *arg;
+    virus_name = NULL;
     arg = strtok(NULL, " ");
     if (arg == NULL)
     {
@@ -319,6 +317,8 @@ bool listNonVaccinatedParse(char *&virus_name)
 
 bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end)
 {
+    start.set(0, 0, 0);
+    end.set(0, 0, 0);
     char **args = new char*[4];
 
     short int curr_arg = 0;
@@ -369,17 +369,19 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
             virus_name = new char[strlen(args[0])+1];
             strcpy(virus_name, args[0]);
 
-            sscanf(args[1], "%hu-%hu-%hu", &start.day, &start.month, &start.year);
-            sscanf(args[2], "%hu-%hu-%hu", &end.day, &end.month, &end.year);
+            if ( !(parseDateString(args[1], start) && parseDateString(args[2], end)) )
+            {
+                delete[] args;
+                printf("Invalid date argument detected. Rejecting command.\n");
+                return false;
+            }
+            delete[] args;
             if (compareDates(&start, &end) > 0)
             {
                 printf("The first Date cannot be greater than the second one. Rejecting command.\n");
-                delete[] virus_name;
-                delete[] args;
+                
                 return false;
             }
-
-            delete[] args;
             return true;
         case 4:
             // args are: country virus date1 date2
@@ -388,15 +390,16 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
             virus_name = new char[strlen(args[1])+1];
             strcpy(virus_name, args[1]);
 
-            sscanf(args[2], "%hu-%hu-%hu", &start.day, &start.month, &start.year);
-            sscanf(args[3], "%hu-%hu-%hu", &end.day, &end.month, &end.year);
+            if ( !(parseDateString(args[2], start) && parseDateString(args[3], end)) )
+            {
+                delete[] args;
+                printf("Invalid date argument detected. Rejecting command.\n");
+                return false;
+            }
             delete[] args;
             if (compareDates(&start, &end) > 0)
             {
                 printf("The first Date cannot be greater than the second one. Rejecting command.\n");
-                delete[] country_name;
-                delete[] virus_name;
-
                 return false;
             }
             return true;   
