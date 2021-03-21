@@ -231,11 +231,11 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
         }
         curr_arg++;
     }
-    if (curr_arg == 6)
+    if (curr_arg == 7)
     {
         return true;
     }
-    else if (curr_arg < 6)
+    else if (curr_arg < 7)
     {
         printf("Less than expected arguments have been detected. Rejecting command.\n");
     }
