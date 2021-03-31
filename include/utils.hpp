@@ -1,13 +1,14 @@
 /**
  * File: utils.hpp
  * Contains typedefs/templates widely used by the ADT's and\or the main app.
- * Pavlos Spanoudakis(sdi1800184)
+ * Pavlos Spanoudakis (sdi1800184)
  */
 
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-// Used for 2 element comparison functions.
+// Used for 2 element comparison.
+// Should return > 0 if a > b, 0 if a == b and < 0 if b > a.
 typedef int (*CompareFunc)(void *a, void *b);
 
 // Used for displaying elements.

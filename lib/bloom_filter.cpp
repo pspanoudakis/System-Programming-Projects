@@ -1,7 +1,7 @@
 /**
  * File: bloom_filter.cpp
  * Bloom Filter class implementation.
- * Pavlos Spanoudakis(sdi1800184)
+ * Pavlos Spanoudakis (sdi1800184)
  */
 
 #include "../include/bloom_filter.hpp"
@@ -14,7 +14,7 @@ BloomFilter::BloomFilter(unsigned long n): numBits(n*8), bits(new unsigned char[
 {
     for (unsigned long i = 0; i < n; i++)
     {
-        bits[i] = 0;    // All bytes are initiallized to 0.
+        bits[i] = 0;    // All bytes are initialized to 0.
     }
 }
 

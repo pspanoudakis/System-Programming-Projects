@@ -1,6 +1,6 @@
 /**
  * File:
- * Pavlos Spanoudakis(sdi1800184)
+ * Pavlos Spanoudakis (sdi1800184)
  */
 
 #ifndef HASH_TABLE_HPP

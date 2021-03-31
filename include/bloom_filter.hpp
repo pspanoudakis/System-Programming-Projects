@@ -1,7 +1,7 @@
 /**
  * File: bloom_filter.hpp
  * Bloom Filter class definition.
- * Pavlos Spanoudakis(sdi1800184)
+ * Pavlos Spanoudakis (sdi1800184)
  */
 
 #ifndef BLOOM_FILTER_HPP
