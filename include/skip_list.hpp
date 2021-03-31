@@ -1,3 +1,8 @@
+/**
+ * File:
+ * Pavlos Spanoudakis(sdi1800184)
+ */
+
 #ifndef SKIP_LIST_HPP
 #define SKIP_LIST_HPP
 

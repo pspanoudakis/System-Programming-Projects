@@ -1,3 +1,8 @@
+/**
+ * File:
+ * Pavlos Spanoudakis(sdi1800184)
+ */
+
 #ifndef RB_TREE_HPP
 #define RB_TREE_HPP
 

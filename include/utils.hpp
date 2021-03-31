@@ -1,11 +1,25 @@
+/**
+ * File: utils.hpp
+ * Contains typedefs/templates widely used by the ADT's and\or the main app.
+ * Pavlos Spanoudakis(sdi1800184)
+ */
+
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+// Used for 2 element comparison functions.
 typedef int (*CompareFunc)(void *a, void *b);
-typedef void (*DisplayFunc)(void *a);
-typedef void (*DestroyFunc)(void *a);
-typedef int (*HashObjectFunc)(void *a);
 
+// Used for displaying elements.
+typedef void (*DisplayFunc)(void *a);
+
+// Used for destroying elements.
+typedef void (*DestroyFunc)(void *a);
+
+// Used to return an integer based on the specified element, to get the hashcode of.
+typedef int (*HashObjectFunc)(void *a);         
+
+// Used to destroy elements properly (ensuring destructor call & safely casting)
 template <class T>
 void delete_object(void *object)
 {

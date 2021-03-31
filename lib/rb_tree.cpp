@@ -1,5 +1,9 @@
+/**
+ * File:
+ * Pavlos Spanoudakis(sdi1800184)
+ */
+
 #include <cstddef>
-//#include <cassert>
 #include "../include/rb_tree.hpp"
 
 RBTreeNode::RBTreeNode(Color c, void *element, RBTreeNode *parent_node):
@@ -131,8 +135,6 @@ void RedBlackTree::fixRedRedViolation(RBTreeNode *target)
     // We know that parent is not BLACK 
     // (so it's not the root), so grandparent exists
     RBTreeNode *grandparent = parent->parent;
-    //assert( !((parent->color == RED) && (parent == this->root)) );
-    //assert(grandparent != NULL);
 
     if (uncle == NULL || (uncle->color == BLACK))
     {

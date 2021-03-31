@@ -1,3 +1,8 @@
+/**
+ * File: hash_functions.cpp
+ * Implementations of hash functions used by the Bloom Filter.
+ */
+
 /*
 This algorithm (k=33) was first reported by dan bernstein many years 
 ago in comp.lang.c. 
