@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: hash_table.cpp
+ * Hash Table implementation.
  * Pavlos Spanoudakis (sdi1800184)
  */
 

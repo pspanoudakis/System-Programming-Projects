@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: hash_table.hpp
+ * Hash Table definition.
  * Pavlos Spanoudakis (sdi1800184)
  */
 

@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: rb_tree.cpp
+ * Red-Black Tree implementation.
  * Pavlos Spanoudakis (sdi1800184)
  */
 
@@ -8,12 +9,6 @@
 
 RBTreeNode::RBTreeNode(Color c, void *element, RBTreeNode *parent_node):
 color(c), data(element), left(NULL), right(NULL), parent(parent_node) { }
-
-// To be deleted
-RBTreeNode::~RBTreeNode()
-{
-    //delete (int*)data;
-}
 
 RBTreeNode* RBTreeNode::sibling()
 {

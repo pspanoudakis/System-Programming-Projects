@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: skip_list.hpp
+ * Skip List definition.
  * Pavlos Spanoudakis (sdi1800184)
  */
 
@@ -8,11 +9,20 @@
 
 #include "utils.hpp"
 
-#define SKIP_LIST_MAX_LAYERS 30
+#define SKIP_LIST_MAX_LAYERS 30     // The maximum number of levels allowed in a Skip List.
 
+/**
+ * A probabilistic ordered List structure, which allows significantly
+ * faster element lookup & insertion.
+ */
 class SkipList
 {
     private:
+        /**
+         * The Skip List Node structure.
+         * Each node has an array of pointers to other Nodes, one for each
+         * level where the node is present.
+         */
         struct SkipListNode
         {
             const int layers;
@@ -21,11 +31,10 @@ class SkipList
             SkipListNode(int total_layers);
             ~SkipListNode();
         };
-        const int max_layer;
-        int curr_layer;
-        SkipListNode **layer_heads;
-        //CompareFunc compare;
-        DestroyFunc destroyElement;
+        const int max_layer;        // The max level selected for the Skip List.
+        int curr_layer;             // The currently higher level of the list.
+        SkipListNode **layer_heads; // An array of pointers to the first node of each level.
+        DestroyFunc destroyElement; // Used for destroying elements when the skip list is being destroyed.
         int getRandomLayer(void);
         
     public:
@@ -34,7 +43,6 @@ class SkipList
         void* find(void *element, CompareFunc compare);
         bool insert(void *element, void **present, CompareFunc compare);
         void remove(void *element, void **present, CompareFunc compare);
-        void display(DisplayFunc f);
         void displayElements(DisplayFunc print);
 };
 

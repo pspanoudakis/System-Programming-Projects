@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: rb_tree.hpp
+ * Red-Black Tree definition.
  * Pavlos Spanoudakis (sdi1800184)
  */
 
@@ -8,6 +9,7 @@
 
 #include "utils.hpp"
 
+// Red-Black Tree Node color.
 enum Color {RED, BLACK};
 
 class RBTreeNode
@@ -20,7 +22,6 @@ class RBTreeNode
         RBTreeNode *parent;
 
         RBTreeNode(Color c, void *element, RBTreeNode *parent_node);
-        ~RBTreeNode();
         void destroyDescendants();
         RBTreeNode *sibling();
         bool isLeftChild();
