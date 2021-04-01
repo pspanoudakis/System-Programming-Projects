@@ -1,6 +1,6 @@
 /**
  * File: utils.hpp
- * Contains typedefs/templates widely used by the ADT's and\or the main app.
+ * Contains typedefs/templates widely used by the ADT's and/or the main app.
  * Pavlos Spanoudakis (sdi1800184)
  */
 

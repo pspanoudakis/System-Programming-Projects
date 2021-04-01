@@ -56,7 +56,6 @@ bool BloomFilter::getBit(unsigned long n)
     int relative_bit = n - target_byte*8;               // The relative number of the bit inside that byte
 
     unsigned char temp_byte = this->bits[target_byte];  // Copying the target byte to not change it
-    //temp_byte = temp_byte << (8 - relative_bit - 1);  // Proper shifting to set the rest of the bits to 0
     temp_byte = temp_byte << (7 - relative_bit);        // Proper shifting to set the rest of the bits to 0
     temp_byte = temp_byte >> 7;                         // Shift the bit so that it is now the less significant
 

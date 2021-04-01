@@ -12,6 +12,9 @@
 // Red-Black Tree Node color.
 enum Color {RED, BLACK};
 
+/**
+ * A Node of the Red-Black Tree.
+ */
 class RBTreeNode
 {
     public:
@@ -26,15 +29,17 @@ class RBTreeNode
         RBTreeNode *sibling();
         bool isLeftChild();
         void replaceWithNewParent(RBTreeNode *new_parent);
-        void swapColor(RBTreeNode *other);
-        
+        void swapColor(RBTreeNode *other);        
 };
 
+/**
+ * The Red-Black Tree structure.
+ */
 class RedBlackTree
 {
     private:
         unsigned int num_elements;
-        CompareFunc compare;
+        CompareFunc compare;                    // Used for element comparison
         void leftRotation(RBTreeNode *target);
         void rightRotation(RBTreeNode *target);
         void fixRedRedViolation(RBTreeNode *target);
