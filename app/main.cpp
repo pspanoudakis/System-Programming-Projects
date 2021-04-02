@@ -33,8 +33,8 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
     if (token != NULL)
     // Recognizing the main command
     {
-        // Calling the corresponding parse routine and execution routine, if there are no errors.
-        // Releasing any temporarily allocated memory
+        // Call the corresponding parse routine and execution routine, if there are no errors.
+        // Release any temporarily allocated memory at the end.
         if (strcmp(token, "/insertCitizenRecord") == 0)
         {
             if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name,
@@ -129,6 +129,10 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
     }
 }
 
+/**
+ * Checks and stores the program agruments properly.
+ * @returns TRUE if the arguments are valid, FALSE otherwise.
+ */
 bool checkParseArgs(int argc, char const *argv[], FILE *&input_file, unsigned long &bloom_size)
 {
     if (argc != 5)
@@ -184,32 +188,36 @@ bool checkParseArgs(int argc, char const *argv[], FILE *&input_file, unsigned lo
             bloom_size = MAX_BLOOM_SIZE;
         }
         input_file = fopen(argv[2], "r");
-    }
-    
+    }    
     return true;
 }
 
 int main(int argc, char const *argv[])
 {
-    char *line_buf, *buf_copy, *temp;
+    char *line_buf, *buf_copy, *temp;       // Used for storing line strings from input file
     FILE *input_file;
     unsigned long bloom_size;
 
+    // Checking arguments and storing them.
     if ( !checkParseArgs(argc, argv, input_file, bloom_size) )
+    // Exit if given arguments are invalid
     {
         printf("Execution format: ./vaccineMonitor -c <citizenRecordsFile> -b <bloomSize>\n");
         return 1;
     }
      
     if (input_file == NULL)
+    // Exit if opening the input file failed.
     {
         printf("Unable to open the specified input file.\n");
         return 1;
     }
 
+    // Structures used for information storing.
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
+    // Used for command argument storing.
     int citizen_id, age;
     char *citizen_name, *country_name, *virus_name;
     bool vaccinated;
@@ -217,17 +225,22 @@ int main(int argc, char const *argv[])
 
     srand(time(NULL));
 
+    // Starting input file processing
     printf("Processing input from file...\n");
+    // Read the file line by line
     while( (line_buf = fgetline(input_file)) != NULL)
     {
         buf_copy = new char[strlen(line_buf) + 1];
         temp = new char[strlen(line_buf) + 3];
-        sprintf(temp, "~ %s", line_buf);
+        sprintf(temp, "~ %s", line_buf);            // just a "hack" so that the parsing function
+                                                    // can get all the line tokens using strtok.
         strcpy(buf_copy, line_buf);
         
         strtok(temp, " ");       
 
+        // Parse the line
         if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
+        // If parsing was successful, try to insert the Record.
         {
             insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
                                     countries, viruses, citizens, bloom_size, NULL);
@@ -236,6 +249,7 @@ int main(int argc, char const *argv[])
             delete[] virus_name;
         }
         else
+        // Parsing error
         {
             printf("ERROR in record: %s\n", buf_copy);
         }
@@ -243,27 +257,34 @@ int main(int argc, char const *argv[])
         delete[] buf_copy;
         free(line_buf);
     }
+    // Done with file at this point.
     fclose(input_file);
+
+    // Entering command line mode
     printf("Now in command line mode.\n");
     bool terminate = false;
     while( !terminate )
     {
         printf("------------------------------------------\n");
+        // Read line from stdin
         line_buf = fgetline(stdin);
         if (line_buf == NULL)
         {
             continue;
         }
         if (strcmp(line_buf, "/exit") == 0)
+        // Exit if asked by the user
         {
             terminate = true;
             continue;
         }
+        // Otherwise, try to parse the line into a command and execute it.
         parseExecuteCommand(line_buf, citizens, countries, viruses, bloom_size);
         free(line_buf);
     }
     free(line_buf);
 
+    // Release resources and exit.
     delete countries;
     delete viruses;
     delete citizens;
