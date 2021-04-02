@@ -17,6 +17,9 @@ class SkipList;
 class BloomFilter;
 class HashTable;
 
+/**
+ * Used for Date representation.
+ */
 class Date
 {
     public:
@@ -34,38 +37,47 @@ class Date
 };
 
 class CountryStatus;
+/**
+ * Used for Citizen Representation.
+ */
 class CitizenRecord
 {
     public:        
         const int id;
         char *fullname;
         int age;
-        CountryStatus *country;
+        CountryStatus *country;     // The country of the citizen.
         CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c);
         ~CitizenRecord();
         bool hasInfo(int id, char *name, int age, char *country_name);
 };
 
+/**
+ * Used for a Vaccination Record represenation.
+ */
 class VaccinationRecord
 {
     public:
-        CitizenRecord *citizen;
+        CitizenRecord *citizen;     // The citizen that the record refers to.
         char* virus_name;
-        bool vaccinated;
+        bool vaccinated;            // TRUE if the citizen has been vaccinated, FALSE otherwise
         Date date; 
         VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d = Date());
         ~VaccinationRecord();
         void vaccinate(Date d);
 };
 
+/**
+ * Used for storing records for a specific Virus.
+ */
 class VirusRecords
 {
     private:
-        SkipList *vaccinated;
-        SkipList *non_vaccinated;
-        BloomFilter *filter;
+        SkipList *vaccinated;       // Skip List for vaccinated persons
+        SkipList *non_vaccinated;   // Skip List for not vaccinated persons
+        BloomFilter *filter;        // Bloom Filter for fast citizen lookup
     public:
-        char *virus_name;        
+        char *virus_name;           // The name of the Virus.
         VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits);
         ~VirusRecords();
         bool insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified,
@@ -76,6 +88,9 @@ class VirusRecords
         void displayNonVaccinated();
 };
 
+/**
+ * Used for storing information about a specific Virus in a specific country.
+ */
 class VirusCountryStatus
 {
     private:
@@ -86,9 +101,12 @@ class VirusCountryStatus
                             int &plus60, RBTreeNode *root);
         void updateAgeCounter(int age, int &bellow_20, int &between20_40, 
                               int &between40_60, int &plus60);
-        RedBlackTree *record_tree;
+        RedBlackTree *record_tree;      // A Red-Black Tree that contains all the Vaccination Records
+                                        // of *vaccinated* persons in the country for this Virus.
     public:
-        char *virus_name;        
+        char *virus_name;               // The name of the virus.
+                                        // Note than this is the *exact same* character array address
+                                        // stored in VirusRecords for this Virus.
         VirusCountryStatus(char *name, CompareFunc tree_func);
         ~VirusCountryStatus();
         void storeVaccinationRecord(VaccinationRecord *record);
@@ -100,17 +118,21 @@ class VirusCountryStatus
         void getTotalVaccinationStats(int &total);
 };
 
+/**
+ * Used for storing information about a specific country.
+ */
 class CountryStatus
 {
     private:
-        int total_population;
-        int population_bellow_20;
+        int total_population;           // Total Population
+        int population_bellow_20;       // Total Population of each Age Group
         int population_20_40;
         int population_40_60;
         int population_60_plus;
-        LinkedList *virus_status;
+        LinkedList *virus_status;       // A List of statuses about every Virus for which
+                                        // a citizen of this country has been vaccinated.
     public:
-        char *country_name;
+        char *country_name;             // The name of the country.
         CountryStatus(char *name);
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
@@ -120,7 +142,7 @@ class CountryStatus
 };
 
 /**
- * "Generic" Functions to be used internally by container structures ------------------------------ 
+ * Functions to be used internally by container structures ------------------------------ 
  */
 
 char* copyString(const char *str);

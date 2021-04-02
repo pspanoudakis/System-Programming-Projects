@@ -9,12 +9,17 @@
 
 class Date;
 
-bool isPositiveNumber(const char* str);
 char* fgetline(FILE *stream);
+
+/**
+ * Routines used for argument parsing-checking --------------------------------------------
+ */
+
+bool isPositiveNumber(const char* str);
 bool parseDateString(const char *string, Date &date);
 
 /**
- * Routines used for command argument parsing-checking --------------------------------------------
+ * Routines used for command parsing-checking --------------------------------------------
  */
 
 bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
@@ -26,8 +31,6 @@ bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name);
 bool vaccineStatusParse(int &citizen_id, char *&virus_name);
 
 bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end);
-// They can cover each over probably
-//bool popStatusByAgeParse(char *&country_name, char *&virus_name, Date &start, Date &end);
 
 bool listNonVaccinatedParse(char *&virus_name);
 

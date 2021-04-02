@@ -1,6 +1,6 @@
 /**
  * File: parse_utils.cpp
- * Contains implementations for several routines used in input parsing
+ * Contains implementations for several routines used in input parsing.
  * Pavlos Spanoudakis (sdi1800184)
  */
 
@@ -12,17 +12,31 @@
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 
+/**
+ * @brief Parses the specified string into the given date.
+ * 
+ * @param string The string to extract the date from.
+ * @param date The date object to store the information in.
+ * 
+ * @returns TRUE if successful, FALSE otherwise.
+ */
 bool parseDateString(const char *string, Date &date)
 {
     unsigned short int len = strlen(string);
     if (len < 8 || len > 10)
+    // A valid date string has 8-10 characters
     {
         return false;
     }
+    // Just extract info using sscanf
     sscanf(string, "%hu-%hu-%hu", &date.day, &date.month, &date.year);
+    // Check if the Date is valid
     return date.isValidDate();
 }
 
+/**
+ * Checks whether the given string represents a positive integer.
+ */
 bool isPositiveNumber(const char* str)
 {
     char* endptr;    
@@ -32,27 +46,31 @@ bool isPositiveNumber(const char* str)
 /**
  * Reads a character sequence up to a newline character or EOF from stream,
  * and returns a character buffer which contains the sequence.
- * Note that the returned pointer has to be free-ed after use.
+ * 
+ * @returns A pointer to the character buffer containing the line.
+ * If a line was not read, NULL will be returned.
+ * Note that the returned pointer has to be free-d after use.
  */
 char* fgetline(FILE *stream)
 {
     int c;
     int count = 1;
-    char *buffer = NULL;
+    char *buffer = NULL;                                    // The line will be stored here
 
+    // Reading from stream character by character
     c = fgetc(stream);
+    // Until EOF or \n found
     while ( (c != '\n') && (c != EOF) )
     {  
-        buffer = (char*)realloc(buffer, count + 1);           // Increasing the space by 1 byte
-        // TODO: maybe display something?
+        buffer = (char*)realloc(buffer, count + 1);         // Increasing the line buffer by 1 byte
         assert(buffer != NULL);
-        buffer[count - 1] = c;                               // Storing the new letter
+        buffer[count - 1] = c;                              // Storing the new letter in buffer
         buffer[count] = '\0';
         count++;
-        c = fgetc(stream);
+        c = fgetc(stream);                                  // Read next character
     }
 
-    return buffer;
+    return buffer;                                          // Return when done.
 }
 
 /**
@@ -404,7 +422,7 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
             }
             return true;   
         default:
-            // This point will never be reached but anyway...
+            // This point should never be reached
             return false;
             break;
     }
