@@ -1,5 +1,6 @@
 /**
- * File:
+ * File: main.cpp
+ * Main client program
  * Pavlos Spanoudakis (sdi1800184)
  */
 
@@ -14,11 +15,15 @@
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 
-#define HASHTABLE_BUCKETS 10000
-#define MAX_BLOOM_SIZE 1000000
+#define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
+#define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 
+/**
+ * Parses and executes the specified command properly. Displays error messages if needed.
+ */
 void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countries, LinkedList *viruses, unsigned long &bloom_size)
 {
+    // Variables used for storing command parameters
     int citizen_id, age;
     char *citizen_name, *country_name, *virus_name;
     bool vaccinated;
@@ -26,7 +31,10 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
 
     char *token = strtok(command, " ");
     if (token != NULL)
+    // Recognizing the main command
     {
+        // Calling the corresponding parse routine and execution routine, if there are no errors.
+        // Releasing any temporarily allocated memory
         if (strcmp(token, "/insertCitizenRecord") == 0)
         {
             if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name,
@@ -199,13 +207,6 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    FILE *dump_output = fopen("/dev/null", "w");
-    if (dump_output == NULL)
-    {
-        printf("Cannot open /dev/null.\n");
-        return 1;
-    }
-
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
@@ -226,10 +227,10 @@ int main(int argc, char const *argv[])
         
         strtok(temp, " ");       
 
-        if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, dump_output))
+        if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
         {
             insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
-                                    countries, viruses, citizens, bloom_size, dump_output);
+                                    countries, viruses, citizens, bloom_size, NULL);
             delete[] citizen_name;
             delete[] country_name;
             delete[] virus_name;
@@ -242,7 +243,6 @@ int main(int argc, char const *argv[])
         delete[] buf_copy;
         free(line_buf);
     }
-    fclose(dump_output);
     fclose(input_file);
     printf("Now in command line mode.\n");
     bool terminate = false;

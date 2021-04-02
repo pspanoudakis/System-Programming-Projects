@@ -141,7 +141,7 @@ void displayVaccinationCitizen(void *record);
  * Functions used directly by main ----------------------------------------------------------------
  */
 
-Date currentDate();
+void displayMessage(FILE *fstream, const char *format, ...);
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date &date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens,

@@ -78,7 +78,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 // token is citizen_id
                 if (!isPositiveNumber(token) || strlen(token) > 4)
                 {
-                    fprintf(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                    displayMessage(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
                     return false;
                 }
                 citizen_id = atoi(token);
@@ -110,8 +110,8 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                         break;
                     }                
                 }
-                fprintf(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-                fprintf(fstream, "Rejecting command.\n");
+                displayMessage(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
+                displayMessage(fstream, "Rejecting command.\n");
                 return false;
             case 6:
                 // token is virus
@@ -129,14 +129,14 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                     vaccinated = false;
                     if ((token = strtok(NULL, " "))!= NULL)
                     {
-                        fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
+                        displayMessage(fstream, "More than expected arguments have been detected. Rejecting command.\n");
                         return false;
                     }
                     return true;
                 }
                 else
                 {
-                    fprintf(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
+                    displayMessage(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
                     return false;
                 }
                 break;
@@ -144,7 +144,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 // token is date
                 if (!parseDateString(token, date))
                 {
-                    fprintf(fstream, "Invalid date argument detected. Rejecting command.\n");
+                    displayMessage(fstream, "Invalid date argument detected. Rejecting command.\n");
                     return false;
                 }
                 break;        
@@ -159,11 +159,11 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     }
     else if (curr_arg < 9)
     {
-        fprintf(fstream, "Less than expected arguments have been detected. Rejecting command.\n");
+        displayMessage(fstream, "Less than expected arguments have been detected. Rejecting command.\n");
     }
     else
     {
-        fprintf(fstream, "More than expected arguments have been detected. Rejecting command.\n");
+        displayMessage(fstream, "More than expected arguments have been detected. Rejecting command.\n");
     }
     return false;
 }
