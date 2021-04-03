@@ -114,7 +114,7 @@ void* SkipList::find(void *element, CompareFunc compare)
 }
 
 /**
- * Inserts the specified element in the Skip List.
+ * @brief Inserts the specified element in the Skip List.
  * 
  * @param element The element to be inserted.
  * @param present If the element was already present in the Skip List,

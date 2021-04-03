@@ -345,10 +345,17 @@ VirusRecords::~VirusRecords()
     delete filter;
 }
 
+/**
+ * Prints a message to inform whether the Citizen with the specified ID
+ * has been Vaccinated or not.
+ * It is identical to displayWhetherVaccinated, but prints slightly different messages.
+ */
 void VirusRecords::displayVaccinationStatus(int citizenID)
 {
     VaccinationRecord *record;
+    // Search for a Citizen Vaccination Record with this ID in the Vaccinated Skip List
     record =  static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
+    // Print message to indicate if a Record was found.
     if (record == NULL)
     {
         printf("%s NO\n", this->virus_name);
@@ -359,10 +366,17 @@ void VirusRecords::displayVaccinationStatus(int citizenID)
     }
 }
 
+/**
+ * Prints a message to inform whether the Citizen with the specified ID
+ * has been Vaccinated or not.
+ * It is identical to displayVaccinationStatus, but prints slightly different messages.
+ */
 void VirusRecords::displayWhetherVaccinated(int citizenID)
 {
     VaccinationRecord *record;
+    // Search for a Citizen Vaccination Record with this ID in the Vaccinated Skip List
     record =  static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
+    // Print message to indicate if a Record was found.
     if (record == NULL)
     {
         printf("NOT VACCINATED\n");
@@ -373,16 +387,35 @@ void VirusRecords::displayWhetherVaccinated(int citizenID)
     }    
 }
 
+/**
+ * Displays all the Citizens stored in the Non-Vaccinated Skip List.
+ */
 void VirusRecords::displayNonVaccinated()
 {
     this->non_vaccinated->displayElements(displayVaccinationCitizen);
 }
 
+/**
+ * Returns TRUE if the given citizen ID is "possibly present"
+ * according to the Bloom Filter, FALSE otherwise.
+ */
 bool VirusRecords::checkBloomFilter(char *citizen_id)
 {
     return this->filter->isPresent(citizen_id);
 }
 
+/**
+ * @brief Attempts to insert the specified Vaccination Record in the Skip List & Bloom Filter.
+ * 
+ * @param record The Vaccination Record to insert.
+ * @param present If a Vaccination Record for the same citizen is found, it will be stored here.
+ * @param modified This is set to TRUE if the existing Vaccination Record was modified
+ * (from non-vaccinated to vaccinated)
+ * @param fstream The file stream to print messages to. If output is not desirable, NULL can be passed.
+ * 
+ * @returns TRUE if the *given* record was inserted, FALSE otherwise. If FALSE is returned, present
+ * parameter will point to the existing Record.
+ */
 bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified,
                                             FILE *fstream)
 {
@@ -470,30 +503,52 @@ int compareNameVirusRecord(void *name, void *virus_record)
  * Virus Country Status functions -----------------------------------------------------------------
  */
 
+/**
+ * @brief Creates a Virus information structure for a specific Country.
+ * @param name The name of the Virus. Note than this is the *exact same* character array address
+ * stored in VirusRecords for this Virus.
+ * @param tree_func The comparison function to use in the Vaccinations Tree.
+ */
 VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
 record_tree(new RedBlackTree(tree_func)), virus_name(name) { }
 
 VirusCountryStatus::~VirusCountryStatus()
 {
-    delete record_tree;
+    delete record_tree;                     
+    // Note that virus_name is NOT deleted. 
+    // It will be deleted when VirusRecords destructor is called.
 }
 
+/**
+ * Stores the specified Record in the Vaccinations Tree.
+ */
 void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
 {
     this->record_tree->insert(record);
 }
 
+/**
+ * While traversing the subtree starting with root recursively, 
+ * counts the number of vaccinated persons between the two Dates
+ * and updates the population counter.
+ */
 void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTreeNode *root)
 {
     if (root == NULL) { return; }
+    // Getting the root Record
     VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
     if (compareDates(&root_data->date, &start) >= 0)
+    // root Date is greater than start
     {
+        // so count stats in Left subtree
         getTotalStatsRec(total, start, end, root->left);
         if (compareDates(&root_data->date, &end) <= 0)
+        // end is greater than root Date
         {
-            total++;    // root is in range
+            // root is in range, so update the counter
+            total++;
+            // and count stats in the right subtree
             getTotalStatsRec(total, start, end, root->right);
             return;
         }
@@ -505,18 +560,29 @@ void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTr
     }
 }
 
+/**
+ * While traversing the subtree starting with root recursively, 
+ * counts the number of vaccinated persons between the two Dates for each age group
+ * and updates the age group counters.
+ */
 void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
                                         int &plus60, Date start, Date end, RBTreeNode *root)
 {
     if (root == NULL) { return; }
+    // Getting the root Record
     VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
     if (compareDates(&root_data->date, &start) >= 0)
+    // root Date is greater than start
     {
+        // so count stats in Left subtree
         getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->left);
         if (compareDates(&root_data->date, &end) <= 0)
+        // end is greater than root Date
         {
+            // root Date is between the limits, so update the correct counter
             updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
+            // and count stats in the right subtree
             getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->right);
             return;
         }
@@ -525,39 +591,67 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
     getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, root->right);
 }
 
+/**
+ * While traversing the subtree starting with root recursively, 
+ * counts the number of vaccinated persons for each age group
+ * and updates the age group counters.
+ */
 void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
                                         int &plus60, RBTreeNode *root)
 {
     if (root == NULL) { return; }
+    // Getting the root Record
     VaccinationRecord *root_data = static_cast<VaccinationRecord*>(root->data);
 
+    // Update the correct counter
     updateAgeCounter(root_data->citizen->age, bellow_20, between20_40, between40_60, plus60);
+    // And count stats from left and right subtree
     getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, root->left);
     getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, root->right);
 }
 
+/**
+ * Stores the number of vaccinated persons between the two Dates in the counter.
+ */
 void VirusCountryStatus::getTotalVaccinationStats(int &total, Date start, Date end)
 {
     this->getTotalStatsRec(total, start, end, this->record_tree->root);
 }
 
+/**
+ * Stores the total number of vaccinated persons in the counter.
+ */
 void VirusCountryStatus::getTotalVaccinationStats(int &total)
 {
     total = this->record_tree->getNumElements();
 }
 
+/**
+ * Stores the number of vaccinated persons between the two Dates for each age group in the proper counter.
+ */
 void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
                                                    int &plus60, Date start, Date end)
 {
     this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, this->record_tree->root);
 }
 
+/**
+ * Stores the number of vaccinated persons for each age group in the proper counter.
+ */
 void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
                                                    int &plus60)
 {
     this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, this->record_tree->root);
 }
 
+/**
+ * Updates the correct age counter according to the given age.
+ * @param age The given Age.
+ * @param bellow_20 The counter for age group [0-19]
+ * @param between20_40 The counter for age group [20-39]
+ * @param between40_60 The counter for age group [40-59]
+ * @param plus60 The counter for age group 60+
+ */
 void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between20_40, 
                                           int &between40_60, int &plus60)
 {
@@ -583,6 +677,10 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
  * Country Status functions -----------------------------------------------------------------------
  */
 
+/**
+ * Creates a Country structure with the specified name. 
+ * @param name The name of the Country.
+ */
 CountryStatus::CountryStatus(char *name):
 total_population(0), population_bellow_20(0), population_20_40(0), population_40_60(0), population_60_plus(0),
 virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
@@ -594,21 +692,35 @@ CountryStatus::~CountryStatus()
     delete virus_status;
 }
 
+/**
+ * Stores the specified Vaccination Record in the proper Virus information structure of this Country.
+ */
 void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 {
+    // The Country information about the specified Virus will be stored here
     VirusCountryStatus *virus_tree;
+    // Get this Country information about the specified Virus
     virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(record->virus_name, compareNameVirusCountryStatus));
     if (virus_tree == NULL)
+    // Did not find information about this Virus
     {
+        // So create it now
         this->virus_status->append(new VirusCountryStatus(record->virus_name, compareVaccinationsDateFirst));
         virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getLast());
     }
+    // Store the Record in the Virus structure.
     virus_tree->storeVaccinationRecord(record);   
 }
 
+/**
+ * Updates the Country total population and age group population
+ * based on the specified citizen.
+ */
 void CountryStatus::updatePopulation(CitizenRecord *citizen)
 {
+    // Increase total population counter
     this->total_population++;
+    // Then increase population counter for the citizen age group
     if (citizen->age < 20)
     {
         this->population_bellow_20++;
@@ -627,28 +739,40 @@ void CountryStatus::updatePopulation(CitizenRecord *citizen)
     }
 }
 
+/**
+ * Displays the age groups statuses in this Country regarding the specified Virus.
+ * If the given Dates are valid, the results will be filtered accordingly.
+ */
 void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
 {
+    // Number of vaccinated Citizens for each age group
     int bellow_20 = 0;
     int between_20_40 = 0;
     int between_40_60 = 0;
     int plus_60 = 0;
 
-    VirusCountryStatus *virus_tree;
+    VirusCountryStatus *virus_tree;         // The Country information about the specified Virus will be stored here
+
+    // Get this Country information about the specified Virus
     virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusCountryStatus));
 
     if (virus_tree != NULL)
+    // Found information about this Virus
     {
         if (start.isNullDate())
+        // If Dates are null, calculate total stats
         {
             virus_tree->getVaccinationStatsByAge(bellow_20, between_20_40, between_40_60, plus_60);
         }
         else
+        // Otherwise calculate stats between the given Dates
         {
             virus_tree->getVaccinationStatsByAge(bellow_20, between_20_40, between_40_60, plus_60, start, end);
         }        
     }
 
+    // Print the results
+    // If the country has no population in an age group just print 0 percentage    
     printf("%s\n", this->country_name);
     if (this->population_bellow_20 == 0)
     {
@@ -684,28 +808,38 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
     }
 }
 
+/**
+ * Displays the Population Status in this Country regarding the specified virus.
+ * If the given Dates are valid, the results will be filtered accordingly.
+ */
 void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, Date end)
 {
-    int vaccinated_citizens = 0;
-    VirusCountryStatus *virus_tree;
+    int vaccinated_citizens = 0;            // Total number of vaccinated Citizens
+    VirusCountryStatus *virus_tree;         // The Country information about the specified Virus will be stored here
 
     if (this->total_population == 0)
+    // If the country has no population just print 0 percentage (although this won't happen normally)
     {
         printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, (float)0);
         return;
     }
+    // Get this Country information about the specified Virus
     virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusCountryStatus));
     if (virus_tree != NULL)
+    // Found information about this Virus
     {
         if (start.isNullDate())
+        // If Dates are null, calculate total stats
         {
             virus_tree->getTotalVaccinationStats(vaccinated_citizens);
         }
         else
+        // Otherwise calculate stats between the given Dates
         {
             virus_tree->getTotalVaccinationStats(vaccinated_citizens, start, end);
         }        
     }
+    // Print the results
     printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, ((float)vaccinated_citizens/(float)total_population)*100);
 }
 
@@ -790,7 +924,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         target_virus = new VirusRecords(virus_name, SKIP_LIST_MAX_LAYERS, bloom_bytes);
         viruses->append(target_virus);
     }
-    // The new Vaccination Record
+    // The new Vaccination Record will be stored here
     VaccinationRecord *new_record;
     // If there is an existing Record for this Citizen and this Virus, store it here
     VaccinationRecord *existing;
