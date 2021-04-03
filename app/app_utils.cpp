@@ -734,12 +734,25 @@ int compareNameCountryStatus(void *name, void *country_status)
  * Functions to be used by main in order to execute user commands ---------------------------------
  */
 
+/**
+ * @brief Execute the /insertVaccinationRecord command with the specified arguments
+ * (a Citizen ID, a Citizen name, a Country name, an Age, a Virus name, a boolean (YES/NO) variable,
+ * and possibly a Vaccination Date.).
+ * @param countries A Linked List with the Country Statuses.
+ * @param viruses A Linked List with the Virus Records.
+ * @param citizens A HashTable with all the stored Citizens.
+ * @param bloom_bytes The number of bytes in Bloom Filters.
+ * @param fstream The file stream to print output messages. If output is not desirable, NULL can be passed.
+ */
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
                              char *virus_name, bool vaccinated, Date &date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens,
                              unsigned long bloom_bytes, FILE *fstream)
 {
+    // First try to find or create the citizen with the specified info.
     CitizenRecord *target_citizen;
+
+    // Trying to find if this citizen is already stored.
     CitizenRecord *present = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
 
     if (present != NULL)
@@ -769,16 +782,21 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         target_country->updatePopulation(target_citizen);
         citizens->insert(target_citizen);
     }
+    // Trying to find a Virus with that name
     VirusRecords *target_virus = (VirusRecords*)viruses->getElement(virus_name, compareNameVirusRecord);
     if (target_virus == NULL)
+    // There is no Virus with the specified name, so a new one will be made
     {
         target_virus = new VirusRecords(virus_name, SKIP_LIST_MAX_LAYERS, bloom_bytes);
         viruses->append(target_virus);
     }
-    
+    // The new Vaccination Record
     VaccinationRecord *new_record;
+    // If there is an existing Record for this Citizen and this Virus, store it here
     VaccinationRecord *existing;
+    // This will indicate if the existing Record changed (from non-vaccinated to vaccinated)
     bool status_changed = false;
+    // Creating a new Vaccination Record
     if (vaccinated)
     {
         new_record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name, date);
@@ -787,6 +805,7 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
     {
         new_record = new VaccinationRecord(target_citizen, vaccinated, target_virus->virus_name);
     }
+    // Try to store the record or record an existing one for this Citizen and this Virus
     if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed, fstream))
     // The vaccination record was successfully stored
     {
@@ -802,45 +821,69 @@ void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name
         delete new_record;
         if (status_changed)
         // If the status of the existing record changed from "non vaccinated"
-        // to "vaccinated", it must be stored now
+        // to "vaccinated", it must be stored in the Country structure now.
         {
             existing->citizen->country->storeCitizenVaccinationRecord(existing);
         }
     }    
 }
 
+/**
+ * Executes the /vaccineStatus command with a citizen ID as the only argument.
+ * 
+ * @param viruses A Linked List with the Virus Records.
+ */
 void vaccineStatus(int citizen_id, LinkedList *viruses)
 {
     LinkedList::ListIterator itr = viruses->listHead();
 
     while ( !itr.isNull() )
+    // Iterate over all viruses
     {
+        // Display Status for this citizen
         static_cast<VirusRecords*>(itr.getData())->displayVaccinationStatus(citizen_id);
         itr.forward();
     }
 }
 
+/**
+ * Executes the /vaccineStatus command with a citizen ID and a Virus name as arguments.
+ * 
+ * @param viruses A Linked List with the Virus Records.
+ */
 void vaccineStatus(int citizen_id, LinkedList *viruses, char *virus_name)
 {
+    // Get the Records for the specified virus
     VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
     if (target_virus != NULL)
+    // Records found, so display whether the citizen is vaccinated
     {
         target_virus->displayWhetherVaccinated(citizen_id);
     }
     else
+    // Records not found for this Virus
     {
         printf("ERROR: The specified virus was not found.\n");
     }    
 }
 
+/**
+ * Executes the /vaccineStatusBloom command with the specified arguments.
+ *
+ * @param viruses A Linked List with the Virus Records.
+ */
 void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
 {
+    // Get Records for this Virus
     VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
     
+    // Storing citizen ID in a string
     char char_id[5]; // max 4 digits + \0
     sprintf(char_id, "%d", citizen_id);
     if (target_virus != NULL)
+    // Records found for this Virus
     {
+        // So check bloom filter
         if (target_virus->checkBloomFilter(char_id))
         {
             printf("MAYBE\n");
@@ -851,11 +894,17 @@ void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
         }
     }
     else
+    // Records not found for this Virus
     {
         printf("ERROR: The specified virus was not found.\n");
     }
 }
 
+/**
+ * Executes the /listNonVaccinatedPersons command with the specified Virus name as argument.
+ * 
+ * @param viruses A Linked List with the Virus Records.
+ */
 void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses)
 {
     VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
@@ -869,53 +918,89 @@ void listNonVaccinatedPersons(char *virus_name, LinkedList *viruses)
     }
 }
 
+/**
+ * Executes the /populationStatus command with a Virus name and (possibly) 2 Dates as arguments.
+ * If no Date arguments were given by the user, 2 null Dates can be passed in order to be ignored.
+ * 
+ * @param countries A Linked List with the Country Statuses.
+ */
 void populationStatus(char *virus_name, LinkedList *countries, Date start, Date end)
 {
     LinkedList::ListIterator itr = countries->listHead();
 
     while ( !itr.isNull() )
+    // Iterate over the Countries
     {
+        // Display population status for each country
         static_cast<CountryStatus*>(itr.getData())->displayTotalPopulationStatus(virus_name, start, end);
         itr.forward();
     }
 }
 
+/**
+ * Executes the /populationStatus command with a Virus name, a Country name and (possibly) 2 Dates as arguments.
+ * If no Date arguments were given by the user, 2 null Dates can be passed in order to be ignored.
+ * 
+ * @param countries A Linked List with the Country Statuses.
+ */
 void populationStatus(char *virus_name, char *country_name, LinkedList *countries, Date start, Date end)
 {
     CountryStatus* target_country;
+    // Find this specific Country
     target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
 
     if (target_country != NULL)
+    // Country found
     {
+        // Display population status for this country
         target_country->displayTotalPopulationStatus(virus_name, start, end);
     }
     else
+    // Country not found
     {
         printf("ERROR: The specified country was not found.\n");
     }
 }
 
+/**
+ * Executes the /popStatusByAge command with a Virus name and (possibly) 2 Dates as arguments.
+ * If no Date arguments were given by the user, 2 null Dates can be passed in order to be ignored.
+ * 
+ * @param countries A Linked List with the Country Statuses.
+ */
 void popStatusByAge(char *virus_name, LinkedList *countries, Date start, Date end)
 {
     LinkedList::ListIterator itr = countries->listHead();
 
     while ( !itr.isNull() )
+    // Iterate over the Countries
     {
+        // Display population status for each country
         static_cast<CountryStatus*>(itr.getData())->displayStatusByAge(virus_name, start, end);
         itr.forward();
     }    
 }
 
+/**
+ * Executes the /popStatusByAge command with a Virus name, a Country name and (possibly) 2 Dates as arguments.
+ * If no Date arguments were given by the user, 2 null Dates can be passed in order to be ignored.
+ * 
+ * @param countries A Linked List with the Country Statuses.
+ */
 void popStatusByAge(char *virus_name, char *country_name, LinkedList *countries, Date start, Date end)
 {
     CountryStatus* target_country;
+    // Find this specific Country
     target_country = static_cast<CountryStatus*>(countries->getElement(country_name, compareNameCountryStatus));
 
     if (target_country != NULL)
+    // Country found
     {
+        // Display each age group status for this country
         target_country->displayStatusByAge(virus_name, start, end);
     }
     else
+    // Country not found
     {
         printf("ERROR: The specified country was not found.\n");
     }
