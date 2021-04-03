@@ -50,12 +50,18 @@ char* copyString(const char *str)
  * Date class functions ---------------------------------------------------------------------------
  */
 
+/**
+ * Creates a date with the specified informations.
+ */
 Date::Date(unsigned short int d, unsigned short int m, unsigned short int y):
 day(d), month(m), year(y) { }
 
 Date::Date(const Date &date):
 day(date.day), month(date.month), year(date.year) { }
 
+/**
+ * Sets the date information according to the parameters.
+ */
 void Date::set(unsigned short int d, unsigned short int m, unsigned short int y)
 {
     this->day = d;
@@ -63,6 +69,10 @@ void Date::set(unsigned short int d, unsigned short int m, unsigned short int y)
     this->year = y;
 }
 
+/**
+ * Checks if the Date is valid:
+ * Day between 1-30, Month between 1-12, year between 1990-2100
+ */
 bool Date::isValidDate()
 {
     return ( (day >= 1) && (day <= 30) && 
@@ -75,6 +85,9 @@ bool Date::isNullDate()
     return (day == 0) && (month == 0) && (year == 0);
 }
 
+/**
+ * Sets the Date to the today's date.
+ */
 void Date::setToCurrentDate()
 {
     time_t timer = time(NULL);
@@ -83,6 +96,9 @@ void Date::setToCurrentDate()
     this->set(time_info.tm_mday, time_info.tm_mon + 1, time_info.tm_year + 1900);
 }
 
+/**
+ * Sets the Date information according to the other date.
+ */
 void Date::set(Date &other)
 {
     this->day = other.day;
@@ -90,6 +106,10 @@ void Date::set(Date &other)
     this->year = other.year;
 }
 
+/**
+ * Compares Dates a and b.
+ * @returns > 0 if a > b, 0 if a == b and < 0 if a < b.
+ */
 int compareDates(void *a, void *b)
 {
     Date *d1 = (Date*)a;
@@ -114,6 +134,14 @@ int compareDates(void *a, void *b)
  * Citizen Record functions -----------------------------------------------------------------------
  */
 
+/**
+ * @brief Creates a Citizen with the specified information.
+ * 
+ * @param citizen_id The ID of the Citizen.
+ * @param name The Citizen's name (a copy will be stored).
+ * @param citizen_age The Citizen's age.
+ * @param c The Citizen's country record.
+ */
 CitizenRecord::CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c):
 id(citizen_id), fullname(copyString(name)), age(citizen_age), country(c) { }
 
@@ -122,64 +150,92 @@ CitizenRecord::~CitizenRecord()
     delete [] fullname;
 }
 
+/**
+ * Checks if the Citizen has the exact same stored information with the specified. 
+ */
 bool CitizenRecord::hasInfo(int citizen_id, char *citizen_name, int citizen_age, char *country_name)
 {
-    if (this->id != citizen_id)
+    // Checking ID
+    if (this->id != citizen_id)    
     {
         return false;
     }
+    // Checking name
     if (strcmp(this->fullname, citizen_name) != 0)
     {
         return false;
     }
+    // Checking age
     if (this->age != citizen_age)
     {
         return false;
     }
+    // Checking country name
     if (strcmp(this->country->country_name, country_name) != 0)
     {
         return false;
     }
+    // All checks were successful
     return true;
 }
 
+/**
+ * Compares Citizens A and B.
+ * @returns 0 if they are identical, > 0 if A is "greater" or < 0 if B is "greater"
+ * (based on their information)
+ */
 int compareCitizens(void *a, void *b)
 {
     CitizenRecord *c1 = static_cast<CitizenRecord*>(a);
     CitizenRecord *c2 = static_cast<CitizenRecord*>(b);
 
     if (c1->id != c2->id)
+    // If the ID's are different, return (a->id - b->id).
     {
         return c1->id - c2->id;
     }
     int cmp = strcmp(c1->fullname, c2->fullname);
     if (cmp != 0)
+    // Else if names are different, return > 0 if a->name is "greater", < 0 if b->name is "greater"
     {
         return cmp;
     }
     cmp = strcmp(c1->country->country_name, c2->country->country_name);
     if (cmp != 0)
+    // Else if countries are different, return > 0 if a->country is "greater", < 0 if b->country is "greater"
     {
         return cmp;
     }
     if (c1->age != c2->age)
+    // If the ages are different, return (a->age - b->age).
     {
         return c1->age - c2->age;
     }
     return 0;
 }
 
+/**
+ * Compares the specified ID to the ID of the specified citizen.
+ * @returns > 0 if ID > citizen->ID, 0 if they are equal, < 0 otherwise.
+ */
 int compareIdToCitizen(void *id, void *citizen_record)
 {
     return *(static_cast<int*>(id)) - (static_cast<CitizenRecord*>(citizen_record)->id);
 }
 
+/**
+ * Displays the information of the given Citizen.
+ */
 void displayCitizen(void *record)
 {
     CitizenRecord *citizen = static_cast<CitizenRecord*>(record);
     printf("%d %s %s %d\n", citizen->id, citizen->fullname, citizen->country->country_name, citizen->age);
 }
 
+/**
+ * Returns the "object" of the citizen to be used for hashing,
+ * which is just the ID of the citizen.
+ */
 int citizenHashObject(void *citizen)
 {
     return static_cast<CitizenRecord*>(citizen)->id;
@@ -189,17 +245,34 @@ int citizenHashObject(void *citizen)
  * Vaccination Record functions -------------------------------------------------------------------
  */
 
+/**
+ * @brief Creates a Vaccination Record with the specified information.
+ * 
+ * @param person The Citizen that the Record refers to.
+ * @param is_vaccinated Shows whether the citizen is vaccinated or not vaccinated.
+ * @param virus The name of the Virus. Note than this is the *exact same* character array address
+ * stored in VirusRecords for this Virus.
+ * @param d The Date of the vaccination. If the citizen was not vaccinated, a null Date can be stored.
+ */
 VaccinationRecord::VaccinationRecord(CitizenRecord *person, bool is_vaccinated, char *virus, Date d):
 citizen(person), virus_name(virus), vaccinated(is_vaccinated), date(d) { }
 
-VaccinationRecord::~VaccinationRecord() { }
+VaccinationRecord::~VaccinationRecord() { } // Note that virus_name is NOT deleted. 
+                                            // It will be deleted when VirusRecords destructor is called.
 
+/**
+ * Change the status of a "non-vaccinated" record to "vaccinated".
+ * @param d The date of the vaccination.
+ */
 void VaccinationRecord::vaccinate(Date d)
 {
     this->vaccinated = true;
     this->date.set(d.day, d.month, d.year);
 }
 
+/**
+ * Compares Vaccination Records A and B by comparing the Citizens they refer to.
+ */
 int compareVaccinationRecordsByCitizen(void *a, void *b)
 {
     CitizenRecord *citizen1 = static_cast<VaccinationRecord*>(a)->citizen;
@@ -207,6 +280,12 @@ int compareVaccinationRecordsByCitizen(void *a, void *b)
     return compareCitizens(citizen1, citizen2);
 }
 
+/**
+ * Compares Vaccination Records a and b by comparing their Dates.
+ * If the Dates are equal, the citizens they refer to will be compared.
+ * 
+ * @returns > 0 if Record A is "greater" (either by Date or by Citizen), 0 if they are equal, < 0 otherwise.
+ */
 int compareVaccinationsDateFirst(void *a, void *b)
 {
     VaccinationRecord *rec1 = static_cast<VaccinationRecord*>(a);
@@ -214,12 +293,6 @@ int compareVaccinationsDateFirst(void *a, void *b)
 
     int cmp = compareDates(&(rec1->date), &(rec2->date));
 
-    if (cmp != 0)
-    {
-        return cmp;
-    }
-
-    cmp = strcmp(rec1->virus_name, rec2->virus_name);
     if (cmp != 0)
     {
         return cmp;
@@ -240,15 +313,8 @@ int compareIdToVaccinationRecord(void *id, void *record)
     return (target_id - vaccination_record->citizen->id);
 }
 
-/*
-void destroyVaccinationRecord(void *record)
-{
-    delete (VaccinationRecord*)record;
-}
-*/
 /**
  * Displays the Citizen Information of the given Vaccination Record.
- * @param record A pointer to a VaccinationRecord (void* for internal compatibility purposes)
  */
 void displayVaccinationCitizen(void *record)
 {
@@ -260,10 +326,16 @@ void displayVaccinationCitizen(void *record)
  * Virus Records Methods-Functions ----------------------------------------------------------------
  */
 
-VirusRecords::VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits):
+/**
+ * @brief Creates a Virus Records object with the specified information.
+ * @param name The name of the Virus (a copy will be stored).
+ * @param skip_list_layers The number of max layers for the Skip Lists.
+ * @param filter_bits The number of bytes for the Bloom Filter.
+ */
+VirusRecords::VirusRecords(char *name, int skip_list_layers, unsigned long filter_bytes):
 vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
 non_vaccinated(new SkipList(skip_list_layers, delete_object<VaccinationRecord>)),
-filter(new BloomFilter(filter_bits)), virus_name(copyString(name)) { }
+filter(new BloomFilter(filter_bytes)), virus_name(copyString(name)) { }
 
 VirusRecords::~VirusRecords()
 {
@@ -331,7 +403,6 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             sprintf(char_id, "%d", (*present)->citizen->id);
             this->filter->markAsPresent(char_id);
 
-            // TODO: fprintf (for dev/null) maybe?
             displayMessage(fstream, "SUCCESSFULLY VACCINATED\n");
             // Indicate that the existing record was previously marked
             // as "non vaccinated" and has changed
@@ -347,14 +418,12 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             sprintf(char_id, "%d", record->citizen->id);
             this->filter->markAsPresent(char_id);
 
-            // TODO: fprintf (for dev/null) maybe?
             displayMessage(fstream, "SUCCESSFULLY VACCINATED\n");
             return true;
         }
         else
         // The insertion failed because the citizen has already been vaccinated
-        {   
-            // TODO: fprintf (for dev/null) maybe?         
+        {
             displayMessage(fstream, "ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             return false;
@@ -367,7 +436,6 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         if (*present != NULL)
         // If so, inform the user
         {
-            // TODO: fprintf (for dev/null) maybe?
             displayMessage(fstream, "ERROR: CITIZEN %d ALREADY VACCINATED ON %d-%d-%d\n", 
                     (*present)->citizen->id, (*present)->date.day, (*present)->date.month, (*present)->date.year);
             // Return false to indicate that the given record must be deleted
@@ -376,19 +444,21 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // Now try to insert to non-vaccinated skip list
         if ( this->non_vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         {
-            // TODO: fprintf (for dev/null) maybe?
             displayMessage(fstream, "SUCCESSFULLY MARKED AS NON VACCINATED\n");
             return true;
         }
         else
         {
-            // TODO: fprintf (for dev/null) maybe?
             displayMessage(fstream, "ERROR: ALREADY MARKED AS NON VACCINATED\n");
             return false;
         }
     }    
 }
 
+/**
+ * Compares the given name to the name of the specified Virus Record.
+ * @returns 0 if they are equal, > 0 if name > virus->name, < 0 otherwise.
+ */
 int compareNameVirusRecord(void *name, void *virus_record)
 {
     char *target_name = static_cast<char*>(name);
@@ -651,20 +721,17 @@ int compareNameVirusCountryStatus(void *name, void *virus_status)
     return strcmp((char*)name, (static_cast<VirusCountryStatus*>(virus_status))->virus_name);
 }
 
+/**
+ * Compares the given Name to the name of the specified Country.
+ * @returns > 0 if name > country->name, 0 if they are equal, < 0 otherwise.
+ */
 int compareNameCountryStatus(void *name, void *country_status)
 {
     return strcmp((char*)name, static_cast<CountryStatus*>(country_status)->country_name);
 }
 
-/*
-void destroyVirusCountryStatus(void *status)
-{
-    delete (VirusCountryStatus*)status;
-}
-*/
-
 /**
- * Functions to be used by main -------------------------------------------------------------------
+ * Functions to be used by main in order to execute user commands ---------------------------------
  */
 
 void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,

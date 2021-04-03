@@ -78,7 +78,7 @@ class VirusRecords
         BloomFilter *filter;        // Bloom Filter for fast citizen lookup
     public:
         char *virus_name;           // The name of the Virus.
-        VirusRecords(char *name, int skip_list_layers, unsigned long filter_bits);
+        VirusRecords(char *name, int skip_list_layers, unsigned long filter_bytes);
         ~VirusRecords();
         bool insertRecordOrShowExisted(VaccinationRecord *record, VaccinationRecord**present, bool &modified,
                                        FILE *fstream);
@@ -147,6 +147,10 @@ class CountryStatus
 
 char* copyString(const char *str);
 int citizenHashObject(void *citizen);
+
+// Comparison functions take void* arguments
+// for internal compatibility purposes.
+
 int compareDates(void *a, void *b);
 int compareIdToVaccinationRecord(void *id, void *record);
 int compareIdToCitizen(void *id, void *citizen_record);
