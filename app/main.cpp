@@ -64,8 +64,8 @@ void parseExecuteCommand(char *command, HashTable *citizens, LinkedList *countri
             if (vaccineStatusBloomParse(citizen_id, virus_name))
             {
                 vaccineStatusBloom(citizen_id, viruses, virus_name);
-                delete[] virus_name;
             }
+            delete[] virus_name;
         }
         else if (strcmp(token, "/vaccineStatus") == 0)
         {

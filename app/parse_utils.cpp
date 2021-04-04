@@ -77,18 +77,38 @@ char* fgetline(FILE *stream)
  * Routines used for command argument parsing-checking --------------------------------------------
  */
 
+/**
+ * @brief Parses the string stored in strtok buffer into /insertCitizenRecord
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param citizen_id The Citizen ID will be stored here.
+ * @param citizen_fullname The Citizen Full Name will be stored here.
+ * @param country_name The citizen Country name will be stored here.
+ * @param citizen_age The Citizen Age will be stored here.
+ * @param virus_name The Virus Name will be stored here.
+ * @param vaccinated This will be either TRUE/FALSE if YES/NO argument was given respectively.
+ * @param date The Date given by the user (if given) will be stored here. If a Date was not given,
+ * a null Date will be stored.
+ * @param fstream The file stream to print output messages. If output is not desirable,
+ * NULL can be passed.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
                               int &citizen_age, char *&virus_name, bool &vaccinated, Date &date, FILE *fstream)
 {
-    short int curr_arg = 1;
-    char *fname = NULL;
-    char *token;
+    short int curr_arg = 1;     // This indicates which argument is examined
+    char *fname = NULL;         // A temporary buffer for the Citizen First name
+    char *token;                // This is used to obtain the token returned by strtok
+    
+    // Initializing the given arguments to NULL
     citizen_fullname = NULL;
     country_name = NULL;
     virus_name = NULL;
     date.set(0, 0, 0);
 
-    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 8 )
+    // Loop until strtok no longer gives other tokens or more than expected arguments detected
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 9 )
     {
         switch (curr_arg)
         {
@@ -128,8 +148,8 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                         break;
                     }                
                 }
-                displayMessage(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-                displayMessage(fstream, "Rejecting command.\n");
+                // Invalid Age argument
+                displayMessage(fstream, "Invalid Citizen Age deteted. Make sure it is a number 0-120.\nRejecting command.\n");
                 return false;
             case 6:
                 // token is virus
@@ -146,6 +166,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                 {
                     vaccinated = false;
                     if ((token = strtok(NULL, " "))!= NULL)
+                    // argument was "NO" but there are still more arguments, which is unexpected.
                     {
                         displayMessage(fstream, "More than expected arguments have been detected. Rejecting command.\n");
                         return false;
@@ -153,6 +174,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
                     return true;
                 }
                 else
+                // The argument was not YES/NO so it is not valid
                 {
                     displayMessage(fstream, "Invalid YES/NO argument detected. Rejecting command.\n");
                     return false;
@@ -161,6 +183,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
             case 8:
                 // token is date
                 if (!parseDateString(token, date))
+                // Could not parse Date token successfully 
                 {
                     displayMessage(fstream, "Invalid date argument detected. Rejecting command.\n");
                     return false;
@@ -171,6 +194,7 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
         }
         curr_arg++;
     }
+    // Checking how many arguments have been read
     if (curr_arg == 9)
     {
         return true;
@@ -186,17 +210,33 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     return false;
 }
 
+/**
+ * @brief Parses the string stored in strtok buffer into /vaccinateNow
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param citizen_id The Citizen ID will be stored here.
+ * @param citizen_fullname The Citizen Full Name will be stored here.
+ * @param country_name The citizen Country name will be stored here.
+ * @param citizen_age The Citizen Age will be stored here.
+ * @param virus_name The Virus Name will be stored here.
+ * @param vaccinated This will be either TRUE/FALSE if YES/NO argument was given respectively.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
                        int &citizen_age, char *&virus_name)
 {
-    short int curr_arg = 1;
-    char *fname = NULL;
-    char *token;
+    short int curr_arg = 1;         // This indicates which argument is examined
+    char *fname = NULL;             // A temporary buffer for the Citizen First name
+    char *token;                    // This is used to obtain the token returned by strtok
+
+    // Initializing the given arguments to NULL
     citizen_fullname = NULL;
     country_name = NULL;
     virus_name = NULL;
 
-    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 6 )
+    // Loop until strtok no longer gives other tokens or more than expected arguments detected
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg <= 7 )
     {
         switch (curr_arg)
         {
@@ -236,8 +276,8 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
                         break;
                     }                
                 }
-                printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\n");
-                printf("Rejecting command.\n");
+                // Invalid Age argument
+                printf("Invalid Citizen Age deteted. Make sure it is a number 0-120.\nRejecting command.");
                 return false;
             case 6:
                 // token is virus
@@ -249,6 +289,7 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
         }
         curr_arg++;
     }
+    // Checking how many arguments have been read
     if (curr_arg == 7)
     {
         return true;
@@ -264,53 +305,94 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
     return false;
 }
 
+/**
+ * @brief Parses the string stored in strtok buffer into /vaccineStatus
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param citizen_id The Citizen ID will be stored here.
+ * @param virus_name The Virus Name will be stored here.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool vaccineStatusParse(int &citizen_id, char *&virus_name)
 {
-    char *arg1;
-    char *arg2;
-    virus_name = NULL;
+    char *arg;              // This is used to obtain the token returned by strtok
+    virus_name = NULL;      // Initializing pointer argument to NULL
 
-    arg1 = strtok(NULL, " ");
-    if (arg1 == NULL)
+    // Try to obtain first argument
+    arg = strtok(NULL, " ");
+    if (arg == NULL)
     {
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 9999) )
+    if ( isPositiveNumber(arg) && (citizen_id = atoi(arg)) >= 0 && (citizen_id <= 9999) )
+    // The argument is a valid ID
     {
-        arg2 = strtok(NULL, " ");
-        if (arg2 != NULL)
+        // Try to obtain a second argument
+        arg = strtok(NULL, " ");
+        if (arg != NULL)
+        // There is a second argument, which is a Virus Name
         {
-            virus_name = new char[strlen(arg2) + 1];
-            strcpy(virus_name, arg2);
-        }        
+            virus_name = new char[strlen(arg) + 1];
+            strcpy(virus_name, arg);
+            // See if there are other arguments
+            arg = strtok(NULL, " ");
+            if (arg != NULL)
+            // There are, which is unexpected
+            {
+                printf("More than expected arguments found. Rejecting command.\n");
+                return false;
+            }
+        }  
         return true;
     }
     printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
     return false; 
 }
 
+/**
+ * @brief Parses the string stored in strtok buffer into /vaccineStatusBloom
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param citizen_id The Citizen ID will be stored here.
+ * @param virus_name The Virus Name will be stored here.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
 {
-    char *arg1;
-    char *arg2;
-    virus_name = NULL;
+    char *arg;                  // This is used to obtain the token returned by strtok
+    virus_name = NULL;          // Initializing pointer argument to NULL
 
-    arg1 = strtok(NULL, " ");
-    if (arg1 == NULL)
+    // Try to obtain first argument
+    arg = strtok(NULL, " ");
+    if (arg == NULL)
     {
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg1) && (citizen_id = atoi(arg1)) >= 0 && (citizen_id <= 9999) )
+    if ( isPositiveNumber(arg) && (citizen_id = atoi(arg)) >= 0 && (citizen_id <= 9999) )
+    // The argument is a valid ID
     {
-        arg2 = strtok(NULL, " ");
-        if (arg2 != NULL)
+        // Try to obtain a second argument
+        arg = strtok(NULL, " ");
+        if (arg != NULL)
         {
-            virus_name = new char[strlen(arg2) + 1];
-            strcpy(virus_name, arg2);
+            // Obtained, so store it
+            virus_name = new char[strlen(arg) + 1];
+            strcpy(virus_name, arg);
+            // See if there are other arguments
+            arg = strtok(NULL, " ");
+            if (arg != NULL)
+            // There are, which is unexpected
+            {
+                printf("More than expected arguments found. Rejecting command.\n");
+                return false;
+            }
             return true;
         }
+        // Second argument not found, which is not acceptable.
         printf("Expected a virus name. Rejecting command.\n"); 
         return false;
     }
@@ -318,56 +400,91 @@ bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
     return false; 
 }
 
+/**
+ * @brief Parses the string stored in strtok buffer into /listNonVaccinated
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param virus_name The Virus Name will be stored here.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool listNonVaccinatedParse(char *&virus_name)
 {
-    char *arg;
-    virus_name = NULL;
+    char *arg;                  // strtok tokens are stored here
+    virus_name = NULL;          // Initializing pointer argument to NULL
+
+    // Try to obtain the argument
     arg = strtok(NULL, " ");
     if (arg == NULL)
+    // Could not obtain any arguments
     {
         printf("Expected a virus name. Rejecting command.\n");
         return false;
     }
+    // Stored the Virus Name
     virus_name = new char[strlen(arg) + 1];
     strcpy(virus_name, arg);
+
+    // See if there are other given arguments
+    arg = strtok(NULL, " ");
+    if (arg != NULL)
+    // There are, which is unexpected.
+    {
+        printf("More than expected arguments found. Rejecting command.\n");
+        return false;
+    }
     return true;
 }
 
+/**
+ * @brief Parses the string stored in strtok buffer into /populationStatus
+ * command arguments, and stores the argument values in the specified variables.
+ * 
+ * @param country_name The citizen Country name will be stored here.
+ * @param virus_name The Virus Name will be stored here.
+ * @param start The First Date given by the user (if given) will be stored here. If a Date was not given,
+ * a null Date will be stored.
+ * @param end The Second Date given by the user (if given) will be stored here. If a Date was not given,
+ * a null Date will be stored.
+ * 
+ * @returns TRUE if parsing was successful, FALSE if an error/bad argument was detected.
+ */
 bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end)
 {
-    start.set(0, 0, 0);
-    end.set(0, 0, 0);
-    char **args = new char*[4];
+    char **args = new char*[4];     // The string arguments will be stored here initially
 
-    short int curr_arg = 0;
-    char *token;
+    short int curr_arg = 0;         // This indicates which argument is examined
+    char *token;                    // This is used to obtain the token returned by strtok
+
+    // Initializing given arguments to NULL
     start.set(0, 0, 0);
     start.set(0, 0, 0);
     country_name = NULL;
     virus_name = NULL;
+
+    // Get all the user arguments
     while ( (token = strtok(NULL, " "))!= NULL && curr_arg < 4)
     {
         args[curr_arg] = token;
         curr_arg++;
     }
     if (token != NULL)
+    // Reject command if arguments were more than expected
     {
         printf("More than expected arguments have been detected. Rejecting command.\n");
         delete[] args;
         return false;
     }
-    else
+    switch (curr_arg)
+    // Exam the number of given arguments, and parse accordingly
     {
-        if (curr_arg == 0)
-        {
+        case 0:
+            // No arguments were given
             printf("Less than expected arguments have been detected. Rejecting command.\n");
             delete[] args;
             return false;
-        }
-    }
-    switch (curr_arg)
-    {
         case 1:
+            // 1 argument (Virus Name) was given
             virus_name = new char[strlen(args[0])+1];
             strcpy(virus_name, args[0]);
 
@@ -422,7 +539,8 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
             }
             return true;   
         default:
-            // This point should never be reached
+            // This point should never be reached, but
+            // if it does, something really bad has happened :(
             return false;
             break;
     }
