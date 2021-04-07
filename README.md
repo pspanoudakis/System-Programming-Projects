@@ -15,6 +15,8 @@
 - `testFile.sh` script to generate input File.
 
 ### Compiling, Executing & Using the app
+**make**, **g++** and **openssl** are required (all installed in DIT workstations)
+
 In the project root, run `make` and after the build is done,
 run `./vaccineMonitor -c <citizenRecordsFile> -b <Bloom Size (in bytes)>`.
 
@@ -49,11 +51,13 @@ so they are stored in Lists, because the number of Countries and of Viruses is
 quite limited.
 
 ### ADT's used by the App
-- Skip List:
-- Bloom Filter: It is implemented using an array of `char` elements (since they have 1 byte size by standrard).
-  The bits are modified and checked using proper bitwise shifts.
-- Single-Linked List:
-- Hash Table:
+- **Skip List**:
+- **Bloom Filter**: It is implemented using an array of `char` elements (since they have 1 byte size by standrard).
+  The bits are modified and checked using proper bitwise shifts. When data is about to be "inserted", or is to
+  be checked whether it has potentially been inserted, the hash functions given by the instructors are used
+  (see `lib/hash_functions.cpp`), to figure out which bits need to be set to 1.
+- **Single-Linked List**:
+- **Hash Table**: `SHA1` from `openssl` is used for hashing.
 
 ### Simplifications, Minor Design Choices & Details
 - The app "treats" file records and records inserted by the user in the **exact same way**:
