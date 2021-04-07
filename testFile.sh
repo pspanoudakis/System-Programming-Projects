@@ -1,21 +1,27 @@
 #!/bin/bash
 MAX_CITIZENS=10000
+
+if [ "$#" -lt 3 ]; then
+    echo "Invalid number of arguments given."
+    echo "Usage: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed (1 for TRUE)]"
+    exit 1
+fi
 numLines=$3
 
 if [[ ! -f $1 ]]; then
     echo "Invalid viruses file specified."
-    echo "Execution: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed]"
+    echo "Usage: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed (1 for TRUE)]"
     exit 1
 fi
 
 if [[ ! -f $2 ]]; then
     echo "Invalid countries file specified."
-    echo "Execution: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed]"
+    echo "Usage: ./testFile.sh <viruses file> <countries file> <num lines> [duplicatesAllowed (1 for TRUE)]"
     exit 1
 fi
 
 if (( $numLines > $MAX_CITIZENS )); then
-    if [ "$4" != "duplicatesAllowed" ]; then
+    if [ "$4" != "1" ]; then
         echo "Cannot create $numLines records without duplicates."
         echo "Up to $MAX_CITIZENS different citizens can be created."
         echo "Re-run with numLines <= $MAX_CITIZENS or use duplicatesAllowed flag."
@@ -66,7 +72,7 @@ while [ "$lineCount" != "$numLines" ]; do
         let "age+=1"
         citizens[id]="${id} ${name}_${id} ${surname}_${id} ${countries[country_id]} ${age}"
     else
-        if [ "$4" != "duplicatesAllowed" ]; then
+        if [ "$4" != "1" ]; then
             continue
         fi
     fi
