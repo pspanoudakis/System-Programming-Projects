@@ -421,7 +421,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
 {
     VaccinationRecord *temp;
     // Storing citizen ID in a string
-    char char_id[MAX_ID_DIGITS + 1]; // max 4 digits + \0
+    char char_id[MAX_ID_DIGITS + 1]; // max digits + \0
     if (record->vaccinated)
     {
         // If there is already a Non-Vaccinated record for this citizen,
