@@ -10,6 +10,8 @@
 
 #include "../include/utils.hpp"
 
+#define MAX_ID_DIGITS 5     // Maximum number of digits allowed in Citizen ID's
+
 class LinkedList;
 class RedBlackTree;
 class RBTreeNode;
@@ -43,13 +45,13 @@ class CountryStatus;
 class CitizenRecord
 {
     public:        
-        const int id;
+        const unsigned int id;
         char *fullname;
-        int age;
+        unsigned short int age;
         CountryStatus *country;     // The country of the citizen.
-        CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c);
+        CitizenRecord(unsigned int citizen_id, char *name, unsigned short int citizen_age, CountryStatus *c);
         ~CitizenRecord();
-        bool hasInfo(int id, char *name, int age, char *country_name);
+        bool hasInfo(unsigned int id, char *name, unsigned short int age, char *country_name);
 };
 
 /**
@@ -168,7 +170,7 @@ void displayVaccinationCitizen(void *record);
  */
 
 void displayMessage(FILE *fstream, const char *format, ...);
-void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
+void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *country_name, unsigned short int age,
                              char *virus_name, bool vaccinated, Date &date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens,
                              unsigned long bloom_bytes, FILE *fstream);

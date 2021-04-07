@@ -114,9 +114,10 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
         {
             case 1:
                 // token is citizen_id
-                if (!isPositiveNumber(token) || strlen(token) > 4)
+                if (!isPositiveNumber(token) || strlen(token) > MAX_ID_DIGITS)
                 {
-                    displayMessage(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                    displayMessage(fstream, "Invalid Citizen ID deteted. Make sure it is an up-to %d digits number.\n",
+                                    MAX_ID_DIGITS);
                     return false;
                 }
                 citizen_id = atoi(token);
@@ -242,9 +243,10 @@ bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_
         {
             case 1:
                 // token is citizen_id
-                if (!isPositiveNumber(token) || strlen(token) > 4)
+                if (!isPositiveNumber(token) || strlen(token) > MAX_ID_DIGITS)
                 {
-                    printf("Invalid Citizen ID deteted. Make sure it is an up-to 4 digits number.\n");
+                    printf("Invalid Citizen ID deteted. Make sure it is an up-to %d digits number.\n",
+                                    MAX_ID_DIGITS);
                     return false;
                 }
                 citizen_id = atoi(token);
@@ -326,7 +328,7 @@ bool vaccineStatusParse(int &citizen_id, char *&virus_name)
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg) && (citizen_id = atoi(arg)) >= 0 && (citizen_id <= 9999) )
+    if ( isPositiveNumber(arg) && (strlen(arg) <= MAX_ID_DIGITS) && (citizen_id = atoi(arg)) >= 0 )
     // The argument is a valid ID
     {
         // Try to obtain a second argument
@@ -372,7 +374,7 @@ bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name)
         printf("Less than expected arguments found. Rejecting command.\n");
         return false;
     }
-    if ( isPositiveNumber(arg) && (citizen_id = atoi(arg)) >= 0 && (citizen_id <= 9999) )
+    if ( isPositiveNumber(arg) && (strlen(arg) <= MAX_ID_DIGITS) && (citizen_id = atoi(arg)) >= 0 )
     // The argument is a valid ID
     {
         // Try to obtain a second argument

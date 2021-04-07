@@ -142,7 +142,7 @@ int compareDates(void *a, void *b)
  * @param citizen_age The Citizen's age.
  * @param c The Citizen's country record.
  */
-CitizenRecord::CitizenRecord(int citizen_id, char *name, int citizen_age, CountryStatus *c):
+CitizenRecord::CitizenRecord(unsigned int citizen_id, char *name, unsigned short int citizen_age, CountryStatus *c):
 id(citizen_id), fullname(copyString(name)), age(citizen_age), country(c) { }
 
 CitizenRecord::~CitizenRecord()
@@ -153,7 +153,7 @@ CitizenRecord::~CitizenRecord()
 /**
  * Checks if the Citizen has the exact same stored information with the specified. 
  */
-bool CitizenRecord::hasInfo(int citizen_id, char *citizen_name, int citizen_age, char *country_name)
+bool CitizenRecord::hasInfo(unsigned int citizen_id, char *citizen_name, unsigned short int citizen_age, char *country_name)
 {
     // Checking ID
     if (this->id != citizen_id)    
@@ -420,7 +420,8 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
                                             FILE *fstream)
 {
     VaccinationRecord *temp;
-    char char_id[5]; // max 4 digits + \0
+    // Storing citizen ID in a string
+    char char_id[MAX_ID_DIGITS + 1]; // max 4 digits + \0
     if (record->vaccinated)
     {
         // If there is already a Non-Vaccinated record for this citizen,
@@ -878,7 +879,7 @@ int compareNameCountryStatus(void *name, void *country_status)
  * @param bloom_bytes The number of bytes in Bloom Filters.
  * @param fstream The file stream to print output messages. If output is not desirable, NULL can be passed.
  */
-void insertVaccinationRecord(int citizen_id, char *full_name, char *country_name, int age,
+void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *country_name, unsigned short int age,
                              char *virus_name, bool vaccinated, Date &date,
                              LinkedList *countries, LinkedList *viruses, HashTable *citizens,
                              unsigned long bloom_bytes, FILE *fstream)
@@ -1012,7 +1013,7 @@ void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
     VirusRecords *target_virus = static_cast<VirusRecords*>(viruses->getElement(virus_name, compareNameVirusRecord));
     
     // Storing citizen ID in a string
-    char char_id[5]; // max 4 digits + \0
+    char char_id[MAX_ID_DIGITS + 1]; // max digits + \0
     sprintf(char_id, "%d", citizen_id);
     if (target_virus != NULL)
     // Records found for this Virus
