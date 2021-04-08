@@ -428,6 +428,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
         // remove it from the non-vaccinated skip list
         this->non_vaccinated->remove(record, (void**)present, compareVaccinationRecordsByCitizen);
         if (*present != NULL)
+        // An existing record for this Citizen was found and removed
         {
             // Mark as vaccinated
             (*present)->vaccinate(record->date);
@@ -444,6 +445,7 @@ bool VirusRecords::insertRecordOrShowExisted(VaccinationRecord *record, Vaccinat
             // Return false to indicate that the given record must be deleted
             return false;
         }
+        // Did not find an existing record for this Citizen to remove 
         // Now try to insert to vaccinated skip list
         if ( this->vaccinated->insert(record, (void**)present, compareVaccinationRecordsByCitizen) )
         // The insertion was successful

@@ -18,7 +18,8 @@
 **make**, **g++** and **openssl** are required (all installed in DIT workstations)
 
 In the project root, run `make` and after the build is done,
-run `./vaccineMonitor -c <citizenRecordsFile> -b <Bloom Size (in bytes)>`.
+run `./vaccineMonitor -c <citizenRecordsFile> -b <Bloom Size (in bytes)>`,
+or `./vaccineMonitor -b <Bloom Size (in bytes)> -c <citizenRecordsFile>`
 
 The app first starts inserting records from the input file. If a record
 has a **syntax** error, a message will be displayed (the execution will continue).
@@ -34,7 +35,7 @@ When done, run `make clean` to clean up objective files & executable.
 - `VaccinationRecord`: Contains Vaccination Record information (Citizen, Virus, vaccinated/non-vaccinated, Date)
 - `VirusRecords`: Contains Skip Lists & Bloom Filter for a specific Virus. 
                   The Skip Lists contain pointers to Vaccination Records.
-- `VirusCountryStatus`: It is associated with a specific Country an a specific Virus.
+- `VirusCountryStatus`: It is associated with a specific Country and a specific Virus.
                         It contains a Red-Black Tree with all the Vaccination Records marked with "YES"
                         (connected with Citizens of this Country and this Virus),
                          sorted by Date (to speed up Date-related queries).
@@ -51,13 +52,19 @@ so they are stored in Lists, because the number of Countries and of Viruses is
 quite limited.
 
 ### ADT's used by the App
-- **Skip List**:
+- **Skip List**: It is implemented using an array of pointers to Skip List Nodes, which are the head nodes of each layer.
+  Every Skip List Node contains an array of pointers to Skip List Nodes, 1 for each layer where the Node is present.
 - **Bloom Filter**: It is implemented using an array of `char` elements (since they have 1 byte size by standrard).
   The bits are modified and checked using proper bitwise shifts. When data is about to be "inserted", or is to
   be checked whether it has potentially been inserted, the hash functions given by the instructors are used
   (see `lib/hash_functions.cpp`), to figure out which bits need to be set to 1.
-- **Single-Linked List**:
-- **Hash Table**: `SHA1` from `openssl` is used for hashing.
+- **Single-Linked List**: A simple single-linked List implementation, with the addition of an iterator class.
+- **Hash Table**: Implemented with Seperate Chaining, using an fixed-size array of Linked Lists.
+ `SHA1` from `openssl` is used for element hashing.
+- **Red-Black Tree**: A typical Red-Black Tree implementation. The internal fields of Red-Black Tree and Node classes
+  are public in order to be visible from App routines (used in Date-related queries).
+
+The only ADT that includes element deletion is the Skip List, since deletion is not needed by the App for the other ADT's.
 
 ### Simplifications, Minor Design Choices & Details
 - The app "treats" file records and records inserted by the user in the **exact same way**:
@@ -81,6 +88,9 @@ quite limited.
     is considered as **not vaccinated**.
 - The Citizen ID's allowed by the app can have up to a certain number of digits,
   which is specified by the `MAX_ID_DIGITS` macro in `app/app_utils.hpp`. It is set to `5` by default.
+- In `app/main.cpp`, macros `HASHTABLE_BUCKETS` (for the Citizen Records Hash Table) and `MAX_BLOOM_SIZE`
+  (for maximum Bloom Filter size) are defined and can be modified. During testing, it was observed that
+  for Bloom Filter sizes > 1000000, bad_alloc exception was thrown at some point (combined with large inputFile size).
 
 ### Performance & Resource Handling
 - The app has been tested with various input file sizes (all generated using the shell script), up to 500K records,
