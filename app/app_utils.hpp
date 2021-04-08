@@ -106,12 +106,18 @@ class VirusCountryStatus
         RedBlackTree *record_tree;      // A Red-Black Tree that contains all the Vaccination Records
                                         // of *vaccinated* persons in the country for this Virus.
     public:
+        int total_population;           // Number of Records associated with this Virus and Citizens of this Country
+        int population_bellow_20;       // Number of such Records for each Age Group
+        int population_20_40;
+        int population_40_60;
+        int population_60_plus;
         char *virus_name;               // The name of the virus.
                                         // Note than this is the *exact same* character array address
                                         // stored in VirusRecords for this Virus.
         VirusCountryStatus(char *name, CompareFunc tree_func);
         ~VirusCountryStatus();
         void storeVaccinationRecord(VaccinationRecord *record);
+        void updatePopulation(CitizenRecord *citizen);
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
                                       int &plus60, Date start, Date end);
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
@@ -126,11 +132,6 @@ class VirusCountryStatus
 class CountryStatus
 {
     private:
-        int total_population;           // Total Population
-        int population_bellow_20;       // Total Population of each Age Group
-        int population_20_40;
-        int population_40_60;
-        int population_60_plus;
         LinkedList *virus_status;       // A List of statuses about every Virus for which
                                         // a citizen of this country has been vaccinated.
     public:
@@ -138,7 +139,8 @@ class CountryStatus
         CountryStatus(char *name);
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
-        void updatePopulation(CitizenRecord *citizen);
+        void storeNewVaccinationRecord(VaccinationRecord *record);
+        void updateVirusStatusPopulation(CitizenRecord *citizen, char *virus_name);
         void displayTotalPopulationStatus(char *virus_name, Date start = Date(),  Date end = Date());
         void displayStatusByAge(char *virus_name, Date start,  Date end);
 };

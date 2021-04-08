@@ -76,18 +76,9 @@ The only ADT that includes element deletion is the Skip List, since deletion is 
   (a "YES" record being modified to a "NO" record). 
 - Citizen, Country and Virus Names are **case sensitive**
   (e.g. "Greece", "greece" and "GREECE" are considered 3 different countries).
-- In each Country structure, 5 population counters are stored:
-    - Total Population
-    - Population aged Under-20
-    - Population aged 20-40
-    - Population aged 40-60
-    - Population aged 60+
-
-    In `/populationStatus` and `/popStatusByAge` queries, the percentage denominator(s) is one of the above.
-    Essentially, that means a Citizen without YES/NO record regarding a specific Virus, 
-    is considered as **not vaccinated** in such queries.
-- On the other hand, in `/list-nonVaccinated-Persons` command, only the citizens that are inserted
-  in the "non-vaccinated" Skip List will be displayed, as asked.
+- In `/vaccineStatus` command, the app will search the specified Citizen in all "vaccinated" Skip Lists,
+  and will print whether the citizen was found or not (if not found, the citizen will appear as non-vaccinated whether
+  there is a Record in "non-vaccinated" Skip List or not).
 - The Citizen ID's allowed by the app can have up to a certain number of digits,
   which is specified by the `MAX_ID_DIGITS` macro in `app/app_utils.hpp`. It is set to `5` by default.
 - In `app/main.cpp`, macros `HASHTABLE_BUCKETS` (for the Citizen Records Hash Table) and `MAX_BLOOM_SIZE`

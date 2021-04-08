@@ -513,7 +513,9 @@ int compareNameVirusRecord(void *name, void *virus_record)
  * @param tree_func The comparison function to use in the Vaccinations Tree.
  */
 VirusCountryStatus::VirusCountryStatus(char *name, CompareFunc tree_func):
-record_tree(new RedBlackTree(tree_func)), virus_name(name) { }
+record_tree(new RedBlackTree(tree_func)),
+total_population(0), population_bellow_20(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+virus_name(name) { }
 
 VirusCountryStatus::~VirusCountryStatus()
 {
@@ -528,6 +530,33 @@ VirusCountryStatus::~VirusCountryStatus()
 void VirusCountryStatus::storeVaccinationRecord(VaccinationRecord *record)
 {
     this->record_tree->insert(record);
+}
+
+/**
+ * Updates the total population and age group population counters
+ * based on the specified citizen.
+ */
+void VirusCountryStatus::updatePopulation(CitizenRecord *citizen)
+{
+    // Increase total population counter
+    this->total_population++;
+    // Then increase population counter for the citizen age group
+    if (citizen->age < 20)
+    {
+        this->population_bellow_20++;
+    }
+    else if(citizen->age < 40)
+    {
+        this->population_20_40++;
+    }
+    else if(citizen->age < 60)
+    {
+        this->population_40_60++;
+    }
+    else
+    {
+        this->population_60_plus++;
+    }
 }
 
 /**
@@ -685,7 +714,7 @@ void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between2
  * @param name The name of the Country.
  */
 CountryStatus::CountryStatus(char *name):
-total_population(0), population_bellow_20(0), population_20_40(0), population_40_60(0), population_60_plus(0),
+//total_population(0), population_bellow_20(0), population_20_40(0), population_40_60(0), population_60_plus(0),
 virus_status(new LinkedList(delete_object<VirusCountryStatus>)),
 country_name(copyString(name)) { }
 
@@ -697,6 +726,8 @@ CountryStatus::~CountryStatus()
 
 /**
  * Stores the specified Vaccination Record in the proper Virus information structure of this Country.
+ * The record should be a "YES" record.
+ * No population counters in the Country Virus information structure will be modified.
  */
 void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 {
@@ -716,32 +747,31 @@ void CountryStatus::storeCitizenVaccinationRecord(VaccinationRecord *record)
 }
 
 /**
- * Updates the Country total population and age group population
- * based on the specified citizen.
+ * To be called when the given record has just been created.
+ * If the Vaccination Record is a "YES" record,
+ * it will be stored in the proper Virus information structure of this Country.
+ * The population counters in the structure will be modified.
  */
-void CountryStatus::updatePopulation(CitizenRecord *citizen)
+void CountryStatus::storeNewVaccinationRecord(VaccinationRecord *record)
 {
-    // Increase total population counter
-    this->total_population++;
-    // Then increase population counter for the citizen age group
-    if (citizen->age < 20)
+    // The Country information about the specified Virus will be stored here
+    VirusCountryStatus *virus_tree;
+    // Get this Country information about the specified Virus
+    virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(record->virus_name, compareNameVirusCountryStatus));
+    if (virus_tree == NULL)
+    // Did not find information about this Virus
     {
-        this->population_bellow_20++;
+        // So create it now
+        this->virus_status->append(new VirusCountryStatus(record->virus_name, compareVaccinationsDateFirst));
+        virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getLast());
     }
-    else if(citizen->age < 40)
+    // Store the Record in the Virus structure.
+    if (record->vaccinated)
     {
-        this->population_20_40++;
+        virus_tree->storeVaccinationRecord(record);
     }
-    else if(citizen->age < 60)
-    {
-        this->population_40_60++;
-    }
-    else
-    {
-        this->population_60_plus++;
-    }
+    virus_tree->updatePopulation(record->citizen);
 }
-
 /**
  * Displays the age groups statuses in this Country regarding the specified Virus.
  * If the given Dates are valid, the results will be filtered accordingly.
@@ -773,41 +803,48 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
             virus_tree->getVaccinationStatsByAge(bellow_20, between_20_40, between_40_60, plus_60, start, end);
         }        
     }
+    else
+    // No information found about this virus, so print 0 percentages
+    {
+        printf("%s\n", this->country_name);
+        printf("0-20 0 0.00%%\n0-20 0 0.00%%\n20-40 0 0.00%%\n40-60 0 0.00%%\n60+ 0 0.00%%\n");
+        return;
+    }
 
     // Print the results
     // If the country has no population in an age group just print 0 percentage    
     printf("%s\n", this->country_name);
-    if (this->population_bellow_20 == 0)
+    if (virus_tree->population_bellow_20 == 0)
     {
         printf("0-20 %d %.2f%%\n", bellow_20, (float)0);
     }
     else
     {
-        printf("0-20 %d %.2f%%\n", bellow_20, (float)bellow_20/(float)this->population_bellow_20*100);
+        printf("0-20 %d %.2f%%\n", bellow_20, (float)bellow_20/(float)virus_tree->population_bellow_20*100);
     }
-    if (this->population_20_40 == 0)
+    if (virus_tree->population_20_40 == 0)
     {
         printf("20-40 %d %.2f%%\n", between_20_40, (float)0);
     }
     else
     {
-        printf("20-40 %d %.2f%%\n", between_20_40, (float)between_20_40/(float)this->population_20_40*100);
+        printf("20-40 %d %.2f%%\n", between_20_40, (float)between_20_40/(float)virus_tree->population_20_40*100);
     }
-    if (this->population_40_60 == 0)
+    if (virus_tree->population_40_60 == 0)
     {
         printf("40-60 %d %.2f%%\n", between_40_60, (float)0);
     }
     else
     {
-        printf("40-60 %d %.2f%%\n", between_40_60, (float)between_40_60/(float)this->population_40_60*100);
+        printf("40-60 %d %.2f%%\n", between_40_60, (float)between_40_60/(float)virus_tree->population_40_60*100);
     }
-    if (this->population_60_plus == 0)
+    if (virus_tree->population_60_plus == 0)
     {
         printf("60+ %d %.2f%%\n", plus_60, (float)0);
     }
     else
     {
-        printf("60+ %d %.2f%%\n", plus_60, (float)plus_60/(float)this->population_60_plus*100);
+        printf("60+ %d %.2f%%\n", plus_60, (float)plus_60/(float)virus_tree->population_60_plus*100);
     }
 }
 
@@ -820,12 +857,6 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, D
     int vaccinated_citizens = 0;            // Total number of vaccinated Citizens
     VirusCountryStatus *virus_tree;         // The Country information about the specified Virus will be stored here
 
-    if (this->total_population == 0)
-    // If the country has no population just print 0 percentage (although this won't happen normally)
-    {
-        printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, (float)0);
-        return;
-    }
     // Get this Country information about the specified Virus
     virus_tree = static_cast<VirusCountryStatus*>(this->virus_status->getElement(virus_name, compareNameVirusCountryStatus));
     if (virus_tree != NULL)
@@ -840,10 +871,16 @@ void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, D
         // Otherwise calculate stats between the given Dates
         {
             virus_tree->getTotalVaccinationStats(vaccinated_citizens, start, end);
-        }        
+        }
+        // Print the results
+        printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, 
+              ((float)vaccinated_citizens/(float)virus_tree->total_population)*100);
     }
-    // Print the results
-    printf("%s %d %.2f%%\n", this->country_name, vaccinated_citizens, ((float)vaccinated_citizens/(float)total_population)*100);
+    else
+    // No information found about this virus, so print 0 percentage
+    {
+        printf("%s 0 0.00%%\n", this->country_name);
+    }
 }
 
 /**
@@ -916,7 +953,6 @@ void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *cou
             countries->append(target_country);
         }
         target_citizen = new CitizenRecord(citizen_id, full_name, age, target_country);
-        target_country->updatePopulation(target_citizen);
         citizens->insert(target_citizen);
     }
     // Trying to find a Virus with that name
@@ -946,11 +982,7 @@ void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *cou
     if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed, fstream))
     // The vaccination record was successfully stored
     {
-        if (new_record->vaccinated)
-        // The citizen has been vaccinated, so store this record
-        {
-            new_record->citizen->country->storeCitizenVaccinationRecord(new_record);
-        }
+        new_record->citizen->country->storeNewVaccinationRecord(new_record);
     }
     else
     // The record was not inserted (was already present)
