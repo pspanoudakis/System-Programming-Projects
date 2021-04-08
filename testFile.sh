@@ -50,10 +50,12 @@ done < "$2"
 
 lineCount=0
 
+# Loop until requested number of lines reached
 while [ "$lineCount" != "$numLines" ]; do
     id=$RANDOM
     let "id %= $MAX_CITIZENS"
     if [ "${citizens[id]}" == "" ]; then
+    # There is no existing citizen with the chosen id
         # Creating new citizen info
         len=$RANDOM
         let "len %= 11"
@@ -70,12 +72,16 @@ while [ "$lineCount" != "$numLines" ]; do
         age=$RANDOM
         let "age %= 120"
         let "age+=1"
-        citizens[id]="${id} ${name}_${id} ${surname}_${id} ${countries[country_id]} ${age}"
+        # Store citizen info
+        citizens[id]="${id} ${name} ${surname} ${countries[country_id]} ${age}"
     else
+    # There is an existing citizen with the chosen id
         if [ "$4" != "1" ]; then
+        # If duplicates are not allowed, continue to select another ID
             continue
         fi
     fi
+    # Creating the record
     virus_id=$RANDOM
     let "virus_id %= $numViruses"
     vaccinated=$RANDOM

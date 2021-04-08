@@ -85,7 +85,9 @@ The only ADT that includes element deletion is the Skip List, since deletion is 
 
     In `/populationStatus` and `/popStatusByAge` queries, the percentage denominator(s) is one of the above.
     Essentially, that means a Citizen without YES/NO record regarding a specific Virus, 
-    is considered as **not vaccinated**.
+    is considered as **not vaccinated** in such queries.
+- On the other hand, in `/list-nonVaccinated-Persons` command, only the citizens that are inserted
+  in the "non-vaccinated" Skip List will be displayed, as asked.
 - The Citizen ID's allowed by the app can have up to a certain number of digits,
   which is specified by the `MAX_ID_DIGITS` macro in `app/app_utils.hpp`. It is set to `5` by default.
 - In `app/main.cpp`, macros `HASHTABLE_BUCKETS` (for the Citizen Records Hash Table) and `MAX_BLOOM_SIZE`
