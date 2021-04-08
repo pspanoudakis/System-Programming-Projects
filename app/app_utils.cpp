@@ -770,6 +770,7 @@ void CountryStatus::storeNewVaccinationRecord(VaccinationRecord *record)
     {
         virus_tree->storeVaccinationRecord(record);
     }
+    // Update the population counters regardless of whether this is a YES/NO record.
     virus_tree->updatePopulation(record->citizen);
 }
 /**
@@ -982,6 +983,7 @@ void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *cou
     if (target_virus->insertRecordOrShowExisted(new_record, &existing, status_changed, fstream))
     // The vaccination record was successfully stored
     {
+        // Store in Country structure as well
         new_record->citizen->country->storeNewVaccinationRecord(new_record);
     }
     else
@@ -990,7 +992,7 @@ void insertVaccinationRecord(unsigned int citizen_id, char *full_name, char *cou
         delete new_record;
         if (status_changed)
         // If the status of the existing record changed from "non vaccinated"
-        // to "vaccinated", it must be stored in the Country structure now.
+        // to "vaccinated", it must be stored in the Country Virus structure now.
         {
             existing->citizen->country->storeCitizenVaccinationRecord(existing);
         }

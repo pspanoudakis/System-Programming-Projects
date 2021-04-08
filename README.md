@@ -39,7 +39,9 @@ When done, run `make clean` to clean up objective files & executable.
                         It contains a Red-Black Tree with all the Vaccination Records marked with "YES"
                         (connected with Citizens of this Country and this Virus),
                          sorted by Date (to speed up Date-related queries).
-- `CountryStatus`: Contains information about a Country (name, population counters), as well as
+                        It also contains total population and age group counters for the Vaccination Records
+                        (**both** YES/NO) associated with this Virus and Citizens of this Country.
+- `CountryStatus`: Contains the corresponding Country name, as well as
                    a List of `VirusCountryStatus` objects.
 
 The app handles:

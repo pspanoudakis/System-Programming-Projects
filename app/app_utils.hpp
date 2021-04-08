@@ -106,7 +106,7 @@ class VirusCountryStatus
         RedBlackTree *record_tree;      // A Red-Black Tree that contains all the Vaccination Records
                                         // of *vaccinated* persons in the country for this Virus.
     public:
-        int total_population;           // Number of Records associated with this Virus and Citizens of this Country
+        int total_population;           // Number of Records (both YES/NO) associated with this Virus and Citizens of this Country
         int population_bellow_20;       // Number of such Records for each Age Group
         int population_20_40;
         int population_40_60;
@@ -140,7 +140,6 @@ class CountryStatus
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
         void storeNewVaccinationRecord(VaccinationRecord *record);
-        void updateVirusStatusPopulation(CitizenRecord *citizen, char *virus_name);
         void displayTotalPopulationStatus(char *virus_name, Date start = Date(),  Date end = Date());
         void displayStatusByAge(char *virus_name, Date start,  Date end);
 };
