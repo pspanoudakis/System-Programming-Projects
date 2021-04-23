@@ -318,8 +318,10 @@ void SkipList::remove(void *element, void **present, CompareFunc compare)
  */
 int SkipList::getRandomLayer(void)
 {
-    int limit = ( ( (curr_layer + 1) < max_layer) ? (curr_layer + 1) : max_layer );
-    for ( int i = 0; i < limit; i++ )
+    //int limit = ( ( (curr_layer + 1) < max_layer) ? (curr_layer + 1) : max_layer);
+    int limit = ( ( (curr_layer + 1) < max_layer - 1) ? (curr_layer + 1) : max_layer - 1);
+    //for ( int i = 0; i < limit; i++ )
+    for ( int i = 0; i <= limit; i++ )
     {
         if ( rand() % 2 == 1 ) { return i; }
     }
