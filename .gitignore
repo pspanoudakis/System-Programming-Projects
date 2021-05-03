@@ -1,0 +1,16 @@
+.vscode/*
+*.code-workspace
+recs
+unlink_pipe
+inputFile*
+
+!*.cpp
+!*.hpp
+!*.sh
+!.gitignore
+!app/*
+
+
+
+
+
