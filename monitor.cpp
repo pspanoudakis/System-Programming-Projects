@@ -27,16 +27,20 @@ bool terminate = false;
 void sigusr1_handler(int s)
 {
     dir_update_notifications++;
+    signal(SIGUSR1, sigusr1_handler);
 }
 
 void sigusr2_handler(int s)
 {
     fifo_pipe_queue_messages++;
+    signal(SIGUSR2, sigusr2_handler);
 }
 
-void sigkill_handler(int s)
+void sigint_handler(int s)
 {
     terminate = true;
+    signal(SIGINT, sigint_handler);
+    signal(SIGQUIT, sigint_handler);
 }
 
 void checkArgc(int argc)
@@ -91,11 +95,13 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     char *line_buf, *buf_copy, *temp;
     
     for (unsigned short i = 0; i < num_dirs; i++)
-    {
+    {        
         LinkedList::ListIterator itr = directories[i]->contents->listHead();
         while (!itr.isNull())
         {
-            input_file = fopen((char*)itr.getData(), "r");
+            char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr.getData()) + 2];
+            sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr.getData());
+            input_file = fopen(file_path, "r");
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -120,6 +126,7 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 delete[] buf_copy;
                 free(line_buf);
             }
+            delete[] file_path;
             itr.forward();
         }        
     }
@@ -148,11 +155,14 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
         {
             itr = new LinkedList::ListIterator(directories[i]->contents->listLast());
             directories[i]->updateContents();
+            itr->forward();
         }
 
         while (!itr->isNull())
         {
-            input_file = fopen((char*)itr->getData(), "r");
+            char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr->getData()) + 2];
+            sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr->getData());
+            input_file = fopen(file_path, "r");
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -177,13 +187,15 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 delete[] buf_copy;
                 free(line_buf);
             }
+            delete[] file_path;
             itr->forward();
         }        
     }
 }
 
 void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
-                  HashTable *citizens, LinkedList *countries, LinkedList *viruses)
+                  HashTable *citizens, LinkedList *countries, LinkedList *viruses,
+                  unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     char msg_type;
     receiveRequestType(read_pipe_fd, msg_type, buffer, buffer_size);
@@ -194,6 +206,7 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
             /* code */
             break;
         case TRAVEL_REQUEST:
+
             break;
         case TRAVEL_STATS:
             break;    
@@ -220,6 +233,10 @@ void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
 
 int main(int argc, char const *argv[])
 {
+    signal(SIGUSR1, sigusr1_handler);
+    signal(SIGUSR2, sigusr2_handler);
+    signal(SIGINT, sigint_handler);
+    signal(SIGQUIT, sigint_handler);
     checkArgc(argc);
     int read_pipe_fd, write_pipe_fd;
     openPipes(read_pipe_fd, write_pipe_fd, argv);
@@ -254,25 +271,46 @@ int main(int argc, char const *argv[])
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
 
-    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
-    while (!terminate)
+    unsigned int accepted_requests = 0, rejected_requests = 0;
+    sigset_t set;
+    sigemptyset(&set);
+    sigfillset(&set);
+    int sig;
+
+    while ( !terminate )
     {
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
-            pause();
+            //pause();
+            sigwait(&set, &sig);
         }
         if (dir_update_notifications > 0)
         {
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
+            printf("updated\n");
             dir_update_notifications--;
         }
         if (fifo_pipe_queue_messages > 0)
         {
-            serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses);
+            serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses,
+                         accepted_requests, rejected_requests);
             fifo_pipe_queue_messages--;
         }
     }
     releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd);
+    printf("cleaned\n");
+    char logfile_name [20];
+    sprintf(logfile_name, "log_file.%d", getpid());
+    FILE *logfile;
+
+    if ((logfile = fopen(logfile_name, "w")) == NULL)
+    {
+        fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
+    }
+
+    // write in log file
+    
     return 0;
 }
