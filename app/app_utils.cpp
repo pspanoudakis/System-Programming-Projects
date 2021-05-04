@@ -951,7 +951,7 @@ path(copyString(path_str)), contents(new LinkedList(delete_object_array<char>)),
 
 DirectoryInfo::~DirectoryInfo()
 {
-    delete path;
+    delete[] path;
     delete contents;
 }
 
@@ -993,6 +993,11 @@ void DirectoryInfo::updateContents()
     num_contents = scandir(this->path, &dir_contents, NULL, alphasort);
     if (num_contents == -1 || this->numContents == num_contents)
     {
+        for (unsigned int i = 0; i < num_contents; i++)
+        {
+            free(dir_contents[i]);
+        }
+        free(dir_contents);
         return;
     }
     for (int i = 0; i < num_contents; i++)

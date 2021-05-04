@@ -102,6 +102,10 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr.getData()) + 2];
             sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr.getData());
             input_file = fopen(file_path, "r");
+            if (input_file == NULL)
+            {
+                continue;
+            }
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -118,15 +122,16 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 {
                     insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
                                             countries, viruses, citizens, bloom_size, NULL);
-                    delete[] citizen_name;
-                    delete[] country_name;
-                    delete[] virus_name;
                 }
+                delete[] citizen_name;
+                delete[] country_name;
+                delete[] virus_name;
                 delete[] temp;
                 delete[] buf_copy;
                 free(line_buf);
             }
             delete[] file_path;
+            fclose(input_file);
             itr.forward();
         }        
     }
@@ -163,6 +168,10 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr->getData()) + 2];
             sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr->getData());
             input_file = fopen(file_path, "r");
+            if (input_file == NULL)
+            {
+                continue;
+            }
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -179,17 +188,19 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 {
                     insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
                                             countries, viruses, citizens, bloom_size, NULL);
-                    delete[] citizen_name;
-                    delete[] country_name;
-                    delete[] virus_name;
                 }
+                delete[] citizen_name;
+                delete[] country_name;
+                delete[] virus_name;
                 delete[] temp;
                 delete[] buf_copy;
                 free(line_buf);
             }
             delete[] file_path;
+            fclose(input_file);
             itr->forward();
-        }        
+        }
+        delete itr;        
     }
 }
 
@@ -274,17 +285,17 @@ int main(int argc, char const *argv[])
     //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
-    sigset_t set;
-    sigemptyset(&set);
-    sigfillset(&set);
+    //sigset_t set;
+    //sigemptyset(&set);
+    //sigfillset(&set);
     int sig;
 
     while ( !terminate )
     {
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
-            //pause();
-            sigwait(&set, &sig);
+            pause();
+            //sigwait(&set, &sig);
         }
         if (dir_update_notifications > 0)
         {
@@ -311,6 +322,6 @@ int main(int argc, char const *argv[])
     }
 
     // write in log file
-    
+    fclose(logfile);
     return 0;
 }
