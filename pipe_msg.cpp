@@ -22,15 +22,47 @@ void sendBloomFilter(int pipe_fd, BloomFilter &filter, int buffer_size)
     }
 }*/
 
-void sendBloomFilter(int pipe_fd, const BloomFilter &filter, char *buffer, unsigned int buffer_size)
+void sendRequestType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
     int written;
-    for(unsigned long sent_bytes = 0; sent_bytes < filter.numBytes; sent_bytes += bytes_to_write)
+    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(char); sent_bytes += bytes_to_write)
     {
-        bytes_left = filter.numBytes - sent_bytes;
+        bytes_left = sizeof(char) - sent_bytes;
         bytes_to_write = bytes_left < buffer_size ? bytes_left : buffer_size;
-        memcpy(buffer, filter.bits + sent_bytes, bytes_to_write);
+        memcpy(buffer, &req_type + sent_bytes, bytes_to_write);
+        written = write(pipe_fd, buffer, bytes_to_write);
+        if (written < bytes_to_write)
+        {
+            if (written == -1)
+            {
+                if (errno == EINTR)
+                {
+                    bytes_to_write = 0;
+                }
+            }
+            else
+            {
+                bytes_to_write = written;
+            }
+        }
+    }
+}
+
+void receiveRequestType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
+{
+
+}
+
+void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
+{
+    unsigned int bytes_to_write, bytes_left;
+    int written;
+    for(unsigned long sent_bytes = 0; sent_bytes < filter->numBytes; sent_bytes += bytes_to_write)
+    {
+        bytes_left = filter->numBytes - sent_bytes;
+        bytes_to_write = bytes_left < buffer_size ? bytes_left : buffer_size;
+        memcpy(buffer, filter->bits + sent_bytes, bytes_to_write);
         written = write(pipe_fd, buffer, bytes_to_write);
         if (written < bytes_to_write)
         {
@@ -290,6 +322,33 @@ void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned 
             {
                 filter.bits[total_bytes + i] = filter.bits[total_bytes + i] | buffer[i]; 
             }
+        }
+    }
+}
+
+void receiveRequestType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size)
+{
+    unsigned int bytes_to_read, bytes_left;
+    int received_bytes;
+    for(unsigned long total_bytes = 0; total_bytes < sizeof(char); total_bytes += received_bytes)
+    {
+        bytes_left = sizeof(char) - total_bytes;
+        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
+        received_bytes = read(pipe_fd, buffer, bytes_to_read);
+        if (received_bytes < 0)
+        {
+            if (errno == EINTR)
+            {
+                received_bytes = 0;
+            }
+            else
+            {
+                // problem
+            }            
+        }
+        else
+        {
+            memcpy(&req_type + total_bytes, buffer, received_bytes);
         }
     }
 }

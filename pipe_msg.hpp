@@ -8,7 +8,9 @@
 
 class BloomFilter;
 
-void sendBloomFilter(int pipe_fd, const BloomFilter &filter, char *buffer, unsigned int buffer_size);
+void sendRequestType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size);
+
+void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size);
 
 void sendInt(int pipe_fd, const unsigned int &i, char *buffer, unsigned int buffer_size);
 
@@ -18,10 +20,12 @@ void sendLongInt(int pipe_fd, const unsigned long int &i, char *buffer, unsigned
 
 void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buffer_size);
 
+void receiveRequestType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size);
+
 void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer_size);
 
+// receive might not be needed
 void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size);
-
 void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size);
 
 void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_size);

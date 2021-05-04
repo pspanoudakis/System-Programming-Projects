@@ -185,7 +185,37 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
 void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses)
 {
-    
+    char msg_type;
+    receiveRequestType(read_pipe_fd, msg_type, buffer, buffer_size);
+
+    switch (msg_type)
+    {
+        case BLOOM_TRANSFER:
+            /* code */
+            break;
+        case TRAVEL_REQUEST:
+            break;
+        case TRAVEL_STATS:
+            break;    
+        default:
+            break;
+    }
+}
+
+void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
+                      LinkedList *viruses)
+{
+    // Inform how many bloom filters will be sent
+    sendInt(write_pipe_fd, viruses->getNumElements(), buffer, buffer_size);    
+
+    for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
+    {
+        VirusRecords *virus = static_cast<VirusRecords*>(itr.getData());
+        // Send the name of the virus that the bloom filter refers to
+        sendString(write_pipe_fd, virus->virus_name, buffer, buffer_size);
+        // Send the bloom filter
+        sendBloomFilter(write_pipe_fd, virus->filter, buffer, buffer_size);
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -223,6 +253,8 @@ int main(int argc, char const *argv[])
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
+
+    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
     while (!terminate)
     {

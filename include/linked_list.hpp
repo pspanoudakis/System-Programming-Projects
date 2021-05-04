@@ -50,6 +50,7 @@ class LinkedList {
         void* getElement(void *element, CompareFunc compare);
         void *getLast();
         bool isEmpty();
+        int getNumElements();
         ListIterator listHead();
         ListIterator listLast();
 };
