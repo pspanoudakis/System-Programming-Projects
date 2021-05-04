@@ -77,9 +77,9 @@ class VirusRecords
 {
     private:
         SkipList *vaccinated;       // Skip List for vaccinated persons
-        SkipList *non_vaccinated;   // Skip List for not vaccinated persons
-        BloomFilter *filter;        // Bloom Filter for fast citizen lookup
+        SkipList *non_vaccinated;   // Skip List for not vaccinated persons        
     public:
+        BloomFilter *filter;        // Bloom Filter for fast citizen lookup
         char *virus_name;           // The name of the Virus.
         VirusRecords(char *name, int skip_list_layers, unsigned long filter_bytes);
         ~VirusRecords();
@@ -88,6 +88,7 @@ class VirusRecords
         bool checkBloomFilter(char *citizenID);
         void getVaccinationStatusString(int citizenID, std::string &msg_str);
         bool isVaccinated(int citizenID);
+        VaccinationRecord *getVaccinationRecord(int citizenID);
 };
 
 /**
@@ -164,6 +165,7 @@ int citizenHashObject(void *citizen);
 // Comparison functions take void* arguments
 // for internal compatibility purposes.
 
+int compareStrings(void *a, void *b);
 int compareDates(void *a, void *b);
 int compareIdToVaccinationRecord(void *id, void *record);
 int compareIdToCitizen(void *id, void *citizen_record);

@@ -385,6 +385,14 @@ bool VirusRecords::isVaccinated(int citizenID)
 }
 
 /**
+ * 
+ */
+VaccinationRecord* VirusRecords::getVaccinationRecord(int citizenID)
+{
+    return static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
+}
+
+/**
  * Returns TRUE if the given citizen ID is "possibly present"
  * according to the Bloom Filter, FALSE otherwise.
  */

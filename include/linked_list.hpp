@@ -49,7 +49,9 @@ class LinkedList {
         void append(void *element);
         void* getElement(void *element, CompareFunc compare);
         void *getLast();
+        bool isEmpty();
         ListIterator listHead();
+        ListIterator listLast();
 };
 
 #endif

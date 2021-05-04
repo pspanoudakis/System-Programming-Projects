@@ -88,12 +88,22 @@ void* LinkedList::getLast()
     return last->data;
 }
 
+bool LinkedList::isEmpty()
+{
+    return this->head == NULL;
+}
+
 /**
  * Returns an iterator to the head of the list.
  */
 LinkedList::ListIterator LinkedList::listHead()
 {
     return ListIterator(this->head);
+}
+
+LinkedList::ListIterator LinkedList::listLast()
+{
+    return ListIterator(this->last);
 }
 
 /**

@@ -20,13 +20,13 @@
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 
-int sigusr1_received = 0;
+int dir_update_notifications = 0;
 int fifo_pipe_queue_messages = 0;
 bool terminate = false;
 
 void sigusr1_handler(int s)
 {
-    sigusr1_received++;
+    dir_update_notifications++;
 }
 
 void sigusr2_handler(int s)
@@ -79,6 +79,115 @@ void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short 
     delete citizens;
 }
 
+void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
+                        HashTable *citizens, LinkedList *countries, LinkedList *viruses,
+                        unsigned long bloom_size)
+{
+    int citizen_id, age;
+    char *citizen_name, *country_name, *virus_name;
+    bool vaccinated;
+    Date date;
+    FILE *input_file;
+    char *line_buf, *buf_copy, *temp;
+    
+    for (unsigned short i = 0; i < num_dirs; i++)
+    {
+        LinkedList::ListIterator itr = directories[i]->contents->listHead();
+        while (!itr.isNull())
+        {
+            input_file = fopen((char*)itr.getData(), "r");
+            while( (line_buf = fgetline(input_file)) != NULL)
+            {
+                buf_copy = new char[strlen(line_buf) + 1];
+                temp = new char[strlen(line_buf) + 3];
+                sprintf(temp, "~ %s", line_buf);            // just a "hack" so that the parsing function
+                                                            // can get all the line tokens using strtok.
+                strcpy(buf_copy, line_buf);
+                
+                strtok(temp, " ");       
+
+                // Parse the line
+                if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
+                // If parsing was successful, try to insert the Record.
+                {
+                    insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
+                                            countries, viruses, citizens, bloom_size, NULL);
+                    delete[] citizen_name;
+                    delete[] country_name;
+                    delete[] virus_name;
+                }
+                delete[] temp;
+                delete[] buf_copy;
+                free(line_buf);
+            }
+            itr.forward();
+        }        
+    }
+}
+
+void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
+                  HashTable *citizens, LinkedList *countries, LinkedList *viruses,
+                  unsigned long bloom_size)
+{
+    int citizen_id, age;
+    char *citizen_name, *country_name, *virus_name;
+    bool vaccinated;
+    Date date;
+    FILE *input_file;
+    char *line_buf, *buf_copy, *temp;
+    
+    for (unsigned short i = 0; i < num_dirs; i++)
+    {
+        LinkedList::ListIterator *itr;
+        if (directories[i]->contents->isEmpty())
+        {
+            directories[i]->updateContents();
+            itr = new LinkedList::ListIterator(directories[i]->contents->listHead());
+        }
+        else
+        {
+            itr = new LinkedList::ListIterator(directories[i]->contents->listLast());
+            directories[i]->updateContents();
+        }
+
+        while (!itr->isNull())
+        {
+            input_file = fopen((char*)itr->getData(), "r");
+            while( (line_buf = fgetline(input_file)) != NULL)
+            {
+                buf_copy = new char[strlen(line_buf) + 1];
+                temp = new char[strlen(line_buf) + 3];
+                sprintf(temp, "~ %s", line_buf);            // just a "hack" so that the parsing function
+                                                            // can get all the line tokens using strtok.
+                strcpy(buf_copy, line_buf);
+                
+                strtok(temp, " ");       
+
+                // Parse the line
+                if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
+                // If parsing was successful, try to insert the Record.
+                {
+                    insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
+                                            countries, viruses, citizens, bloom_size, NULL);
+                    delete[] citizen_name;
+                    delete[] country_name;
+                    delete[] virus_name;
+                }
+                delete[] temp;
+                delete[] buf_copy;
+                free(line_buf);
+            }
+            itr->forward();
+        }        
+    }
+}
+
+void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+                  HashTable *citizens, LinkedList *countries, LinkedList *viruses)
+{
+    
+}
+
 int main(int argc, char const *argv[])
 {
     checkArgc(argc);
@@ -113,25 +222,22 @@ int main(int argc, char const *argv[])
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
-    int citizen_id, age;
-    char *citizen_name, *country_name, *virus_name;
-    bool vaccinated;
-    Date date;
+    scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
 
     while (!terminate)
     {
-        if (sigusr1_received == 0 && fifo_pipe_queue_messages == 0)
+        if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
             pause();
         }
-        if (sigusr1_received > 0)
+        if (dir_update_notifications > 0)
         {
-            // rescandir, get new data
-            sigusr1_received--;
+            scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
+            dir_update_notifications--;
         }
         if (fifo_pipe_queue_messages > 0)
         {
-            // get message
+            serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses);
             fifo_pipe_queue_messages--;
         }
     }
