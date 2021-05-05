@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <string>
+#include <sstream>
 
 #include <dirent.h>
 
@@ -181,6 +182,14 @@ bool CitizenRecord::hasInfo(unsigned int citizen_id, char *citizen_name, unsigne
     }
     // All checks were successful
     return true;
+}
+
+std::string CitizenRecord::toString()
+{
+    std::stringstream stream;
+    stream << this->id << " " << this->fullname << this->country->country_name;
+    stream << "\n" << "AGE " << this->age << "\n";
+    return stream.str();
 }
 
 /**
@@ -362,12 +371,12 @@ void VirusRecords::getVaccinationStatusString(int citizenID, std::string &msg_st
     msg_str.append(this->virus_name);
     if (record == NULL)
     {
-        msg_str.append(" NO\n");
+        msg_str.append(" NOT YET VACCINATED\n");
     }
     else
     {
-        char rest[17];
-        sprintf(rest, " YES %d-%d-%d\n", record->date.day, record->date.month, record->date.year);
+        char rest[17 + 3*sizeof(unsigned short)];
+        sprintf(rest, " VACCINATED ON %hu-%hu-%hu\n", record->date.day, record->date.month, record->date.year);
         msg_str.append(rest);
     }
 }

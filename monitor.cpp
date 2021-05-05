@@ -204,26 +204,75 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     }
 }
 
-void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
-                  HashTable *citizens, LinkedList *countries, LinkedList *viruses,
-                  unsigned int &accepted_requests, unsigned int &rejected_requests)
+void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+                        HashTable *citizens, LinkedList *viruses, unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
-    char msg_type;
-    receiveRequestType(read_pipe_fd, msg_type, buffer, buffer_size);
+    unsigned int citizen_id;
+    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    Date date;
+    receiveShortInt(read_pipe_fd, date.day, buffer, buffer_size);
+    receiveShortInt(read_pipe_fd, date.month, buffer, buffer_size);
+    receiveShortInt(read_pipe_fd, date.year, buffer, buffer_size);
+    char *virus_name;
+    receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
+    std::string answer;
+    char answer_type;
 
-    switch (msg_type)
+    VirusRecords *virus = (VirusRecords*)viruses->getElement(virus_name, compareNameVirusRecord);
+    free(virus_name);
+    if (virus == NULL)
     {
-        case BLOOM_TRANSFER:
-            /* code */
-            break;
-        case TRAVEL_REQUEST:
-
-            break;
-        case TRAVEL_STATS:
-            break;    
-        default:
-            break;
+        //answer.append("ERROR: The specified virus has no records in the given country")
+        answer.append("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
+        answer_type = TRAVEL_REQUEST_REJECTED;
+        rejected_requests++;
     }
+    else
+    {
+        VaccinationRecord *record = static_cast<VaccinationRecord*>(virus->getVaccinationRecord(citizen_id));
+        if (record == NULL)
+        {
+            answer.append("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
+            answer_type = TRAVEL_REQUEST_REJECTED;
+            rejected_requests++;
+        }
+        else
+        {
+            // TODO: check for 6 months...
+            answer.append("REQUEST ACCEPTED - HAPPY TRAVELS\n");
+            answer_type = TRAVEL_REQUEST_ACCEPTED;
+            accepted_requests++;
+        }
+    }
+    
+    // Only the message type coulb be sent though...
+    sendMessageType(write_pipe_fd, answer_type, buffer, buffer_size);
+    sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
+}
+
+void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+                              HashTable *citizens, LinkedList *viruses)
+{
+    unsigned int citizen_id;
+    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
+    std::string answer;
+    if (citizen == NULL)
+    {
+        answer.append("A citizen with the specified ID was not found.\n");
+    }
+    else
+    {
+        answer.append(citizen->toString());
+
+        for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
+        {
+            VirusRecords *virus =  static_cast<VirusRecords*>(itr.getData());
+            virus->getVaccinationStatusString(citizen_id, answer);
+        }
+        
+    }
+    sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
 }
 
 void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
@@ -240,6 +289,52 @@ void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
         // Send the bloom filter
         sendBloomFilter(write_pipe_fd, virus->filter, buffer, buffer_size);
     }
+}
+
+void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+                  HashTable *citizens, LinkedList *countries, LinkedList *viruses,
+                  unsigned int &accepted_requests, unsigned int &rejected_requests)
+{
+    char msg_type;
+    receiveMessageType(read_pipe_fd, msg_type, buffer, buffer_size);
+
+    switch (msg_type)
+    {
+        case BLOOM_TRANSFER:
+            break;
+        case TRAVEL_REQUEST:
+            serveTravelRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size,
+                               citizens, viruses, accepted_requests, rejected_requests);
+            break;  
+        case SEARCH_STATUS:
+            serveSearchStatusRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, viruses);
+        default:
+            // Should never be reached, or something is wrong
+            break;
+    }
+}
+
+void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_requests, LinkedList *countries)
+{
+    char logfile_name [20];
+    sprintf(logfile_name, "log_file.%d", getpid());
+    FILE *logfile;
+
+    if ((logfile = fopen(logfile_name, "w")) == NULL)
+    {
+        fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
+    }
+
+    for (LinkedList::ListIterator itr = countries->listHead(); !itr.isNull(); itr.forward())
+    {
+        CountryStatus *country =  static_cast<CountryStatus*>(itr.getData());
+        fprintf(logfile, "%s\n", country->country_name);
+    }
+    fprintf(logfile, "TOTAL TRAVEL REQUESTS %d\n", accepted_requests + rejected_requests);
+    fprintf(logfile, "ACCEPTED %d\n", accepted_requests);
+    fprintf(logfile, "REJECTED %d\n", rejected_requests);
+    
+    fclose(logfile);
 }
 
 int main(int argc, char const *argv[])
@@ -310,18 +405,10 @@ int main(int argc, char const *argv[])
             fifo_pipe_queue_messages--;
         }
     }
+    createLogFile(accepted_requests, rejected_requests, countries);
     releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd);
+    
     printf("cleaned\n");
-    char logfile_name [20];
-    sprintf(logfile_name, "log_file.%d", getpid());
-    FILE *logfile;
 
-    if ((logfile = fopen(logfile_name, "w")) == NULL)
-    {
-        fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
-    }
-
-    // write in log file
-    fclose(logfile);
     return 0;
 }

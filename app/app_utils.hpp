@@ -53,6 +53,7 @@ class CitizenRecord
         CitizenRecord(unsigned int citizen_id, char *name, unsigned short int citizen_age, CountryStatus *c);
         ~CitizenRecord();
         bool hasInfo(unsigned int id, char *name, unsigned short int age, char *country_name);
+        std::string toString();
 };
 
 /**

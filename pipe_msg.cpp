@@ -22,7 +22,7 @@ void sendBloomFilter(int pipe_fd, BloomFilter &filter, int buffer_size)
     }
 }*/
 
-void sendRequestType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
+void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
     int written;
@@ -326,7 +326,7 @@ void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned 
     }
 }
 
-void receiveRequestType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size)
+void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
     int received_bytes;
