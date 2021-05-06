@@ -3,13 +3,17 @@
 recs
 unlink_pipe
 inputFile*
+monitor
+writer
+a/*
+log_file.*
 
 !*.cpp
 !*.hpp
 !*.sh
 !.gitignore
 !app/*
-monitor
+
 
 
 

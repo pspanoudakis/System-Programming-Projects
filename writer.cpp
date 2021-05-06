@@ -54,6 +54,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
     char buffer[3];
+    char *answer;
     int buffer_size = 3;
     sendInt(write_pipe_fd, 3, buffer, buffer_size);
     sendLongInt(write_pipe_fd, 10000, buffer, buffer_size);
@@ -61,7 +62,11 @@ int main(int argc, char const *argv[])
     sendShortInt(write_pipe_fd, 2, buffer, buffer_size);
     sendString(write_pipe_fd, "./a/France", buffer, buffer_size);
     sendString(write_pipe_fd, "./a/Greece", buffer, buffer_size);
-
+    sendMessageType(write_pipe_fd, SEARCH_STATUS, buffer, buffer_size);
+    sendInt(write_pipe_fd, 14, buffer, buffer_size);
+    receiveString(read_pipe_fd, answer, buffer, buffer_size);
+    printf("%s", answer);
+    free(answer);
     close(read_pipe_fd);
     close(write_pipe_fd);
     unlink("./write_fifo");

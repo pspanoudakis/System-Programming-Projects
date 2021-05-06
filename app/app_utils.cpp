@@ -187,7 +187,7 @@ bool CitizenRecord::hasInfo(unsigned int citizen_id, char *citizen_name, unsigne
 std::string CitizenRecord::toString()
 {
     std::stringstream stream;
-    stream << this->id << " " << this->fullname << this->country->country_name;
+    stream << this->id << " " << this->fullname << " " << this->country->country_name;
     stream << "\n" << "AGE " << this->age << "\n";
     return stream.str();
 }
@@ -375,7 +375,7 @@ void VirusRecords::getVaccinationStatusString(int citizenID, std::string &msg_st
     }
     else
     {
-        char rest[17 + 3*sizeof(unsigned short)];
+        char rest[19 + 3*sizeof(unsigned short)];
         sprintf(rest, " VACCINATED ON %hu-%hu-%hu\n", record->date.day, record->date.month, record->date.year);
         msg_str.append(rest);
     }
