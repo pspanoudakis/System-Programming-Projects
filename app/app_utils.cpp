@@ -115,11 +115,12 @@ void Date::set6monthsPrior(const Date &other)
 {
     this->day = other.day;
     this->year = other.year;
-    this->month = other.month - 6;
-    if (this->month < 1)
+    short temp_month = other.month;
+    temp_month -= 6;
+    if (temp_month < 1)
     {
         this->year--;
-        this->month = 12 + this->month;
+        this->month = 12 + temp_month;
     }
 }
 

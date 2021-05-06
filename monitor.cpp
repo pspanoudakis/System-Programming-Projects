@@ -388,20 +388,20 @@ int main(int argc, char const *argv[])
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
 
-    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
-    //sigset_t set;
-    //sigemptyset(&set);
-    //sigfillset(&set);
+    sigset_t set;
+    sigemptyset(&set);
+    sigfillset(&set);
     int sig;
 
     while ( !terminate )
     {
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
-            pause();
-            //sigwait(&set, &sig);
+            //pause();
+            sigwait(&set, &sig);
         }
         if (dir_update_notifications > 0)
         {

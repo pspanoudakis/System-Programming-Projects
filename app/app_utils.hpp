@@ -169,6 +169,7 @@ int citizenHashObject(void *citizen);
 // for internal compatibility purposes.
 
 int compareStrings(void *a, void *b);
+int compareDates(const Date &d1, const Date &d2);
 int compareDates(void *a, void *b);
 int compareIdToVaccinationRecord(void *id, void *record);
 int compareIdToCitizen(void *id, void *citizen_record);
