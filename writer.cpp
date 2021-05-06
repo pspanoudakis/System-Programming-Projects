@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 
 #include "include/bloom_filter.hpp"
+#include "app/app_utils.hpp"
 #include "pipe_msg.hpp"
 
 #define BLOOM_TRANSFER 1
@@ -62,8 +63,17 @@ int main(int argc, char const *argv[])
     sendShortInt(write_pipe_fd, 2, buffer, buffer_size);
     sendString(write_pipe_fd, "./a/France", buffer, buffer_size);
     sendString(write_pipe_fd, "./a/Greece", buffer, buffer_size);
-    sendMessageType(write_pipe_fd, SEARCH_STATUS, buffer, buffer_size);
-    sendInt(write_pipe_fd, 14, buffer, buffer_size);
+    //sendMessageType(write_pipe_fd, SEARCH_STATUS, buffer, buffer_size);
+    //sendInt(write_pipe_fd, 14, buffer, buffer_size);
+    //receiveString(read_pipe_fd, answer, buffer, buffer_size);
+    //printf("%s", answer);
+    //free(answer);
+    sendMessageType(write_pipe_fd, TRAVEL_REQUEST, buffer, buffer_size);
+    sendInt(write_pipe_fd, 1, buffer, buffer_size);
+    sendDate(write_pipe_fd, Date(6, 5, 2021), buffer, buffer_size);
+    sendString(write_pipe_fd, "COVID-19", buffer, buffer_size);
+    char request_result;
+    receiveMessageType(read_pipe_fd, request_result, buffer, buffer_size);
     receiveString(read_pipe_fd, answer, buffer, buffer_size);
     printf("%s", answer);
     free(answer);

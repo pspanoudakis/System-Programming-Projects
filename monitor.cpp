@@ -210,9 +210,7 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
     unsigned int citizen_id;
     receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
     Date date;
-    receiveShortInt(read_pipe_fd, date.day, buffer, buffer_size);
-    receiveShortInt(read_pipe_fd, date.month, buffer, buffer_size);
-    receiveShortInt(read_pipe_fd, date.year, buffer, buffer_size);
+    receiveDate(read_pipe_fd, date, buffer, buffer_size);
     char *virus_name;
     receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
     std::string answer;
@@ -394,15 +392,16 @@ int main(int argc, char const *argv[])
         }
         if (dir_update_notifications > 0)
         {
-            scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
-            printf("updated\n");
             dir_update_notifications--;
+            scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
+            sendMessageType(write_pipe_fd, BLOOM_TRANSFER, buffer, buffer_size);
+            sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
         }
         if (fifo_pipe_queue_messages > 0)
         {
+            fifo_pipe_queue_messages--;
             serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses,
                          accepted_requests, rejected_requests);
-            fifo_pipe_queue_messages--;
         }
     }
     createLogFile(accepted_requests, rejected_requests, countries);

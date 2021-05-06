@@ -10,6 +10,7 @@
 #define TRAVEL_REQUEST_INVALID 7
 
 class BloomFilter;
+class Date;
 
 void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size);
 
@@ -22,6 +23,8 @@ void sendShortInt(int pipe_fd, const unsigned short int &i, char *buffer, unsign
 void sendLongInt(int pipe_fd, const unsigned long int &i, char *buffer, unsigned int buffer_size);
 
 void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buffer_size);
+
+void sendDate(int pipe_fd, const Date &date, char *buffer, unsigned int buffer_size);
 
 void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size);
 
@@ -36,5 +39,7 @@ void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_
 void receiveShortInt(int pipe_fd, unsigned short int &i, char *buffer, unsigned int buffer_size);
 
 void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned int buffer_size);
+
+void receiveDate(int pipe_fd, Date &date, char *buffer, unsigned int buffer_size);
 
 #endif

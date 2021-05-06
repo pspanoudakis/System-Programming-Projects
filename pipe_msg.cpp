@@ -5,8 +5,9 @@
 #include <unistd.h>
 #include <string>
 
-#include "include/bloom_filter.hpp"
 #include "pipe_msg.hpp"
+#include "include/bloom_filter.hpp"
+#include "app/app_utils.hpp"
 
 /*
 using std::memcpy;
@@ -47,11 +48,6 @@ void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buff
             }
         }
     }
-}
-
-void receiveRequestType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
-{
-
 }
 
 void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
@@ -193,6 +189,13 @@ void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buff
             }
         }
     }    
+}
+
+void sendDate(int pipe_fd, const Date &date, char *buffer, unsigned int buffer_size)
+{
+    sendShortInt(pipe_fd, date.day, buffer, buffer_size);
+    sendShortInt(pipe_fd, date.month, buffer, buffer_size);
+    sendShortInt(pipe_fd, date.year, buffer, buffer_size);
 }
 
 void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer_size)
@@ -432,4 +435,11 @@ void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned in
             memcpy((char*)&i + total_bytes, buffer, received_bytes);
         }
     }
+}
+
+void receiveDate(int pipe_fd, Date &date, char *buffer, unsigned int buffer_size)
+{
+    receiveShortInt(pipe_fd, date.day, buffer, buffer_size);
+    receiveShortInt(pipe_fd, date.month, buffer, buffer_size);
+    receiveShortInt(pipe_fd, date.year, buffer, buffer_size);
 }
