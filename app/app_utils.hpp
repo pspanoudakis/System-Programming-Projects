@@ -37,6 +37,8 @@ class Date
         bool isNullDate();
         bool isValidDate();
         void setToCurrentDate();
+        bool isBetween(const Date &a, const Date &b);
+        void set6monthsPrior(const Date &other);
 };
 
 class CountryStatus;

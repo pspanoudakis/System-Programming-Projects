@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string>
+#include <sstream>
 
 #include "pipe_msg.hpp"
 #include "include/linked_list.hpp"
@@ -211,6 +213,8 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
     receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
     Date date;
     receiveDate(read_pipe_fd, date, buffer, buffer_size);
+    Date date6monthsPrior;
+    date6monthsPrior.set6monthsPrior(date);
     char *virus_name;
     receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
     std::string answer;
@@ -236,14 +240,22 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
         }
         else
         {
-            // TODO: check for 6 months...
-            answer.append("REQUEST ACCEPTED - HAPPY TRAVELS\n");
-            answer_type = TRAVEL_REQUEST_ACCEPTED;
-            accepted_requests++;
+            if (record->date.isBetween(date6monthsPrior, date))
+            {
+                answer.append("REQUEST ACCEPTED - HAPPY TRAVELS\n");
+                answer_type = TRAVEL_REQUEST_ACCEPTED;
+                accepted_requests++;
+            }
+            else
+            {
+                answer.append("REQUEST REJECTED - YOU WILL NEED ANOTHER VACCINATION BEFORE TRAVEL DATE\n");
+                answer_type = TRAVEL_REQUEST_REJECTED;
+                rejected_requests++;
+            }            
         }
     }
     
-    // Only the message type coulb be sent though...
+    // Only the message type could be sent though...
     sendMessageType(write_pipe_fd, answer_type, buffer, buffer_size);
     sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
 }
@@ -314,8 +326,9 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
 
 void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_requests, LinkedList *countries)
 {
-    char logfile_name [20];
-    sprintf(logfile_name, "log_file.%d", getpid());
+    std::stringstream logfile_name_stream;
+    logfile_name_stream << "log_file." << getpid();
+    const char *logfile_name = logfile_name_stream.str().c_str();
     FILE *logfile;
 
     if ((logfile = fopen(logfile_name, "w")) == NULL)
@@ -375,7 +388,7 @@ int main(int argc, char const *argv[])
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
 
-    //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
     //sigset_t set;
@@ -406,8 +419,6 @@ int main(int argc, char const *argv[])
     }
     createLogFile(accepted_requests, rejected_requests, countries);
     releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd);
-    
-    printf("cleaned\n");
 
     return 0;
 }

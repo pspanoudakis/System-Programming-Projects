@@ -111,6 +111,40 @@ void Date::set(Date &other)
     this->year = other.year;
 }
 
+void Date::set6monthsPrior(const Date &other)
+{
+    this->day = other.day;
+    this->year = other.year;
+    this->month = other.month - 6;
+    if (this->month < 1)
+    {
+        this->year--;
+        this->month = 12 + this->month;
+    }
+}
+
+bool Date::isBetween(const Date &a, const Date &b)
+{
+    return (compareDates(a, *this) < 0) && (compareDates(*this, b) <= 0); 
+}
+
+int compareDates(const Date &d1, const Date &d2)
+{
+    if (d1.year != d2.year)
+    {
+        return d1.year - d2.year;
+    }
+    if (d1.month != d2.month)
+    {
+        return d1.month - d2.month;
+    }
+    if (d1.day != d2.day)
+    {
+        return d1.day - d2.day;
+    }
+    return 0;
+}
+
 /**
  * Compares Dates a and b.
  * @returns > 0 if a > b, 0 if a == b and < 0 if a < b.
