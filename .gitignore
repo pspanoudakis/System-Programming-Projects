@@ -1,7 +1,6 @@
 .vscode/*
 *.code-workspace
 recs
-unlink_pipe
 inputFile*
 parent_monitor
 monitor
@@ -15,11 +14,9 @@ log_file.*
 fifo_pipes/*
 countries/*
 
-!*.hpp
-!*.sh
-!.gitignore
 !app/*
-
+!lib/*
+!include/*
 
 
 
