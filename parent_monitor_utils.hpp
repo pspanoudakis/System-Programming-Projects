@@ -40,12 +40,26 @@ class TravelRequest
         ~TravelRequest(); 
 };
 
+class VirusFilter
+{
+    private:
+    public:
+        const char *virus_name;
+        BloomFilter *filter;
+        VirusFilter(const char *name, unsigned long size);
+        ~VirusFilter();
+};
+
 bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
 void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors);
 void restoreChild(MonitorInfo *monitor);
 void restoreChild(int pid, MonitorInfo **monitors, unsigned int num_monitors);
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors);
+void sendMonitorData(MonitorInfo **monitors, unsigned int &num_monitors, char *buffer, unsigned int buffer_size,
+                     unsigned long int bloom_size);
+void receiveMonitorFilters(MonitorInfo **monitors, unsigned int &num_monitors, LinkedList *viruses);
+void terminateChildren(MonitorInfo **monitors, unsigned int &num_monitors);
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
                       unsigned int num_monitors, struct dirent **directories, unsigned int num_dirs);
 

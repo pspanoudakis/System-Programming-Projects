@@ -371,12 +371,12 @@ int main(int argc, char const *argv[])
     unsigned long bloom_size;
     receiveLongInt(read_pipe_fd, bloom_size, buffer, buffer_size);
     // Read directory paths
-    unsigned short int num_dirs;
-    receiveShortInt(read_pipe_fd, num_dirs, buffer, buffer_size);
+    unsigned int num_dirs;
+    receiveInt(read_pipe_fd, num_dirs, buffer, buffer_size);
 
     DirectoryInfo **directories = new DirectoryInfo*[num_dirs];
     char *str;
-    for (unsigned short i = 0; i < num_dirs; i++)
+    for (unsigned int i = 0; i < num_dirs; i++)
     {
         str = NULL;
         receiveString(read_pipe_fd, str, buffer, buffer_size);
@@ -394,18 +394,18 @@ int main(int argc, char const *argv[])
     //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
-    sigset_t set;
-    sigemptyset(&set);
-    sigfillset(&set);
+    //sigset_t set;
+    //sigemptyset(&set);
+    //sigfillset(&set);
     int sig;
 
     while ( !terminate )
     {
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
-            //pause();
+            pause();
             //sigwait(&set, &sig);
-            sigsuspend(&set);
+            //sigsuspend(&set);
         }
         if (dir_update_notifications > 0)
         {

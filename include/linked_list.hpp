@@ -26,7 +26,7 @@ class LinkedList {
         ListNode* head;
         ListNode* last;
         DestroyFunc destroy;    // Used for destroying elements when the list is being destroyed.
-        int num_elements;
+        unsigned int num_elements;
 
     public:
         /**
@@ -50,7 +50,7 @@ class LinkedList {
         void* getElement(void *element, CompareFunc compare);
         void *getLast();
         bool isEmpty();
-        int getNumElements();
+        unsigned int getNumElements();
         ListIterator listHead();
         ListIterator listLast();
 };

@@ -30,7 +30,14 @@ int main(int argc, char const *argv[])
     {
         exit(EXIT_FAILURE);
     }
-    num_countries = num_dirs - 2;   
+    num_countries = num_dirs - 2;
+
+    createMonitors(monitors, num_monitors);
+
+    char buffer[4];
+    sendMonitorData(monitors, num_monitors, buffer, 4, 10);
+
+    terminateChildren(monitors, num_monitors);
 
     releaseResources(countries, monitors, num_monitors, directories, num_dirs);
 }

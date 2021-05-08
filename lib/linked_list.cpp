@@ -106,7 +106,7 @@ LinkedList::ListIterator LinkedList::listLast()
     return ListIterator(this->last);
 }
 
-int LinkedList::getNumElements()
+unsigned int LinkedList::getNumElements()
 {
     return this->num_elements;
 }

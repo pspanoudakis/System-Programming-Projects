@@ -1,7 +1,9 @@
 #include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include <wait.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -10,12 +12,15 @@
 
 #include "parent_monitor_utils.hpp"
 #include "include/linked_list.hpp"
+#include "include/bloom_filter.hpp"
 #include "include/rb_tree.hpp"
 #include "include/utils.hpp"
 #include "app/app_utils.hpp"
 #include "include/utils.hpp"
+#include "pipe_msg.hpp"
 
-MonitorInfo::MonitorInfo(): process_id(-1), read_pipe_path(NULL), write_pipe_path(NULL), subdirs(new LinkedList(delete_object_array<char>)) { }
+MonitorInfo::MonitorInfo(): process_id(-1), read_pipe_path(NULL), write_pipe_path(NULL),
+subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
 {
@@ -37,6 +42,14 @@ TravelRequest::TravelRequest(Date &request_date, bool is_accepted):
 date(request_date), accepted(is_accepted) { }
 
 TravelRequest::~TravelRequest() { }
+
+VirusFilter::VirusFilter(const char *name, unsigned long size): virus_name(copyString(name)), filter(new BloomFilter(size)) { }
+
+VirusFilter::~VirusFilter()
+{
+    delete[] virus_name;
+    delete filter;
+}
 
 bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors,
                               unsigned int num_monitors, struct dirent **&directories, unsigned int &num_dirs)
@@ -112,24 +125,17 @@ void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors)
         switch (pid)
         {
             case -1:
-                /* problem */
+                perror("Failed to create child process\n");
+                exit(EXIT_FAILURE);
                 break;
             case 0:
                 /* child */
                 execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
+                _Exit(EXIT_FAILURE);
             default:
                 monitors[i]->process_id = pid;
                 // send subdirs to child...
         }
-        return;
-    }
-    if (i < num_monitors)
-    {
-        num_monitors = i;
-    }
-    else
-    {
-        num_monitors = i - 1;
     }
 }
 
@@ -215,22 +221,61 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors)
     }
 }
 
+void sendMonitorData(MonitorInfo **monitors, unsigned int &num_monitors, char *buffer, unsigned int buffer_size,
+                     unsigned long int bloom_size)
+{
+    int fd;
+    for(unsigned int i = 0; (i < num_monitors && monitors[i] != NULL); i++)
+    {
+        fd = open(monitors[i]->write_pipe_path, O_WRONLY);
+        if (fd < 0)
+        {
+            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->write_pipe_path);
+        }
+        sendInt(fd, buffer_size, buffer, buffer_size);
+        sendLongInt(fd, bloom_size, buffer, buffer_size);
+        sendInt(fd, monitors[i]->subdirs->getNumElements(), buffer, buffer_size);
+        for (LinkedList::ListIterator itr = monitors[i]->subdirs->listHead(); !itr.isNull(); itr.forward())
+        {
+            sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
+        }
+        close(fd);
+    }
+}
+
+void receiveMonitorFilters(MonitorInfo **monitors, unsigned int &num_monitors, LinkedList *viruses)
+{
+
+}
+
+void terminateChildren(MonitorInfo **monitors, unsigned int &num_monitors)
+{
+    for(unsigned int i = 0; (i < num_monitors && monitors[i] != NULL); i++)
+    {
+        kill(monitors[i]->process_id, SIGKILL);
+        waitpid(monitors[i]->process_id, NULL, 0);
+        unlink(monitors[i]->read_pipe_path);
+        unlink(monitors[i]->write_pipe_path);
+    }
+}
+
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
                       unsigned int num_monitors, struct dirent **directories, unsigned int num_dirs)
 {
-    for (unsigned int i = 0; i < num_dirs - 2; i++)
+    unsigned int i;
+    for (i = 0; i < num_dirs - 2; i++)
     {
         delete countries[i];
     }
     delete[] countries;
 
-    for (unsigned int i = 0; i < num_monitors; i++)
+    for (i = 0; i < num_monitors; i++)
     {
         delete monitors[i];
     }
     delete[] monitors;
 
-    for (unsigned int i = 0; i < num_dirs; i++)
+    for (i = 0; i < num_dirs; i++)
     {
         free(directories[i]);
     }
