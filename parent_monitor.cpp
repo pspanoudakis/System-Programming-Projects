@@ -23,10 +23,14 @@ int main(int argc, char const *argv[])
     MonitorInfo **monitors;
     CountryMonitor **countries;
     struct dirent **directories;
-    unsigned int num_files;
+    unsigned int num_dirs;
+    unsigned int num_countries;
 
-    assignMonitorDirectories("./countries", countries, monitors, num_monitors, directories, num_files);
-    
+    if (!assignMonitorDirectories("./countries", countries, monitors, num_monitors, directories, num_dirs))
+    {
+        exit(EXIT_FAILURE);
+    }
+    num_countries = num_dirs - 2;   
 
-    releaseResources(countries, monitors, num_monitors, directories, num_files);
+    releaseResources(countries, monitors, num_monitors, directories, num_dirs);
 }

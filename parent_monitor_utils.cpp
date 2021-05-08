@@ -1,48 +1,69 @@
+#include <cstring>
 #include <unistd.h>
 #include <wait.h>
 #include <dirent.h>
-#include <cstring>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <string>
+#include <sstream>
 
 #include "parent_monitor_utils.hpp"
 #include "include/linked_list.hpp"
+#include "include/rb_tree.hpp"
 #include "include/utils.hpp"
 #include "app/app_utils.hpp"
+#include "include/utils.hpp"
 
-MonitorInfo::MonitorInfo(): process_id(-1), subdirs(new LinkedList(delete_object_array<char>)) { }
+MonitorInfo::MonitorInfo(): process_id(-1), read_pipe_path(NULL), write_pipe_path(NULL), subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
 {
+    delete[] read_pipe_path;
+    delete[] write_pipe_path;
     delete subdirs;
 }
 
 CountryMonitor::CountryMonitor(const char *name, MonitorInfo *monitor_info):
-country_name(copyString(name)), monitor(monitor_info) { }
+country_name(copyString(name)), monitor(monitor_info), requests_tree(new RedBlackTree(compareTravelRequests)) { }
 
 CountryMonitor::~CountryMonitor()
 {
-    delete country_name;
+    delete[] country_name;
+    delete requests_tree;
 }
 
-void assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors,
+TravelRequest::TravelRequest(Date &request_date, bool is_accepted):
+date(request_date), accepted(is_accepted) { }
+
+TravelRequest::~TravelRequest() { }
+
+bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors,
                               unsigned int num_monitors, struct dirent **&directories, unsigned int &num_dirs)
 {
     unsigned int i;
     num_dirs = scandir(path, &directories, NULL, alphasort);
 
-    countries = new CountryMonitor *[num_dirs];
-    for (i = 0; i < num_dirs; i++)
+    if (num_dirs == -1)
+    {
+        fprintf(stderr, "Failed to scan directory: %s\n", path);
+        return false;
+    }
+
+    countries = new CountryMonitor*[num_dirs - 2];
+    for (i = 0; i < num_dirs - 2; i++)
     {
         countries[i] = NULL;
     }
 
     monitors = new MonitorInfo*[num_monitors];
-    for (unsigned int i = 0; i < num_monitors; i++)
+    for (i = 0; i < num_monitors; i++)
     {
         monitors[i] = NULL;
     }
 
     i = 0;
-    for (unsigned int j = 0; j < num_dirs; j++)
+    for (unsigned int j = 2; j < num_dirs; j++)
     {
         if (strcmp(directories[j]->d_name, ".") == 0 || strcmp(directories[j]->d_name, "..") == 0)
         {
@@ -50,13 +71,35 @@ void assignMonitorDirectories(const char *path, CountryMonitor **&countries, Mon
         }
         if (monitors[i] == NULL)
         {
+            std::stringstream read_name_stream;
+            std::stringstream write_name_stream;
             monitors[i] = new MonitorInfo();
+            read_name_stream << "./fifo_pipes/read" << i;
+            write_name_stream << "./fifo_pipes/write" << i; 
+            monitors[i]->read_pipe_path = copyString(read_name_stream.str().c_str());
+            monitors[i]->write_pipe_path = copyString(write_name_stream.str().c_str());
+
+            if (mkfifo(monitors[i]->write_pipe_path, 0666) < 0 )
+            {
+                fprintf(stderr, "Error creating fifo: %s\n", monitors[i]->write_pipe_path);
+                return false;
+            }
+            if (mkfifo(monitors[i]->read_pipe_path, 0666) < 0 )
+            {
+                fprintf(stderr, "Error creating fifo: %s\n", monitors[i]->read_pipe_path);
+                return false;
+            }
         }
-        monitors[i]->subdirs->append(copyString(directories[j]->d_name));
-        countries[j] = new CountryMonitor(directories[j]->d_name, monitors[i]);
+        std::string directory_path(path);
+        directory_path.append("/");
+        directory_path.append(directories[j]->d_name);
+        monitors[i]->subdirs->append(copyString(directory_path.c_str()));
+        countries[j - 2] = new CountryMonitor(directories[j]->d_name, monitors[i]);
         i++;
         i = i % num_monitors;
     }
+
+    return true;
 }
 
 void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors)
@@ -92,6 +135,18 @@ void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors)
 
 void restoreChild(MonitorInfo *monitor)
 {
+    unlink(monitor->write_pipe_path);
+    unlink(monitor->read_pipe_path);
+    if (mkfifo(monitor->write_pipe_path, 0666) < 0 )
+    {
+        perror("Error creating fifo");
+        return;
+    }
+    if (mkfifo(monitor->read_pipe_path, 0666) < 0 )
+    {
+        perror("Error creating fifo");
+        return;
+    }
     int new_pid = fork();
     switch (new_pid)
     {
@@ -101,6 +156,7 @@ void restoreChild(MonitorInfo *monitor)
         case 0:
             /* child */
             execl("./monitor", "monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
+            _Exit(EXIT_FAILURE);
         default:
             monitor->process_id = new_pid;
             // send subdirs to child...
@@ -162,7 +218,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors)
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
                       unsigned int num_monitors, struct dirent **directories, unsigned int num_dirs)
 {
-    for (unsigned int i = 0; i < num_dirs; i++)
+    for (unsigned int i = 0; i < num_dirs - 2; i++)
     {
         delete countries[i];
     }
@@ -179,4 +235,17 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
         free(directories[i]);
     }
     free(directories);
+}
+
+
+int compareTravelRequests(void *r1, void *r2)
+{
+    TravelRequest *req1 = static_cast<TravelRequest*>(r1);
+    TravelRequest *req2 = static_cast<TravelRequest*>(r2);
+
+    int comp = compareDates(req1->date, req2->date);
+    if (comp != 0) { return comp; }
+
+    // return either -1 or 1
+    return -1 + (rand() % 2) * 2;
 }

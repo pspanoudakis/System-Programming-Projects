@@ -3,10 +3,13 @@
 recs
 unlink_pipe
 inputFile*
+parent_monitor
 monitor
 writer
 a/*
 log_file.*
+fifo_pipes/*
+countries/*
 
 !*.cpp
 !*.hpp

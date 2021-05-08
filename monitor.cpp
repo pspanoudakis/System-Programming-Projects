@@ -328,14 +328,17 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
 {
     std::stringstream logfile_name_stream;
     logfile_name_stream << "log_file." << getpid();
-    const char *logfile_name = logfile_name_stream.str().c_str();
+    const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
     if ((logfile = fopen(logfile_name, "w")) == NULL)
     {
         fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
+        delete [] logfile_name;
+        return;
     }
-
+    
+    delete [] logfile_name;
     for (LinkedList::ListIterator itr = countries->listHead(); !itr.isNull(); itr.forward())
     {
         CountryStatus *country =  static_cast<CountryStatus*>(itr.getData());
@@ -401,7 +404,8 @@ int main(int argc, char const *argv[])
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
         {
             //pause();
-            sigwait(&set, &sig);
+            //sigwait(&set, &sig);
+            sigsuspend(&set);
         }
         if (dir_update_notifications > 0)
         {
