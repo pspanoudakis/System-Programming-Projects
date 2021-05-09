@@ -390,8 +390,8 @@ int main(int argc, char const *argv[])
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
-
-    //sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    printf("sent\n");
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
     //sigset_t set;

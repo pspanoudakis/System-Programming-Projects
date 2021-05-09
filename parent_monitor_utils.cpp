@@ -4,6 +4,7 @@
 #include <wait.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -19,7 +20,7 @@
 #include "include/utils.hpp"
 #include "pipe_msg.hpp"
 
-MonitorInfo::MonitorInfo(): process_id(-1), read_pipe_path(NULL), write_pipe_path(NULL),
+MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), read_pipe_path(NULL), write_pipe_path(NULL),
 subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
@@ -115,7 +116,7 @@ bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, Mon
     return true;
 }
 
-void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors)
+void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors)
 {
     int pid;
     unsigned int i;
@@ -137,6 +138,7 @@ void createMonitors(MonitorInfo **monitors, unsigned int &num_monitors)
                 // send subdirs to child...
         }
     }
+    active_monitors = i;
 }
 
 void restoreChild(MonitorInfo *monitor)
@@ -221,11 +223,11 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors)
     }
 }
 
-void sendMonitorData(MonitorInfo **monitors, unsigned int &num_monitors, char *buffer, unsigned int buffer_size,
+void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                      unsigned long int bloom_size)
 {
     int fd;
-    for(unsigned int i = 0; (i < num_monitors && monitors[i] != NULL); i++)
+    for(unsigned int i = 0; i < num_monitors; i++)
     {
         fd = open(monitors[i]->write_pipe_path, O_WRONLY);
         if (fd < 0)
@@ -243,14 +245,81 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int &num_monitors, char *b
     }
 }
 
-void receiveMonitorFilters(MonitorInfo **monitors, unsigned int &num_monitors, LinkedList *viruses)
+void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, LinkedList *viruses,
+                           char *buffer, unsigned int buffer_size, unsigned long int bloom_size)
 {
+    fd_set fdset;
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    FD_ZERO(&fdset);
 
+    unsigned int done_monitors = 0;
+    int max_fd = -1;
+    for (unsigned int i = 0; i < num_monitors; i++)
+    {
+        int fd = open(monitors[i]->read_pipe_path, O_RDONLY);
+        if (fd < 0)
+        {
+
+        }
+        FD_SET(fd, &fdset);
+        monitors[i]->read_fd = fd;
+        if (max_fd < monitors[i]->read_fd)
+        {
+            max_fd = monitors[i]->read_fd;
+        }
+    }
+
+    while (done_monitors != num_monitors)
+    {
+        int ready_fds;
+        ready_fds = select(max_fd + 1, &fdset, NULL, NULL, &timeout);
+        if (ready_fds == -1)
+        {
+
+        }
+        if (ready_fds != 0)
+        {
+            for (unsigned int i = 0; i < num_monitors; i++)
+            {
+                if (FD_ISSET(monitors[i]->read_fd, &fdset))
+                {
+                    unsigned int num_filters;
+                    receiveInt(monitors[i]->read_fd, num_filters, buffer, buffer_size);
+                    for (unsigned int j = 0; j < num_filters; j++)
+                    {
+                        char *virus_name;
+                        receiveString(monitors[i]->read_fd, virus_name, buffer, buffer_size);
+                        VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
+                        if (virus == NULL)
+                        {
+                            viruses->append(new VirusFilter(virus_name, bloom_size));
+                            virus = static_cast<VirusFilter*>(viruses->getLast());
+                        }
+                        free(virus_name);
+                        updateBloomFilter(monitors[i]->read_fd, *(virus->filter), buffer, buffer_size);
+                    }
+                    done_monitors++;
+                }
+            }
+        }
+        FD_ZERO(&fdset);
+        for (unsigned int i = 0; i < num_monitors; i++)
+        {
+            FD_SET(monitors[i]->read_fd, &fdset);
+        }
+    }
+
+    for (unsigned int i = 0; i < num_monitors; i++)
+    {
+        close(monitors[i]->read_fd);
+    }
 }
 
-void terminateChildren(MonitorInfo **monitors, unsigned int &num_monitors)
+void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors)
 {
-    for(unsigned int i = 0; (i < num_monitors && monitors[i] != NULL); i++)
+    for(unsigned int i = 0; i < num_monitors; i++)
     {
         kill(monitors[i]->process_id, SIGKILL);
         waitpid(monitors[i]->process_id, NULL, 0);
@@ -259,8 +328,8 @@ void terminateChildren(MonitorInfo **monitors, unsigned int &num_monitors)
     }
 }
 
-void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
-                      unsigned int num_monitors, struct dirent **directories, unsigned int num_dirs)
+void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
+                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses)
 {
     unsigned int i;
     for (i = 0; i < num_dirs - 2; i++)
@@ -271,6 +340,11 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
 
     for (i = 0; i < num_monitors; i++)
     {
+        if (monitors[i] != NULL)
+        {
+            unlink(monitors[i]->read_pipe_path);
+            unlink(monitors[i]->write_pipe_path);
+        }
         delete monitors[i];
     }
     delete[] monitors;
@@ -280,8 +354,14 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors,
         free(directories[i]);
     }
     free(directories);
+    
+    delete viruses;
 }
 
+int compareNameVirusFilter(void *name, void *filter)
+{
+    return strcmp(static_cast<char*>(name), static_cast<VirusFilter*>(filter)->virus_name);
+}
 
 int compareTravelRequests(void *r1, void *r2)
 {
