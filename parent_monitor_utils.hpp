@@ -19,6 +19,15 @@ class MonitorInfo
         ~MonitorInfo();
 };
 
+class VirusRequests
+{
+    public:
+        const char *virus_name;
+        RedBlackTree *requests_tree;
+        VirusRequests(const char *name);
+        ~VirusRequests();
+};
+
 class CountryMonitor
 {
     private:
@@ -26,7 +35,7 @@ class CountryMonitor
     public:
         const char *country_name;
         MonitorInfo *monitor;
-        RedBlackTree *requests_tree;
+        LinkedList *virus_requests;
         CountryMonitor(const char *name, MonitorInfo *monitor_info);
         ~CountryMonitor();
 };

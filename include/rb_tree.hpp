@@ -26,6 +26,7 @@ class RBTreeNode
 
         RBTreeNode(Color c, void *element, RBTreeNode *parent_node);
         void destroyDescendants();
+        void destroyDescendants(DestroyFunc destroy);
         RBTreeNode *sibling();
         bool isLeftChild();
         void replaceWithNewParent(RBTreeNode *new_parent);
@@ -52,6 +53,7 @@ class RedBlackTree
         void insert(void *element);
         void *search(void *element);
         unsigned int getNumElements();
+        void clear(DestroyFunc destroy);
 };
 
 #endif

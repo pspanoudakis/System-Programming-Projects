@@ -30,13 +30,23 @@ MonitorInfo::~MonitorInfo()
     delete subdirs;
 }
 
+VirusRequests::VirusRequests(const char *name):
+virus_name(copyString(name)), requests_tree(new RedBlackTree(compareTravelRequests)) { }
+
+VirusRequests::~VirusRequests()
+{
+    delete[] virus_name;
+    requests_tree->clear(delete_object<TravelRequest>);
+    delete requests_tree;
+}
+
 CountryMonitor::CountryMonitor(const char *name, MonitorInfo *monitor_info):
-country_name(copyString(name)), monitor(monitor_info), requests_tree(new RedBlackTree(compareTravelRequests)) { }
+country_name(copyString(name)), monitor(monitor_info), virus_requests(new LinkedList(delete_object<VirusRequests>)) { }
 
 CountryMonitor::~CountryMonitor()
 {
+    delete virus_requests;
     delete[] country_name;
-    delete requests_tree;
 }
 
 TravelRequest::TravelRequest(Date &request_date, bool is_accepted):

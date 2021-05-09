@@ -50,6 +50,28 @@ void RBTreeNode::destroyDescendants()
 }
 
 /**
+ * Deletes all the descendants of the Node recursively.
+ * The Nodes data will also be deleted using the specified destroy function.
+ */
+void RBTreeNode::destroyDescendants(DestroyFunc destroy)
+{
+    if (this->left != NULL)
+    // If there is a Left Child, destroy its descendants and itself
+    {
+        this->left->destroyDescendants();
+        destroy(this->left->data);
+        delete left;
+    }
+    if (this->right != NULL)
+    // If there is a Right Child, destroy its descendants and itself
+    {
+        this->right->destroyDescendants();
+        destroy(this->right->data);
+        delete right;
+    }
+}
+
+/**
  * Indicates whether the Node is a Left Child.
  */
 bool RBTreeNode::isLeftChild()
@@ -325,4 +347,15 @@ void* RedBlackTree::search(void *element)
 unsigned int RedBlackTree::getNumElements()
 {
     return this->num_elements;
+}
+
+void RedBlackTree::clear(DestroyFunc destroy)
+{
+    if (this->root != NULL)
+    {
+        this->root->destroyDescendants(destroy);
+        destroy(this->root->data);
+        delete this->root;
+        this->root = NULL;
+    }
 }
