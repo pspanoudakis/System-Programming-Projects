@@ -44,7 +44,7 @@ bool isPositiveNumber(const char* str)
 }
 
 /**
- * Reads a character sequence up to a newline character or EOF from stream,
+ * Reads a character sequence up to a newline character or EOF from stream, 
  * and returns a character buffer which contains the sequence.
  * 
  * @returns A pointer to the character buffer containing the line.
@@ -460,7 +460,7 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
 
     // Initializing given arguments to NULL
     start.set(0, 0, 0);
-    start.set(0, 0, 0);
+    end.set(0, 0, 0);
     country_name = NULL;
     virus_name = NULL;
 
@@ -543,6 +543,7 @@ bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, 
         default:
             // This point should never be reached, but
             // if it does, something really bad has happened :(
+            delete[] args;
             return false;
             break;
     }

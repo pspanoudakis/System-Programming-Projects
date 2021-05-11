@@ -15,7 +15,7 @@
 #include "app/app_utils.hpp"
 #include "app/parse_utils.hpp"
 
-bool sigchld_received = false;
+int sigchld_received = 0;
 bool terminate = false;
 
 void sigint_handler(int s)
@@ -27,7 +27,7 @@ void sigint_handler(int s)
 
 void sigchld_handler(int s)
 {
-    sigchld_received = true;
+    sigchld_received++;
     signal(SIGCHLD, sigchld_handler);
 }
 
@@ -61,7 +61,7 @@ bool addVaccinationRecordsParse(char *&country_name)
     return true;
 }
 
-bool searchVaccinationStatusParse(int &citizen_id)
+bool searchVaccinationStatusParse(unsigned int &citizen_id)
 {
     char *arg;
     // Try to obtain the argument
@@ -90,27 +90,153 @@ bool searchVaccinationStatusParse(int &citizen_id)
     return true;
 }
 
-bool travelRequestParse()
+bool travelRequestParse(unsigned int &citizen_id, Date &date, char *country_name, char *virus_name)
 {
-
-}
-
-bool travelStatsParse()
-{
-
-}
-
-void travelRequest(unsigned int citizen_id, Date &date, const char *country_name, const char *virus_name,
-                   LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
-                   CountryMonitor **countries, unsigned int num_countries)
-{
-
-}
-
-void travelStats(const char *virus_name, Date &start, Date &end, const char *country_name,
-                 CountryMonitor **countries, unsigned int num_countries)
-{
+    short int curr_arg = 0;     // This indicates which argument is examined
+    char *token;                // This is used to obtain the token returned by strtok
     
+    // Initializing the given arguments to NULL
+    country_name = NULL;
+    virus_name = NULL;
+    date.set(0, 0, 0);
+
+    // Loop until strtok no longer gives other tokens or more than expected arguments detected
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg < 5 )
+    {
+        switch (curr_arg)
+        {
+            case 0:
+                // token is citizen_id
+                if (!isPositiveNumber(token) || strlen(token) > MAX_ID_DIGITS)
+                {
+                    printf("Invalid Citizen ID deteted. Make sure it is an up-to %d digits number.\n",
+                            MAX_ID_DIGITS);
+                    return false;
+                }
+                citizen_id = atoi(token);
+                break;
+            case 1:
+                // token is date
+                if (!parseDateString(token, date))
+                // Could not parse Date token successfully 
+                {
+                    printf("Invalid date argument detected. Rejecting command.\n");
+                    return false;
+                }
+                break;
+            case 2:
+                // token is countryFrom
+                country_name = new char [strlen(token)+1];
+                strcpy(country_name, token);
+                break;
+            case 3:
+                // token is countryTo
+            case 4:
+                // token is virus
+                virus_name = new char [strlen(token)+1];
+                strcpy(virus_name, token);
+                break;
+            default:
+                break;
+        }
+        curr_arg++;
+    }
+    // Checking how many arguments have been read
+    if (curr_arg == 5)
+    {
+        return true;
+    }
+    else if (curr_arg < 5)
+    {
+        printf("Less than expected arguments have been detected. Rejecting command.\n");
+    }
+    else
+    {
+        printf("More than expected arguments have been detected. Rejecting command.\n");
+    }
+    return false;
+}
+
+bool travelStatsParse(char *virus_name, Date &start, Date &end, char *country_name)
+{
+    char **args = new char*[4];     // The string arguments will be stored here initially
+    short int curr_arg = 0;         // This indicates which argument is examined
+    char *token;                    // This is used to obtain the token returned by strtok
+
+    // Initializing given arguments to NULL
+    start.set(0, 0, 0);
+    end.set(0, 0, 0);
+    country_name = NULL;
+    virus_name = NULL;
+
+    // Get all the user arguments
+    while ( (token = strtok(NULL, " "))!= NULL && curr_arg < 4)
+    {
+        args[curr_arg] = token;
+        curr_arg++;
+    }
+    if (token != NULL)
+    // Reject command if arguments were more than expected
+    {
+        printf("More than expected arguments have been detected. Rejecting command.\n");
+        delete[] args;
+        return false;
+    }
+    switch (curr_arg)
+    // Exam the number of given arguments, and parse accordingly
+    {
+        case 0:
+        case 1:
+        case 2:
+            // No arguments were given
+            printf("Less than expected arguments have been detected. Rejecting command.\n");
+            delete[] args;
+            return false;
+        case 3:
+            // args are: virus date1 date2
+            virus_name = new char[strlen(args[0])+1];
+            strcpy(virus_name, args[0]);
+
+            if ( !(parseDateString(args[1], start) && parseDateString(args[2], end)) )
+            {
+                delete[] args;
+                printf("Invalid date argument detected. Rejecting command.\n");
+                return false;
+            }
+            delete[] args;
+            if (compareDates(start, end) > 0)
+            {
+                printf("The first Date cannot be greater than the second one. Rejecting command.\n");
+                return false;
+            }
+            return true;
+        case 4:
+            // args are: virus date1 date2 country
+            virus_name = new char[strlen(args[0])+1];
+            strcpy(virus_name, args[1]);
+            country_name = new char[strlen(args[3])+1];
+            strcpy(country_name, args[3]);
+
+            if ( !(parseDateString(args[1], start) && parseDateString(args[2], end)) )
+            {
+                delete[] args;
+                printf("Invalid date argument detected. Rejecting command.\n");
+                return false;
+            }
+            delete[] args;
+            if (compareDates(start, end) > 0)
+            {
+                printf("The first Date cannot be greater than the second one. Rejecting command.\n");
+                return false;
+            }
+            return true;   
+        default:
+            // This point should never be reached, but
+            // if it does, something really bad has happened :(
+            delete[] args;
+            return false;
+            break;
+    }
 }
 
 void addVaccinationRecords(const char *country_name, CountryMonitor **countries, unsigned int num_countries,
@@ -149,12 +275,31 @@ void addVaccinationRecords(const char *country_name, CountryMonitor **countries,
     printf("The specified country was not found.\n");
 }
 
+void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, unsigned int active_monitors,
+                             char *buffer, unsigned int buffer_size)
+{
+
+}
+
+void travelRequest(unsigned int citizen_id, Date &date, const char *country_name, const char *virus_name,
+                   LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
+                   CountryMonitor **countries, unsigned int num_countries)
+{
+
+}
+
+void travelStats(const char *virus_name, Date &start, Date &end, const char *country_name,
+                 CountryMonitor **countries, unsigned int num_countries)
+{
+    
+}
+
 void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, unsigned int buffer_size,
                          CountryMonitor **countries, LinkedList *viruses, MonitorInfo **monitors,
                          unsigned int num_countries, unsigned int active_monitors)
 {
     // Variables used for storing command parameters
-    int citizen_id;
+    unsigned int citizen_id;
     char *country_name, *virus_name;
     Date date, start, end;
 
@@ -166,11 +311,21 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
         // Release any temporarily allocated memory at the end.
         if (strcmp(token, "/travelRequest") == 0)
         {
-
+            if (travelRequestParse(citizen_id, date, country_name, virus_name))
+            {
+                //travelRequest()
+            }
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/travelStats") == 0)
         {
-            
+            if (travelStatsParse(virus_name, start, end, country_name))
+            {
+                //travelStats()
+            }
+            delete[] country_name;
+            delete[] virus_name;
         }
         else if (strcmp(token, "/addVaccinationRecords") == 0)
         {
@@ -182,7 +337,10 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
         }
         else if (strcmp(token, "/searchVaccinationRecords") == 0)
         {
-            
+            if (searchVaccinationStatusParse(citizen_id))
+            {
+                searchVaccinationStatus(citizen_id, monitors, active_monitors, buffer, buffer_size);
+            }
         }
         else
         {
@@ -228,6 +386,11 @@ int main(int argc, char const *argv[])
     char *line_buf;
     while ( !terminate )
     {
+        if (sigchld_received > 0)
+        {
+            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size);
+            sigchld_received--;
+        }
         pause();
         line_buf = fgetline(stdin);
         if (line_buf == NULL)

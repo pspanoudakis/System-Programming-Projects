@@ -7,8 +7,6 @@ class LinkedList;
 
 class MonitorInfo
 {
-    private:
-        /* data */
     public:
         int process_id;
         int read_fd;
@@ -30,8 +28,6 @@ class VirusRequests
 
 class CountryMonitor
 {
-    private:
-        /* data */
     public:
         const char *country_name;
         MonitorInfo *monitor;
@@ -42,7 +38,6 @@ class CountryMonitor
 
 class TravelRequest
 {
-    private:
     public:
         Date date;
         const bool accepted;
@@ -52,7 +47,6 @@ class TravelRequest
 
 class VirusFilter
 {
-    private:
     public:
         const char *virus_name;
         BloomFilter *filter;
