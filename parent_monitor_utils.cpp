@@ -151,7 +151,7 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
     active_monitors = i;
 }
 
-void restoreChild(MonitorInfo *monitor)
+void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size)
 {
     unlink(monitor->write_pipe_path);
     unlink(monitor->read_pipe_path);
@@ -177,36 +177,25 @@ void restoreChild(MonitorInfo *monitor)
             _Exit(EXIT_FAILURE);
         default:
             monitor->process_id = new_pid;
-            // send subdirs to child...
+            int fd = open(monitor->write_pipe_path, O_WRONLY);
+            if (fd < 0)
+            {
+                fprintf(stderr, "Failed to open pipe: %s\n", monitor->write_pipe_path);
+            }
+            sendInt(fd, buffer_size, buffer, buffer_size);
+            sendLongInt(fd, bloom_size, buffer, buffer_size);
+            sendInt(fd, monitor->subdirs->getNumElements(), buffer, buffer_size);
+            for (LinkedList::ListIterator itr = monitor->subdirs->listHead(); !itr.isNull(); itr.forward())
+            {
+                sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
+            }
+            close(fd);
     }
     return;
 }
 
-void restoreChild(int pid, MonitorInfo **monitors, unsigned int num_monitors)
-{
-    for(unsigned int i = 0; i < num_monitors; i++)
-    {
-        if(monitors[i]->process_id == pid)
-        {
-            int new_pid = fork();
-            switch (new_pid)
-            {
-                case -1:
-                    /* problem */
-                    break;
-                case 0:
-                    /* child */
-                    execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
-                default:
-                    monitors[i]->process_id = new_pid;
-                    // send subdirs to child...
-            }
-            return;
-        }
-    }
-}
-
-void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors)
+void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
+                             unsigned long int bloom_size)
 {
     int new_pid;
     int wait_pid;
@@ -215,20 +204,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors)
         wait_pid = waitpid(monitors[i]->process_id, NULL, WNOHANG);
         if(wait_pid > 0)
         {
-            new_pid = fork();
-            switch (new_pid)
-            {
-                case -1:
-                    /* problem */
-                    break;
-                case 0:
-                    /* child */
-                    execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
-                default:
-                    monitors[i]->process_id = new_pid;
-                    // send subdirs to child...
-            }
-            return;
+            restoreChild(monitors[i], buffer, buffer_size, bloom_size);
         }
     }
 }

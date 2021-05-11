@@ -63,9 +63,9 @@ class VirusFilter
 bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
 void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors);
-void restoreChild(MonitorInfo *monitor);
-void restoreChild(int pid, MonitorInfo **monitors, unsigned int num_monitors);
-void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors);
+void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size);
+void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
+                             unsigned long int bloom_size);
 void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                      unsigned long int bloom_size);
 void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, LinkedList *viruses,

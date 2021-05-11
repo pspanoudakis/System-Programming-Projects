@@ -211,7 +211,7 @@ void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -254,7 +254,7 @@ void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned in
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -283,7 +283,7 @@ void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -310,7 +310,7 @@ void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned 
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -340,7 +340,7 @@ void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int 
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -367,7 +367,7 @@ void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -394,7 +394,7 @@ void receiveShortInt(int pipe_fd, unsigned short int &i, char *buffer, unsigned 
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
@@ -421,7 +421,7 @@ void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned in
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 received_bytes = 0;
             }
