@@ -8,6 +8,8 @@
 #define TRAVEL_REQUEST_ACCEPTED 5
 #define TRAVEL_REQUEST_REJECTED 6
 #define TRAVEL_REQUEST_INVALID 7
+#define CITIZEN_FOUND 8
+#define CITIZEN_NOT_FOUND 9
 
 class BloomFilter;
 class Date;

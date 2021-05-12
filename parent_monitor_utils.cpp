@@ -360,3 +360,8 @@ int compareTravelRequests(void *r1, void *r2)
     // return either -1 or 1
     return -1 + (rand() % 2) * 2;
 }
+
+int compareNameVirusRequests(void *name, void *req)
+{
+    return strcmp(static_cast<char*>(name), static_cast<VirusRequests*>(req)->virus_name);
+}

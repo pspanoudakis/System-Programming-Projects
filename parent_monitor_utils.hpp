@@ -70,5 +70,6 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsign
 
 int compareNameVirusFilter(void *name, void *filter);
 int compareTravelRequests(void *r1, void *r2);
+int compareNameVirusRequests(void *name, void *req)
 
 #endif

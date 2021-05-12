@@ -9,8 +9,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <sstream>
+
 #include "pipe_msg.hpp"
 #include "include/linked_list.hpp"
+#include "include/bloom_filter.hpp"
+#include "include/rb_tree.hpp"
 #include "parent_monitor_utils.hpp"
 #include "app/app_utils.hpp"
 #include "app/parse_utils.hpp"
@@ -278,14 +282,129 @@ void addVaccinationRecords(const char *country_name, CountryMonitor **countries,
 void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, unsigned int active_monitors,
                              char *buffer, unsigned int buffer_size)
 {
+    fd_set fdset;
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    FD_ZERO(&fdset);
 
+    unsigned int done_monitors = 0;
+    int max_fd = -1;
+    for (unsigned int i = 0; i < active_monitors; i++)
+    {
+        int fd = open(monitors[i]->read_pipe_path, O_RDONLY);
+        if (fd < 0)
+        {
+            
+        }
+        FD_SET(fd, &fdset);
+        monitors[i]->read_fd = fd;
+        if (max_fd < monitors[i]->read_fd)
+        {
+            max_fd = monitors[i]->read_fd;
+        }
+    }
+
+    while (done_monitors != active_monitors)
+    {
+        int ready_fds;
+        ready_fds = select(max_fd + 1, &fdset, NULL, NULL, &timeout);
+        if (ready_fds == -1)
+        {
+
+        }
+        if (ready_fds != 0)
+        {
+            for (unsigned int i = 0; i < active_monitors; i++)
+            {
+                if (FD_ISSET(monitors[i]->read_fd, &fdset))
+                {
+                    char msg_type;
+                    receiveMessageType(monitors[i]->read_fd, msg_type, buffer, buffer_size);
+                    if (msg_type == CITIZEN_FOUND)
+                    {
+                        char *answer;
+                        receiveString(monitors[i]->read_fd, answer, buffer, buffer_size);
+                        printf("%s", answer);
+                        free(answer);
+                    }
+                    done_monitors++;
+                }
+            }
+        }
+        FD_ZERO(&fdset);
+        for (unsigned int i = 0; i < active_monitors; i++)
+        {
+            FD_SET(monitors[i]->read_fd, &fdset);
+        }
+    }
+
+    for (unsigned int i = 0; i < active_monitors; i++)
+    {
+        close(monitors[i]->read_fd);
+    }
 }
 
-void travelRequest(unsigned int citizen_id, Date &date, const char *country_name, const char *virus_name,
+void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char *virus_name,
                    LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
-                   CountryMonitor **countries, unsigned int num_countries)
+                   CountryMonitor **countries, unsigned int num_countries,
+                   char *buffer, unsigned int buffer_size)
 {
+    VirusFilter *target_virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
+    if (target_virus == NULL)
+    {
+        printf("ERROR: The specified virus was not found.\n");
+    }
+    else
+    {
+        CountryMonitor *target_country = NULL;
+        for (unsigned int i = 0; i < num_countries; i++)
+        {
+            if (strcmp(country_name, countries[i]->country_name) == 0)
+            {
+                target_country = countries[i];
+                break;
+            }
+        }
+        if (target_country == NULL)
+        {
+            printf("ERROR: The specified country was not found.\n");
+        }
+        else
+        {
+            char char_id[MAX_ID_DIGITS + 1]; // max digits + \0
+            sprintf(char_id, "%d", citizen_id);
+            bool accepted = false;
+            if (target_virus->filter->isPresent(char_id))
+            {
+                target_country->monitor->read_fd = open(target_country->monitor->read_pipe_path, O_RDONLY);
+                if (target_country->monitor->read_fd < 0)
+                {
 
+                }
+                char ans_type;
+                char *answer;
+                sendMessageType(target_country->monitor->read_fd, TRAVEL_REQUEST, buffer, buffer_size);
+                kill(target_country->monitor->process_id, SIGUSR2);
+                receiveMessageType(target_country->monitor->read_fd, ans_type, buffer, buffer_size);
+                receiveString(target_country->monitor->read_fd, answer, buffer, buffer_size);
+                printf("%s", answer);
+                free(answer);
+                accepted = (ans_type == TRAVEL_REQUEST_ACCEPTED);
+            }
+            else
+            {
+                printf("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
+            }
+            VirusRequests *requests = static_cast<VirusRequests*>(target_country->virus_requests->getElement(virus_name, compareNameVirusRequests));
+            if (requests == NULL)
+            {
+                target_country->virus_requests->append(new VirusRequests(virus_name));
+                requests = static_cast<VirusRequests*>(target_country->virus_requests->getLast());
+            }
+            requests->requests_tree->insert(new TravelRequest(date, accepted));
+        }
+    }
 }
 
 void travelStats(const char *virus_name, Date &start, Date &end, const char *country_name,

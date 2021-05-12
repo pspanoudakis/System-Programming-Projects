@@ -266,13 +266,15 @@ void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer,
     unsigned int citizen_id;
     receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
     CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
-    std::string answer;
+    
     if (citizen == NULL)
     {
-        answer.append("A citizen with the specified ID was not found.\n");
+        //answer.append("A citizen with the specified ID was not found.\n");
+        sendMessageType(write_pipe_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
     }
     else
     {
+        std::string answer;
         answer.append(citizen->toString());
 
         for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
@@ -280,9 +282,9 @@ void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer,
             VirusRecords *virus =  static_cast<VirusRecords*>(itr.getData());
             virus->getVaccinationStatusString(citizen_id, answer);
         }
-        
+        sendMessageType(write_pipe_fd, CITIZEN_FOUND, buffer, buffer_size);
+        sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
     }
-    sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
 }
 
 void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
