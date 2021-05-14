@@ -320,6 +320,7 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
             break;  
         case SEARCH_STATUS:
             serveSearchStatusRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, viruses);
+            break;
         default:
             // Should never be reached, or something is wrong
             break;

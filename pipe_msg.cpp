@@ -299,13 +299,13 @@ void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned
     }
 }
 
-void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size)
+void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left, total_bytes;
     int received_bytes;
-    for(unsigned long int total_bytes = 0; total_bytes < filter.numBytes; total_bytes += received_bytes)
+    for(unsigned long int total_bytes = 0; total_bytes < filter->numBytes; total_bytes += received_bytes)
     {
-        bytes_left = filter.numBytes - total_bytes;
+        bytes_left = filter->numBytes - total_bytes;
         bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
         received_bytes = read(pipe_fd, buffer, bytes_to_read);
         if (received_bytes < 0)
@@ -323,7 +323,7 @@ void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned 
         {
             for (int i = 0; i < received_bytes; i++)
             {
-                filter.bits[total_bytes + i] = filter.bits[total_bytes + i] | buffer[i]; 
+                filter->bits[total_bytes + i] = filter->bits[total_bytes + i] | buffer[i]; 
             }
         }
     }

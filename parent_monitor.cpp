@@ -94,7 +94,7 @@ bool searchVaccinationStatusParse(unsigned int &citizen_id)
     return true;
 }
 
-bool travelRequestParse(unsigned int &citizen_id, Date &date, char *country_name, char *virus_name)
+bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&country_name, char *&virus_name)
 {
     short int curr_arg = 0;     // This indicates which argument is examined
     char *token;                // This is used to obtain the token returned by strtok
@@ -135,6 +135,7 @@ bool travelRequestParse(unsigned int &citizen_id, Date &date, char *country_name
                 break;
             case 3:
                 // token is countryTo
+                break;
             case 4:
                 // token is virus
                 virus_name = new char [strlen(token)+1];
@@ -161,7 +162,7 @@ bool travelRequestParse(unsigned int &citizen_id, Date &date, char *country_name
     return false;
 }
 
-bool travelStatsParse(char *virus_name, Date &start, Date &end, char *country_name)
+bool travelStatsParse(char *virus_name, Date &start, Date &end, char *&country_name)
 {
     char **args = new char*[4];     // The string arguments will be stored here initially
     short int curr_arg = 0;         // This indicates which argument is examined
@@ -270,7 +271,7 @@ void addVaccinationRecords(const char *country_name, CountryMonitor **countries,
                     virus = static_cast<VirusFilter*>(viruses->getLast());
                 }
                 free(virus_name);
-                updateBloomFilter(countries[i]->monitor->read_fd, *(virus->filter), buffer, buffer_size);
+                updateBloomFilter(countries[i]->monitor->read_fd, virus->filter, buffer, buffer_size);
             }
             printf("Records updated successfully.\n");
             return;
@@ -292,13 +293,22 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
     int max_fd = -1;
     for (unsigned int i = 0; i < active_monitors; i++)
     {
-        int fd = open(monitors[i]->read_pipe_path, O_RDONLY);
-        if (fd < 0)
+        int read_fd = open(monitors[i]->read_pipe_path, O_RDONLY);
+        if (read_fd < 0)
         {
             
         }
-        FD_SET(fd, &fdset);
-        monitors[i]->read_fd = fd;
+        int write_fd = open(monitors[i]->write_pipe_path, O_WRONLY);
+        if (write_fd < 0)
+        {
+
+        }
+        sendMessageType(write_fd, SEARCH_STATUS, buffer, buffer_size);
+        sendInt(write_fd, citizen_id, buffer, buffer_size);
+        kill(monitors[i]->process_id, SIGUSR2);
+        close(write_fd);
+        FD_SET(read_fd, &fdset);
+        monitors[i]->read_fd = read_fd;
         if (max_fd < monitors[i]->read_fd)
         {
             max_fd = monitors[i]->read_fd;
@@ -382,15 +392,26 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
                 {
 
                 }
+                int write_fd = open(target_country->monitor->write_pipe_path, O_WRONLY);
+                if (write_fd < 0)
+                {
+
+                }
                 char ans_type;
                 char *answer;
-                sendMessageType(target_country->monitor->read_fd, TRAVEL_REQUEST, buffer, buffer_size);
+                sendMessageType(write_fd, TRAVEL_REQUEST, buffer, buffer_size);
+                sendInt(write_fd, citizen_id, buffer, buffer_size);
+                sendDate(write_fd, date, buffer, buffer_size);
+                sendString(write_fd, virus_name, buffer, buffer_size);
                 kill(target_country->monitor->process_id, SIGUSR2);
+                
                 receiveMessageType(target_country->monitor->read_fd, ans_type, buffer, buffer_size);
                 receiveString(target_country->monitor->read_fd, answer, buffer, buffer_size);
                 printf("%s", answer);
                 free(answer);
                 accepted = (ans_type == TRAVEL_REQUEST_ACCEPTED);
+                close(write_fd);
+                close(target_country->monitor->read_fd);
             }
             else
             {
@@ -432,7 +453,8 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
         {
             if (travelRequestParse(citizen_id, date, country_name, virus_name))
             {
-                //travelRequest()
+                travelRequest(citizen_id, date, country_name, virus_name, viruses, monitors, active_monitors,
+                              countries, num_countries, buffer, buffer_size);
             }
             delete[] country_name;
             delete[] virus_name;
@@ -454,7 +476,7 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
             }
             delete[] country_name;
         }
-        else if (strcmp(token, "/searchVaccinationRecords") == 0)
+        else if (strcmp(token, "/searchVaccinationStatus") == 0)
         {
             if (searchVaccinationStatusParse(citizen_id))
             {
@@ -476,14 +498,12 @@ int main(int argc, char const *argv[])
     signal(SIGQUIT, sigint_handler);
     signal(SIGCHLD, sigchld_handler);
 
-    unsigned int num_monitors = 3;
-    unsigned int active_monitors;
+    unsigned int num_monitors = 3, active_monitors;
     MonitorInfo **monitors;
     CountryMonitor **countries;
     LinkedList *viruses;
     struct dirent **directories;
-    unsigned int num_dirs;
-    unsigned int num_countries;
+    unsigned int num_dirs, num_countries;
 
     if (!assignMonitorDirectories("./countries", countries, monitors, num_monitors, directories, num_dirs))
     {
@@ -499,7 +519,6 @@ int main(int argc, char const *argv[])
     sendMonitorData(monitors, active_monitors, buffer, buffer_size, bloom_size);
 
     viruses = new LinkedList(delete_object<VirusFilter>);
-
     receiveMonitorFilters(monitors, active_monitors, viruses, buffer, buffer_size, bloom_size);
 
     char *line_buf;
@@ -510,7 +529,6 @@ int main(int argc, char const *argv[])
             checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size);
             sigchld_received--;
         }
-        pause();
         line_buf = fgetline(stdin);
         if (line_buf == NULL)
         {

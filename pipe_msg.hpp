@@ -34,7 +34,7 @@ void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer
 
 // receive might not be needed
 void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size);
-void updateBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size);
+void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size);
 
 void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_size);
 

@@ -284,7 +284,7 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
                             virus = static_cast<VirusFilter*>(viruses->getLast());
                         }
                         free(virus_name);
-                        updateBloomFilter(monitors[i]->read_fd, *(virus->filter), buffer, buffer_size);
+                        updateBloomFilter(monitors[i]->read_fd, virus->filter, buffer, buffer_size);
                     }
                     done_monitors++;
                 }
