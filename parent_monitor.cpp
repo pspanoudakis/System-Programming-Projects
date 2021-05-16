@@ -428,10 +428,73 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
     }
 }
 
-void travelStats(const char *virus_name, Date &start, Date &end, const char *country_name,
+void getTravelStatsRec(RBTreeNode *root, Date &start, Date &end, unsigned int &accepted, unsigned int &rejected)
+{
+    if (root == NULL) { return; }
+    // Getting the root Record
+    TravelRequest *root_data = static_cast<TravelRequest*>(root->data);
+
+    if (compareDates(&root_data->date, &start) >= 0)
+    // root Date is greater than start
+    {
+        // so count stats in Left subtree
+        getTravelStatsRec(root->left, start, end, accepted, rejected);
+        if (compareDates(&root_data->date, &end) <= 0)
+        // end is greater than root Date
+        {
+            // root is in range, so update the counter
+            root_data->accepted ? accepted++ : rejected++;
+            // and count stats in the right subtree
+            getTravelStatsRec(root->right, start, end, accepted, rejected);
+            return;
+        }
+    }
+    // root is smaller than start, so just search to the right
+    if (compareDates(&root_data->date, &end) <= 0)
+    {
+        getTravelStatsRec(root->right, start, end, accepted, rejected);
+    }
+}
+
+void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
                  CountryMonitor **countries, unsigned int num_countries)
 {
-    
+    if (country_name == NULL)
+    {
+        travelStats(virus_name, start, end, country_name, countries, num_countries);
+        return;
+    }
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
+    for (int i = 0; i < num_countries; i++)
+    {
+        if (strcmp(country_name, countries[i]->country_name) == 0)
+        {
+            VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
+            if (virus_requests != NULL)
+            {
+                getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
+            }
+            return;
+        }
+    }
+    printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
+    printf("ACCEPTED %d\n", accepted_requests);
+    printf("REJECTED %d\n", rejected_requests);
+}
+
+void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries)
+{
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
+    for (int i = 0; i < num_countries; i++)
+    {
+        VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
+        if (virus_requests != NULL)
+        {
+            getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
+        }
+    }
 }
 
 void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, unsigned int buffer_size,
