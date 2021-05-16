@@ -162,7 +162,7 @@ bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&country_nam
     return false;
 }
 
-bool travelStatsParse(char *virus_name, Date &start, Date &end, char *&country_name)
+bool travelStatsParse(char *&virus_name, Date &start, Date &end, char *&country_name)
 {
     char **args = new char*[4];     // The string arguments will be stored here initially
     short int curr_arg = 0;         // This indicates which argument is examined
@@ -193,7 +193,6 @@ bool travelStatsParse(char *virus_name, Date &start, Date &end, char *&country_n
         case 0:
         case 1:
         case 2:
-            // No arguments were given
             printf("Less than expected arguments have been detected. Rejecting command.\n");
             delete[] args;
             return false;
@@ -456,12 +455,29 @@ void getTravelStatsRec(RBTreeNode *root, Date &start, Date &end, unsigned int &a
     }
 }
 
+void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries)
+{
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
+    for (int i = 0; i < num_countries; i++)
+    {
+        VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
+        if (virus_requests != NULL)
+        {
+            getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
+        }
+    }
+    printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
+    printf("ACCEPTED %d\n", accepted_requests);
+    printf("REJECTED %d\n", rejected_requests);
+}
+
 void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
                  CountryMonitor **countries, unsigned int num_countries)
 {
     if (country_name == NULL)
     {
-        travelStats(virus_name, start, end, country_name, countries, num_countries);
+        travelStats(virus_name, start, end, countries, num_countries);
         return;
     }
     unsigned int accepted_requests = 0;
@@ -481,20 +497,6 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
     printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
     printf("ACCEPTED %d\n", accepted_requests);
     printf("REJECTED %d\n", rejected_requests);
-}
-
-void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries)
-{
-    unsigned int accepted_requests = 0;
-    unsigned int rejected_requests = 0;
-    for (int i = 0; i < num_countries; i++)
-    {
-        VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
-        if (virus_requests != NULL)
-        {
-            getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
-        }
-    }
 }
 
 void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, unsigned int buffer_size,
@@ -526,7 +528,7 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
         {
             if (travelStatsParse(virus_name, start, end, country_name))
             {
-                //travelStats()
+                travelStats(virus_name, start, end, country_name, countries, num_countries);
             }
             delete[] country_name;
             delete[] virus_name;
