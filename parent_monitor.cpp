@@ -591,7 +591,7 @@ int main(int argc, char const *argv[])
     {
         if (sigchld_received > 0)
         {
-            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size);
+            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses);
             sigchld_received--;
         }
         line_buf = fgetline(stdin);
@@ -603,6 +603,7 @@ int main(int argc, char const *argv[])
         // Exit if asked by the user
         {
             terminate = true;
+            free(line_buf);
             continue;
         }
         // Otherwise, try to parse the line into a command and execute it.

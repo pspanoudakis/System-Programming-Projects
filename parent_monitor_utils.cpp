@@ -151,7 +151,8 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
     active_monitors = i;
 }
 
-void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size)
+void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size,
+                  LinkedList *viruses)
 {
     unlink(monitor->write_pipe_path);
     unlink(monitor->read_pipe_path);
@@ -176,6 +177,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             execl("./monitor", "monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
             _Exit(EXIT_FAILURE);
         default:
+            // Sent required information
             monitor->process_id = new_pid;
             int fd = open(monitor->write_pipe_path, O_WRONLY);
             if (fd < 0)
@@ -190,12 +192,35 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
                 sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
             }
             close(fd);
+
+            // Receive Bloom Filters
+            unsigned int num_filters;
+            monitor->read_fd = open(monitor->read_pipe_path, O_RDONLY);
+            if (monitor->read_fd < 0)
+            {
+                fprintf(stderr, "Failed to open pipe: %s\n", monitor->write_pipe_path);
+            }
+            receiveInt(monitor->read_fd, num_filters, buffer, buffer_size);
+            for (unsigned int j = 0; j < num_filters; j++)
+            {
+                char *virus_name;
+                receiveString(monitor->read_fd, virus_name, buffer, buffer_size);
+                VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
+                if (virus == NULL)
+                {
+                    viruses->append(new VirusFilter(virus_name, bloom_size));
+                    virus = static_cast<VirusFilter*>(viruses->getLast());
+                }
+                free(virus_name);
+                updateBloomFilter(monitor->read_fd, virus->filter, buffer, buffer_size);
+            }
+            close(monitor->read_fd);
     }
     return;
 }
 
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                             unsigned long int bloom_size)
+                             unsigned long int bloom_size, LinkedList *viruses)
 {
     int new_pid;
     int wait_pid;
@@ -204,7 +229,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
         wait_pid = waitpid(monitors[i]->process_id, NULL, WNOHANG);
         if(wait_pid > 0)
         {
-            restoreChild(monitors[i], buffer, buffer_size, bloom_size);
+            restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses);
         }
     }
 }

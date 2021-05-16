@@ -29,6 +29,7 @@ bool terminate = false;
 void sigusr1_handler(int s)
 {
     dir_update_notifications++;
+    printf("Got sigusr1\n");
     signal(SIGUSR1, sigusr1_handler);
 }
 
@@ -394,7 +395,6 @@ int main(int argc, char const *argv[])
 
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
     sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
-    printf("sent\n");
 
     unsigned int accepted_requests = 0, rejected_requests = 0;
     //sigset_t set;
@@ -414,7 +414,7 @@ int main(int argc, char const *argv[])
         {
             dir_update_notifications--;
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
-            sendMessageType(write_pipe_fd, BLOOM_TRANSFER, buffer, buffer_size);
+            //sendMessageType(write_pipe_fd, BLOOM_TRANSFER, buffer, buffer_size);
             sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
         }
         if (fifo_pipe_queue_messages > 0)
