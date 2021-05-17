@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
-#include <cerrno>
-#include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -11,13 +9,12 @@
 #include <string>
 #include <sstream>
 
+#include "../include/linked_list.hpp"
+#include "../include/hash_table.hpp"
+#include "../include/utils.hpp"
 #include "pipe_msg.hpp"
-#include "include/linked_list.hpp"
-#include "include/hash_table.hpp"
-#include "include/utils.hpp"
-#include "parent_monitor_utils.hpp"
-#include "app/app_utils.hpp"
-#include "app/parse_utils.hpp"
+#include "app_utils.hpp"
+#include "parse_utils.hpp"
 
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
@@ -29,7 +26,7 @@ bool terminate = false;
 void sigusr1_handler(int s)
 {
     dir_update_notifications++;
-    printf("Got sigusr1\n");
+    //printf("Got sigusr1\n");
     signal(SIGUSR1, sigusr1_handler);
 }
 

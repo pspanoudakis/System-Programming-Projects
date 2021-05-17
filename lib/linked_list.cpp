@@ -101,6 +101,9 @@ LinkedList::ListIterator LinkedList::listHead()
     return ListIterator(this->head);
 }
 
+/**
+ * Returns an iterator to the last element of the list.
+ */
 LinkedList::ListIterator LinkedList::listLast()
 {
     return ListIterator(this->last);

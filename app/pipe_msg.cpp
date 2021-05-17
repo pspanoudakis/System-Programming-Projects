@@ -6,8 +6,8 @@
 #include <string>
 
 #include "pipe_msg.hpp"
-#include "include/bloom_filter.hpp"
-#include "app/app_utils.hpp"
+#include "../include/bloom_filter.hpp"
+#include "app_utils.hpp"
 
 /*
 using std::memcpy;

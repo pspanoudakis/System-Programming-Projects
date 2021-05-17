@@ -11,13 +11,12 @@
 #include <string>
 #include <sstream>
 
+#include "../include/linked_list.hpp"
+#include "../include/bloom_filter.hpp"
+#include "../include/rb_tree.hpp"
+#include "../include/utils.hpp"
 #include "parent_monitor_utils.hpp"
-#include "include/linked_list.hpp"
-#include "include/bloom_filter.hpp"
-#include "include/rb_tree.hpp"
-#include "include/utils.hpp"
-#include "app/app_utils.hpp"
-#include "include/utils.hpp"
+#include "app_utils.hpp"
 #include "pipe_msg.hpp"
 
 MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), read_pipe_path(NULL), write_pipe_path(NULL),

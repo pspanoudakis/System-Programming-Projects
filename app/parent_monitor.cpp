@@ -16,8 +16,8 @@
 #include "include/bloom_filter.hpp"
 #include "include/rb_tree.hpp"
 #include "parent_monitor_utils.hpp"
-#include "app/app_utils.hpp"
-#include "app/parse_utils.hpp"
+#include "app_utils.hpp"
+#include "parse_utils.hpp"
 
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 #define MAX_MONITORS 300
