@@ -608,14 +608,14 @@ void createLogFile(CountryMonitor **countries, unsigned int num_countries,
 bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigned int &num_monitors,
                     unsigned long &bloom_size, unsigned int &buffer_size)
 {
+    directory_path = NULL;
     if (argc != 9)
     {
         perror("Insufficient/Unexpected number of arguments given.\n");
         printf("Usage: ./travelMonitor -m numMonitors -b bufferSize -s sizeOfBloom -i input_dir\n");
         return false;
     }
-    
-    directory_path = NULL;
+
     bool got_num_monitors = false;
     bool got_buffer_size = false;
     bool got_bloom_size = false;
@@ -623,7 +623,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
 
     for (int i = 1; i < 8; i+=2)
     {
-        if ( strcmp(argv[i], "-m") != 0 )
+        if ( strcmp(argv[i], "-m") == 0 )
         {
             if (got_num_monitors) {
                 perror("Duplicate numMonitors argument detected.\n");
@@ -641,7 +641,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
                 return false;
             }
         }
-        else if ( strcmp(argv[i], "-b") != 0 )
+        else if ( strcmp(argv[i], "-b") == 0 )
         {
             if (got_buffer_size) { 
                 perror("Duplicate bufferSize argument detected.\n");
@@ -659,7 +659,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
                 return false;
             }
         }
-        else if ( strcmp(argv[i], "-s") )
+        else if ( strcmp(argv[i], "-s") == 0 )
         {
             if (got_bloom_size) { 
                 perror("Duplicate sizeOfBloom argument detected.\n");
@@ -677,7 +677,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
                 return false;
             }
         }
-        else if ( strcmp(argv[i], "-i") != 0 )
+        else if ( strcmp(argv[i], "-i") == 0 )
         {
             if (got_input_dir) {
                 perror("Duplicate input_dir argument detected.\n");
@@ -710,7 +710,7 @@ int main(int argc, char const *argv[])
     unsigned int num_dirs, num_countries, buffer_size;
     unsigned long bloom_size;
 
-    if (checkParseArgs(argc, argv, directory_path, num_monitors, bloom_size, buffer_size))
+    if (!checkParseArgs(argc, argv, directory_path, num_monitors, bloom_size, buffer_size))
     {
         delete[] directory_path;
         exit(EXIT_FAILURE);
@@ -734,16 +734,16 @@ int main(int argc, char const *argv[])
     unsigned int rejected_requests = 0;
     while ( !terminate )
     {
-        if (sigchld_received > 0)
-        {
-            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses);
-            sigchld_received--;
-        }
         printf("------------------------------------------\n");
         line_buf = fgetline(stdin);
         if (line_buf == NULL)
         {
             continue;
+        }
+        if (sigchld_received > 0)
+        {
+            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses);
+            sigchld_received--;
         }
         if (strcmp(line_buf, "/exit") == 0)
         // Exit if asked by the user

@@ -414,7 +414,6 @@ int main(int argc, char const *argv[])
         {
             dir_update_notifications--;
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
-            //sendMessageType(write_pipe_fd, BLOOM_TRANSFER, buffer, buffer_size);
             sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
         }
         if (fifo_pipe_queue_messages > 0)
