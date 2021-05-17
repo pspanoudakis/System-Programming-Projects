@@ -12,9 +12,9 @@
 #include <sstream>
 
 #include "pipe_msg.hpp"
-#include "include/linked_list.hpp"
-#include "include/bloom_filter.hpp"
-#include "include/rb_tree.hpp"
+#include "../include/linked_list.hpp"
+#include "../include/bloom_filter.hpp"
+#include "../include/rb_tree.hpp"
 #include "parent_monitor_utils.hpp"
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
@@ -361,7 +361,7 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
 void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char *virus_name,
                    LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
                    CountryMonitor **countries, unsigned int num_countries,
-                   char *buffer, unsigned int buffer_size)
+                   char *buffer, unsigned int buffer_size, unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     VirusFilter *target_virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
     if (target_virus == NULL)
@@ -427,6 +427,7 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
                 requests = static_cast<VirusRequests*>(target_country->virus_requests->getLast());
             }
             requests->requests_tree->insert(new TravelRequest(date, accepted));
+            accepted ? accepted_requests++ : rejected_requests++;
         }
     }
 }
@@ -518,7 +519,8 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
 
 void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, unsigned int buffer_size,
                          CountryMonitor **countries, LinkedList *viruses, MonitorInfo **monitors,
-                         unsigned int num_countries, unsigned int active_monitors)
+                         unsigned int num_countries, unsigned int active_monitors,
+                         unsigned int &accepted, unsigned int &rejected)
 {
     // Variables used for storing command parameters
     unsigned int citizen_id;
@@ -536,7 +538,7 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
             if (travelRequestParse(citizen_id, date, country_name, virus_name))
             {
                 travelRequest(citizen_id, date, country_name, virus_name, viruses, monitors, active_monitors,
-                              countries, num_countries, buffer, buffer_size);
+                              countries, num_countries, buffer, buffer_size, accepted, rejected);
             }
             delete[] country_name;
             delete[] virus_name;
@@ -753,7 +755,8 @@ int main(int argc, char const *argv[])
             continue;
         }
         // Otherwise, try to parse the line into a command and execute it.
-        parseExecuteCommand(line_buf, bloom_size, buffer, buffer_size, countries, viruses, monitors, num_countries, active_monitors);
+        parseExecuteCommand(line_buf, bloom_size, buffer, buffer_size, countries, viruses, monitors, num_countries, active_monitors,
+                            accepted_requests, rejected_requests);
         free(line_buf);
     }
 

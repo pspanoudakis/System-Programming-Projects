@@ -19,7 +19,7 @@
 #include "app_utils.hpp"
 #include "pipe_msg.hpp"
 
-MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), read_pipe_path(NULL), write_pipe_path(NULL),
+MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), write_pipe_path(NULL), read_pipe_path(NULL),
 subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
@@ -221,7 +221,6 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                              unsigned long int bloom_size, LinkedList *viruses)
 {
-    int new_pid;
     int wait_pid;
     for(unsigned int i = 0; i < num_monitors; i++)
     {

@@ -991,7 +991,7 @@ int compareStrings(void *a, void *b)
 }
 
 DirectoryInfo::DirectoryInfo(const char *path_str):
-path(copyString(path_str)), contents(new LinkedList(delete_object_array<char>)), numContents(0) { }
+numContents(0), path(copyString(path_str)), contents(new LinkedList(delete_object_array<char>)) { }
 
 DirectoryInfo::~DirectoryInfo()
 {

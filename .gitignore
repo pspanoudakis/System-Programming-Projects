@@ -13,6 +13,9 @@ a/*
 log_file.*
 fifo_pipes/*
 countries/*
+build/*
+monitor
+travelMonitor
 
 !app/*
 !lib/*

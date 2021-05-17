@@ -397,7 +397,7 @@ int main(int argc, char const *argv[])
     //sigset_t set;
     //sigemptyset(&set);
     //sigfillset(&set);
-    int sig;
+    //int sig;
 
     while ( !terminate )
     {

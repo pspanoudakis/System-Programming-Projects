@@ -246,7 +246,6 @@ void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned in
     // dest_str.clear();
     unsigned int string_length;
     receiveInt(pipe_fd, string_length, buffer, buffer_size);
-    void *realloc_res;
     unsigned long received_bytes, bytes_to_read, bytes_left = string_length;
     while (bytes_left > 0)
     {
@@ -274,7 +273,7 @@ void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned in
 
 void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size)
 {
-    unsigned int bytes_to_read, bytes_left, total_bytes;
+    unsigned int bytes_to_read, bytes_left;
     int received_bytes;
     for(unsigned long int total_bytes = 0; total_bytes < filter.numBytes; total_bytes += received_bytes)
     {
@@ -301,7 +300,7 @@ void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned
 
 void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
 {
-    unsigned int bytes_to_read, bytes_left, total_bytes;
+    unsigned int bytes_to_read, bytes_left;
     int received_bytes;
     for(unsigned long int total_bytes = 0; total_bytes < filter->numBytes; total_bytes += received_bytes)
     {
