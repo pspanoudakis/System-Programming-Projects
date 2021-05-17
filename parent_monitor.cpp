@@ -19,6 +19,10 @@
 #include "app/app_utils.hpp"
 #include "app/parse_utils.hpp"
 
+#define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
+#define MAX_MONITORS 300
+#define MAX_BUFFER_SIZE 1000000
+
 int sigchld_received = 0;
 bool terminate = false;
 
@@ -455,6 +459,19 @@ void getTravelStatsRec(RBTreeNode *root, Date &start, Date &end, unsigned int &a
     }
 }
 
+void getTravelStatsRec(RBTreeNode *root, unsigned int &accepted, unsigned int &rejected)
+{
+    if (root == NULL) { return; }
+
+    getTravelStatsRec(root->left, accepted, rejected);
+
+    // Getting the root Record
+    TravelRequest *root_data = static_cast<TravelRequest*>(root->data);
+    root_data->accepted ? accepted++ : rejected++;
+
+    getTravelStatsRec(root->right, accepted, rejected);
+}
+
 void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries)
 {
     unsigned int accepted_requests = 0;
@@ -555,7 +572,128 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
     }
 }
 
+void createLogFile(CountryMonitor **countries, unsigned int num_countries,
+                   unsigned int accepted_requests, unsigned int rejected_requests)
+{
+    std::stringstream logfile_name_stream;
+    logfile_name_stream << "log_files/log_file." << getpid();
+    const char *logfile_name = copyString(logfile_name_stream.str().c_str());
+    FILE *logfile;
+
+    if ((logfile = fopen(logfile_name, "w")) == NULL)
+    {
+        fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
+        delete [] logfile_name;
+        return;
+    }
+    
+    delete [] logfile_name;
+    for (unsigned int i = 0; i < num_countries; i++)
+    {
+        fprintf(logfile, "%s\n", countries[i]->country_name);
+    }
+    
+    fprintf(logfile, "TOTAL TRAVEL REQUESTS %d\n", accepted_requests + rejected_requests);
+    fprintf(logfile, "ACCEPTED %d\n", accepted_requests);
+    fprintf(logfile, "REJECTED %d\n", rejected_requests);
+    
+    fclose(logfile);
+}
+
 //-------------------------------------------------------------------------------------------------
+/**
+ * Checks and stores the program agruments properly.
+ * @returns TRUE if the arguments are valid, FALSE otherwise.
+ */
+bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigned int &num_monitors,
+                    unsigned long &bloom_size, unsigned int &buffer_size)
+{
+    if (argc != 9)
+    {
+        perror("Insufficient/Unexpected number of arguments given.\n");
+        printf("Usage: ./travelMonitor -m numMonitors -b bufferSize -s sizeOfBloom -i input_dir\n");
+        return false;
+    }
+    
+    directory_path = NULL;
+    bool got_num_monitors = false;
+    bool got_buffer_size = false;
+    bool got_bloom_size = false;
+    bool got_input_dir = false;
+
+    for (int i = 1; i < 8; i+=2)
+    {
+        if ( strcmp(argv[i], "-m") != 0 )
+        {
+            if (got_num_monitors) {
+                perror("Duplicate numMonitors argument detected.\n");
+                return false; 
+            }
+            int temp = atoi(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_MONITORS)
+            {
+                num_monitors = temp;
+                got_num_monitors = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid numMonitors argument. Make sure it is a positive integer up to %d.\n", MAX_MONITORS);
+                return false;
+            }
+        }
+        else if ( strcmp(argv[i], "-b") != 0 )
+        {
+            if (got_buffer_size) { 
+                perror("Duplicate bufferSize argument detected.\n");
+                return false; 
+            }
+            int temp = atoi(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_MONITORS)
+            {
+                buffer_size = temp;
+                got_buffer_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid numMonitors argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
+                return false;
+            }
+        }
+        else if ( strcmp(argv[i], "-s") )
+        {
+            if (got_bloom_size) { 
+                perror("Duplicate sizeOfBloom argument detected.\n");
+                return false;
+            }
+            long temp = atol(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_BLOOM_SIZE)
+            {
+                bloom_size = temp;
+                got_bloom_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid numMonitors argument. Make sure it is a positive integer up to %d", MAX_BLOOM_SIZE);
+                return false;
+            }
+        }
+        else if ( strcmp(argv[i], "-i") != 0 )
+        {
+            if (got_input_dir) {
+                perror("Duplicate input_dir argument detected.\n");
+                return false;
+            }
+            directory_path = copyString(argv[i + 1]);
+            got_input_dir = true;
+        }
+        else
+        {
+            perror("Invalid argument detected.\n");
+            return false;
+        }
+    }
+    return true;
+}
 
 int main(int argc, char const *argv[])
 {
@@ -567,26 +705,33 @@ int main(int argc, char const *argv[])
     MonitorInfo **monitors;
     CountryMonitor **countries;
     LinkedList *viruses;
+    char *directory_path;
     struct dirent **directories;
-    unsigned int num_dirs, num_countries;
+    unsigned int num_dirs, num_countries, buffer_size;
+    unsigned long bloom_size;
 
+    if (checkParseArgs(argc, argv, directory_path, num_monitors, bloom_size, buffer_size))
+    {
+        delete[] directory_path;
+        exit(EXIT_FAILURE);
+    }
     if (!assignMonitorDirectories("./countries", countries, monitors, num_monitors, directories, num_dirs))
     {
         exit(EXIT_FAILURE);
     }
-    num_countries = num_dirs - 2;
+    num_countries = num_dirs - 2;   // num_dirs counts "." and ".." as well
 
     createMonitors(monitors, num_monitors, active_monitors);
 
-    char buffer[4];
-    unsigned int buffer_size = 4;
-    unsigned long int bloom_size = 100;
+    char *buffer = new char[buffer_size];
     sendMonitorData(monitors, active_monitors, buffer, buffer_size, bloom_size);
 
     viruses = new LinkedList(delete_object<VirusFilter>);
     receiveMonitorFilters(monitors, active_monitors, viruses, buffer, buffer_size, bloom_size);
 
     char *line_buf;
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
     while ( !terminate )
     {
         if (sigchld_received > 0)
@@ -594,6 +739,7 @@ int main(int argc, char const *argv[])
             checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses);
             sigchld_received--;
         }
+        printf("------------------------------------------\n");
         line_buf = fgetline(stdin);
         if (line_buf == NULL)
         {
@@ -612,5 +758,9 @@ int main(int argc, char const *argv[])
     }
 
     terminateChildren(monitors, active_monitors);
+    createLogFile(countries, num_countries, accepted_requests, rejected_requests);
+
+    delete[] directory_path;
+    delete[] buffer;
     releaseResources(countries, monitors, num_monitors, directories, num_dirs, viruses);
 }

@@ -331,7 +331,7 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
 void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_requests, LinkedList *countries)
 {
     std::stringstream logfile_name_stream;
-    logfile_name_stream << "log_file." << getpid();
+    logfile_name_stream << "log_files/log_file." << getpid();
     const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
