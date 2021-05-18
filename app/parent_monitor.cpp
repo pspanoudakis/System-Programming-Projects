@@ -221,7 +221,7 @@ bool travelStatsParse(char *&virus_name, Date &start, Date &end, char *&country_
         case 4:
             // args are: virus date1 date2 country
             virus_name = new char[strlen(args[0])+1];
-            strcpy(virus_name, args[1]);
+            strcpy(virus_name, args[0]);
             country_name = new char[strlen(args[3])+1];
             strcpy(country_name, args[3]);
 
@@ -509,7 +509,7 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
             {
                 getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
             }
-            return;
+            break;
         }
     }
     printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
