@@ -241,6 +241,45 @@ void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer
     }
 }
 
+void receiveStringAlt(int pipe_fd, char *&string, char *buffer, unsigned int buffer_size)
+{
+    unsigned int string_length;
+    receiveInt(pipe_fd, string_length, buffer, buffer_size);
+    string = (char*)malloc(string_length);
+    if (string == NULL)
+    {
+        // problem
+    }
+    unsigned long curr_string_size = 0, received_bytes, bytes_to_read, bytes_left = string_length;
+    while (bytes_left > 0)
+    {
+        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
+        received_bytes = read(pipe_fd, buffer, bytes_to_read);
+        if (received_bytes < 0)
+        {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                received_bytes = 0;
+            }
+            else
+            {
+                // problem
+            }
+        }
+        else
+        {
+            memcpy(string + curr_string_size, buffer, received_bytes);
+        }
+        bytes_left -= received_bytes;
+        curr_string_size += received_bytes;
+    }
+    if (string[string_length - 1] != '\0')
+    // In case something went wrong...
+    {
+        string[string_length - 1] = '\0';
+    }
+}
+
 void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned int buffer_size)
 {
     // dest_str.clear();
