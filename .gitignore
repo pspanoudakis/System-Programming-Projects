@@ -2,7 +2,7 @@
 *.code-workspace
 recs
 inputFile*
-parent_monitor
+app/parent_monitor
 monitor
 writer
 child1.cpp

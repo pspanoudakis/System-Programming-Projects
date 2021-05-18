@@ -57,12 +57,12 @@ for ((i=0; i < numRecords; i++)) do
         target_index=$numCountries
         mkdir "$2/${countries[target_index]}"
         let "numCountries+=1"
-        for ((j=1; j <= filesPerDir; j++)) do
+        for ((j=1; j < filesPerDir; j++)) do
             touch "$2/${countries[target_index]}/${countries[target_index]}-$j.txt"
         done
     fi
     echo "${records[i]}" >> "$2/${countries[target_index]}/${countries[target_index]}-${country_file_indexes[target_index]}.txt"
-    let "country_file_indexes[target_index] %= (filesPerDir + 1)"
+    let "country_file_indexes[target_index] %= (filesPerDir)"
     let "country_file_indexes[target_index]+=1"
 done
 

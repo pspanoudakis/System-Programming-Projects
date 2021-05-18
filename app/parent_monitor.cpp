@@ -650,7 +650,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
                 return false; 
             }
             int temp = atoi(argv[i + 1]);
-            if (temp > 0 && temp <= MAX_MONITORS)
+            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
             {
                 buffer_size = temp;
                 got_buffer_size = true;
