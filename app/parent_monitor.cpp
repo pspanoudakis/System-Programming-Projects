@@ -98,13 +98,14 @@ bool searchVaccinationStatusParse(unsigned int &citizen_id)
     return true;
 }
 
-bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&country_name, char *&virus_name)
+bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&countryFrom, char *&countryTo, char *&virus_name)
 {
     short int curr_arg = 0;     // This indicates which argument is examined
     char *token;                // This is used to obtain the token returned by strtok
     
     // Initializing the given arguments to NULL
-    country_name = NULL;
+    countryFrom = NULL;
+    countryTo = NULL;
     virus_name = NULL;
     date.set(0, 0, 0);
 
@@ -134,11 +135,13 @@ bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&country_nam
                 break;
             case 2:
                 // token is countryFrom
-                country_name = new char [strlen(token)+1];
-                strcpy(country_name, token);
+                countryFrom = new char [strlen(token)+1];
+                strcpy(countryFrom, token);
                 break;
             case 3:
                 // token is countryTo
+                countryTo = new char [strlen(token)+1];
+                strcpy(countryTo, token);
                 break;
             case 4:
                 // token is virus
@@ -358,7 +361,7 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
     }
 }
 
-void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char *virus_name,
+void travelRequest(unsigned int citizen_id, Date &date, char *country_from, char *country_to, char *virus_name,
                    LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
                    CountryMonitor **countries, unsigned int num_countries,
                    char *buffer, unsigned int buffer_size, unsigned int &accepted_requests, unsigned int &rejected_requests)
@@ -370,18 +373,34 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
     }
     else
     {
-        CountryMonitor *target_country = NULL;
+        CountryMonitor *target_country_from = NULL;
+        CountryMonitor *target_country_to = NULL;
         for (unsigned int i = 0; i < num_countries; i++)
         {
-            if (strcmp(country_name, countries[i]->country_name) == 0)
+            if (strcmp(country_from, countries[i]->country_name) == 0)
             {
-                target_country = countries[i];
-                break;
+                target_country_from = countries[i];
+                if (target_country_to != NULL)
+                {
+                    break;
+                }
+            }
+            if (strcmp(country_to, countries[i]->country_name) == 0)
+            {
+                target_country_to = countries[i];
+                if (target_country_from != NULL)
+                {
+                    break;
+                }
             }
         }
-        if (target_country == NULL)
+        if (target_country_from == NULL)
         {
-            printf("ERROR: The specified country was not found.\n");
+            printf("ERROR: The specified origin country was not found.\n");
+        }
+        else if (target_country_to == NULL)
+        {
+            printf("ERROR: The specified destination country was not found.\n");
         }
         else
         {
@@ -390,12 +409,12 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
             bool accepted = false;
             if (target_virus->filter->isPresent(char_id))
             {
-                target_country->monitor->read_fd = open(target_country->monitor->read_pipe_path, O_RDONLY);
-                if (target_country->monitor->read_fd < 0)
+                target_country_from->monitor->read_fd = open(target_country_from->monitor->read_pipe_path, O_RDONLY);
+                if (target_country_from->monitor->read_fd < 0)
                 {
 
                 }
-                int write_fd = open(target_country->monitor->write_pipe_path, O_WRONLY);
+                int write_fd = open(target_country_from->monitor->write_pipe_path, O_WRONLY);
                 if (write_fd < 0)
                 {
 
@@ -406,25 +425,25 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_name, char
                 sendInt(write_fd, citizen_id, buffer, buffer_size);
                 sendDate(write_fd, date, buffer, buffer_size);
                 sendString(write_fd, virus_name, buffer, buffer_size);
-                kill(target_country->monitor->process_id, SIGUSR2);
+                kill(target_country_from->monitor->process_id, SIGUSR2);
                 
-                receiveMessageType(target_country->monitor->read_fd, ans_type, buffer, buffer_size);
-                receiveString(target_country->monitor->read_fd, answer, buffer, buffer_size);
+                receiveMessageType(target_country_from->monitor->read_fd, ans_type, buffer, buffer_size);
+                receiveString(target_country_from->monitor->read_fd, answer, buffer, buffer_size);
                 printf("%s", answer);
                 free(answer);
                 accepted = (ans_type == TRAVEL_REQUEST_ACCEPTED);
                 close(write_fd);
-                close(target_country->monitor->read_fd);
+                close(target_country_from->monitor->read_fd);
             }
             else
             {
                 printf("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
             }
-            VirusRequests *requests = static_cast<VirusRequests*>(target_country->virus_requests->getElement(virus_name, compareNameVirusRequests));
+            VirusRequests *requests = static_cast<VirusRequests*>(target_country_to->virus_requests->getElement(virus_name, compareNameVirusRequests));
             if (requests == NULL)
             {
-                target_country->virus_requests->append(new VirusRequests(virus_name));
-                requests = static_cast<VirusRequests*>(target_country->virus_requests->getLast());
+                target_country_to->virus_requests->append(new VirusRequests(virus_name));
+                requests = static_cast<VirusRequests*>(target_country_to->virus_requests->getLast());
             }
             requests->requests_tree->insert(new TravelRequest(date, accepted));
             accepted ? accepted_requests++ : rejected_requests++;
@@ -500,7 +519,8 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
     }
     unsigned int accepted_requests = 0;
     unsigned int rejected_requests = 0;
-    for (int i = 0; i < num_countries; i++)
+    int i;
+    for (i = 0; i < num_countries; i++)
     {
         if (strcmp(country_name, countries[i]->country_name) == 0)
         {
@@ -512,9 +532,16 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
             break;
         }
     }
-    printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
-    printf("ACCEPTED %d\n", accepted_requests);
-    printf("REJECTED %d\n", rejected_requests);
+    if (i == num_countries)
+    {
+        printf("ERROR: The specified country was not found.\n");
+    }
+    else
+    {
+        printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
+        printf("ACCEPTED %d\n", accepted_requests);
+        printf("REJECTED %d\n", rejected_requests);
+    }
 }
 
 void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, unsigned int buffer_size,
@@ -524,7 +551,7 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
 {
     // Variables used for storing command parameters
     unsigned int citizen_id;
-    char *country_name, *virus_name;
+    char *country_name, *country_from, *country_to, *virus_name;
     Date date, start, end;
 
     char *token = strtok(command, " ");
@@ -535,12 +562,13 @@ void parseExecuteCommand(char *command, unsigned long bloom_size, char *buffer, 
         // Release any temporarily allocated memory at the end.
         if (strcmp(token, "/travelRequest") == 0)
         {
-            if (travelRequestParse(citizen_id, date, country_name, virus_name))
+            if (travelRequestParse(citizen_id, date, country_from, country_to, virus_name))
             {
-                travelRequest(citizen_id, date, country_name, virus_name, viruses, monitors, active_monitors,
+                travelRequest(citizen_id, date, country_from, country_to, virus_name, viruses, monitors, active_monitors,
                               countries, num_countries, buffer, buffer_size, accepted, rejected);
             }
-            delete[] country_name;
+            delete[] country_from;
+            delete[] country_to;
             delete[] virus_name;
         }
         else if (strcmp(token, "/travelStats") == 0)

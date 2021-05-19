@@ -122,11 +122,15 @@ void Date::set6monthsPrior(const Date &other)
         this->year--;
         this->month = 12 + temp_month;
     }
+    else
+    {
+        this->month = temp_month;
+    }
 }
 
 bool Date::isBetween(const Date &a, const Date &b)
 {
-    return (compareDates(a, *this) < 0) && (compareDates(*this, b) <= 0); 
+    return (compareDates(a, *this) <= 0) && (compareDates(*this, b) <= 0); 
 }
 
 int compareDates(const Date &d1, const Date &d2)

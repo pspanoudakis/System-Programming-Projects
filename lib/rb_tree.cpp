@@ -58,16 +58,18 @@ void RBTreeNode::destroyDescendants(DestroyFunc destroy)
     if (this->left != NULL)
     // If there is a Left Child, destroy its descendants and itself
     {
-        this->left->destroyDescendants();
+        this->left->destroyDescendants(destroy);
         destroy(this->left->data);
         delete left;
+        this->left = NULL;
     }
     if (this->right != NULL)
     // If there is a Right Child, destroy its descendants and itself
     {
-        this->right->destroyDescendants();
+        this->right->destroyDescendants(destroy);
         destroy(this->right->data);
         delete right;
+        this->right = NULL;
     }
 }
 

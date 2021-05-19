@@ -15,7 +15,7 @@
 - `lib` directory: Source files for ADT's used by the app.
 - `build` directory: Used during app build for objective files.
 - `Makefile`
-- `create_infiles.sh` script to generate input File.
+- `create_infiles.sh` script to generate Country directories.
 
 ### Compiling, Executing & Using the app
 **make**, **g++** and **openssl** are required (all installed in DIT workstations)
@@ -23,27 +23,21 @@
 In the project root, run `make` and after the build is done,
 run `./travelMonitor -m <numMonitors> -b <bufferSize> -s <sizeOfBloom> -i <inputDirectory>`
 
-The app first starts inserting records from the input file. If a record
-has a **syntax** error, a message will be displayed (the execution will continue).
-
-When file processing is over, the app will inform the user, and will be ready to accept user commands.
-After a command is given, the app will display an error message if the command was invalid,
-or execute the command and print the requested information, or a successful execution message.
-
 When done, run `make clean` to clean up objective files & executable.
 
 ### App Classes & Structures
 - **Parent Montor**:
-    - `MonitorInfo`:
-    - `VirusRequests`:
-    - `CountryMonitor`:
-    - `TravelRequest`:
-    - `VirusFilter`:
+    - `MonitorInfo`: Used by the Parent process to store information about each child Monitor (pipe paths, process id,
+                     directory paths)
+    - `VirusRequests`: Used to store Travel Requests, sorted by date in a Red-Black Tree, about a specific virus.
+    - `CountryMonitor`: Stores the monitor that has access to a specific Country directory.
+    - `TravelRequest`: Represents a Travel Request, which is either accepted or rejected and has a specific date.
+    - `VirusFilter`: Used by the Parent Process to store the bloom filter regarding a specific virus.
 - **Monitor**:
     - `CitizenRecord`: Contains Citizen information (ID, age, Name, Country)
     - `VaccinationRecord`: Contains Vaccination Record information (Citizen, Virus, vaccinated/non-vaccinated, Date)
     - `VirusRecords`: Contains Skip Lists & Bloom Filter for a specific Virus. 
-                    The Skip Lists contain pointers to Vaccination Records.
+                      The Skip Lists contain pointers to Vaccination Records.
     - `VirusCountryStatus`: It is associated with a specific Country and a specific Virus.
                             It contains a Red-Black Tree with all the Vaccination Records marked with "YES"
                             (connected with Citizens of this Country and this Virus),
@@ -51,8 +45,9 @@ When done, run `make clean` to clean up objective files & executable.
                             It also contains total population and age group counters for the Vaccination Records
                             (**both** YES/NO) associated with this Virus and Citizens of this Country.
     - `CountryStatus`: Contains the corresponding Country name, as well as
-                    a List of `VirusCountryStatus` objects.
-    - `DirectoryInfo`: 
+                       a List of `VirusCountryStatus` objects.
+    - `DirectoryInfo`: Used by the child Monitors to handle Directories. Stores the corresponding country directory path,
+                       as well as a list with the files in the directory.
 
 The Monitor app handles:
 - A Hash Table containing `CitizenRecord` objects.

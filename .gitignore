@@ -2,15 +2,13 @@
 *.code-workspace
 recs
 inputFile*
-app/parent_monitor
 monitor
 writer
 child1.cpp
 child2.cpp
 parent.cpp
 writer.cpp
-a/*
-log_file.*
+log_files/*
 fifo_pipes/*
 countries/*
 build/*
@@ -21,6 +19,9 @@ travelMonitor
 !lib/*
 !include/*
 
+app/parent_monitor
+app/test_dates.cpp
+app/test_dates
 
 
 
