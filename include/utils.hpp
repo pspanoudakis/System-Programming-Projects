@@ -20,13 +20,14 @@ typedef void (*DestroyFunc)(void *a);
 // Used to return an integer based on the specified element, to get the hashcode of.
 typedef int (*HashObjectFunc)(void *a);         
 
-// Used to destroy elements properly (ensuring destructor call & safely casting)
+// Used to destroy an object properly (ensuring destructor call with safe casting)
 template <class T>
 void delete_object(void *object)
 {
     delete static_cast<T*>(object);
 }
 
+// Used to destroy an array of objects properly (ensuring destructor call with safe casting)
 template <class T>
 void delete_object_array(void *array)
 {

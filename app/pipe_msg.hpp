@@ -1,15 +1,20 @@
+/**
+ * File: pipe_msg.hpp
+ * Routines used for receiving/sending data through fifo pipes.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #ifndef PIPE_MSG_HPP
 #define PIPE_MSG_HPP
 
-#define BLOOM_TRANSFER 1
-#define TRAVEL_REQUEST 2
-#define TRAVEL_STATS 3
-#define SEARCH_STATUS 4
-#define TRAVEL_REQUEST_ACCEPTED 5
-#define TRAVEL_REQUEST_REJECTED 6
-#define TRAVEL_REQUEST_INVALID 7
-#define CITIZEN_FOUND 8
-#define CITIZEN_NOT_FOUND 9
+/* Defined Message Type codes. */
+#define TRAVEL_REQUEST 1
+#define SEARCH_STATUS 2
+#define TRAVEL_REQUEST_ACCEPTED 3
+#define TRAVEL_REQUEST_REJECTED 4
+#define TRAVEL_REQUEST_INVALID 5
+#define CITIZEN_FOUND 6
+#define CITIZEN_NOT_FOUND 7
 
 class BloomFilter;
 class Date;

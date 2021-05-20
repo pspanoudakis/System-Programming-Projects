@@ -1,3 +1,9 @@
+/**
+ * File: parent_monitor_utils.cpp
+ * Implementations of Classes & Routines used by the Parent Monitor.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>

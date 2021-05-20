@@ -1,3 +1,9 @@
+/**
+ * File: pipe_msg.cpp
+ * Implementations of routines used for receiving/sending data through fifo pipes.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -9,20 +15,15 @@
 #include "../include/bloom_filter.hpp"
 #include "app_utils.hpp"
 
-/*
-using std::memcpy;
-using std::memset;
-using std::free;
-*/
-/*
-void sendBloomFilter(int pipe_fd, BloomFilter &filter, int buffer_size)
-{
-    for(unsigned long int i = 0; i < filter.numBytes; i += buffer_size)
-    {
-        write(pipe_fd, filter.bits + i, buffer_size);
-    }
-}*/
-
+/**
+ * @brief Writes the specified message type in the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param req_type The message type to write to the pipe.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
@@ -41,6 +42,11 @@ void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buff
                 {
                     bytes_to_write = 0;
                 }
+                else
+                {
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
+                }
             }
             else
             {
@@ -50,6 +56,15 @@ void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buff
     }
 }
 
+/**
+ * @brief Writes the bytes array of the specified Bloom Filter in the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param filter The Bloom Filter to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
@@ -68,6 +83,11 @@ void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned in
                 {
                     bytes_to_write = 0;
                 }
+                else
+                {
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
+                }
             }
             else
             {
@@ -77,6 +97,15 @@ void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned in
     }
 }
 
+/**
+ * @brief Writes the specified integer in the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param i The integer to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendInt(int pipe_fd, const unsigned int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
@@ -95,6 +124,11 @@ void sendInt(int pipe_fd, const unsigned int &i, char *buffer, unsigned int buff
                 {
                     bytes_to_write = 0;
                 }
+                else
+                {
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
+                }
             }
             else
             {
@@ -104,6 +138,15 @@ void sendInt(int pipe_fd, const unsigned int &i, char *buffer, unsigned int buff
     }
 }
 
+/**
+ * @brief Writes the specified short integer in the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param i The short integer to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendShortInt(int pipe_fd, const unsigned short int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
@@ -122,6 +165,11 @@ void sendShortInt(int pipe_fd, const unsigned short int &i, char *buffer, unsign
                 {
                     bytes_to_write = 0;
                 }
+                else
+                {
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
+                }
             }
             else
             {
@@ -131,6 +179,15 @@ void sendShortInt(int pipe_fd, const unsigned short int &i, char *buffer, unsign
     }
 }
 
+/**
+ * @brief Writes the specified long integer in the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param i The long integer to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendLongInt(int pipe_fd, const unsigned long int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_write, bytes_left;
@@ -149,6 +206,11 @@ void sendLongInt(int pipe_fd, const unsigned long int &i, char *buffer, unsigned
                 {
                     bytes_to_write = 0;
                 }
+                else
+                {
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
+                }
             }
             else
             {
@@ -158,6 +220,15 @@ void sendLongInt(int pipe_fd, const unsigned long int &i, char *buffer, unsigned
     }
 }
 
+/**
+ * @brief Sends the specified string through the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param string The string to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buffer_size)
 {
     unsigned int len = strlen(string) + 1;
@@ -180,7 +251,8 @@ void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buff
                 }
                 else
                 {
-                    //problem
+                    perror("Fatal error while writing to pipe.\n");
+                    exit(EXIT_FAILURE);
                 }                
             }
             else
@@ -191,6 +263,16 @@ void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buff
     }    
 }
 
+
+/**
+ * @brief Sends the specified Date through the fifo pipe
+ *  with the given file descriptor, using the given buffer with the specified size.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to write the data.
+ * @param date The date to send.
+ * @param buffer The buffer to copy the data before writing to the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void sendDate(int pipe_fd, const Date &date, char *buffer, unsigned int buffer_size)
 {
     sendShortInt(pipe_fd, date.day, buffer, buffer_size);
@@ -198,6 +280,17 @@ void sendDate(int pipe_fd, const Date &date, char *buffer, unsigned int buffer_s
     sendShortInt(pipe_fd, date.year, buffer, buffer_size);
 }
 
+
+/**
+ * @brief Reads a string from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in a heap character array
+ * pointed by the given string pointer. The pointer must be free-ed after use.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param string This will point to the received data.
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer_size)
 {
     unsigned int string_length;
@@ -217,7 +310,8 @@ void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer
             }
             else
             {
-                // problem
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
             }
         }
         else
@@ -225,8 +319,8 @@ void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer
             realloc_res = realloc(string, curr_string_size + received_bytes);
             if (realloc_res == NULL)
             {
-                free(string);
-                // problem
+                perror("Failed realloc() call.\n");
+                exit(EXIT_FAILURE);
             }
             string = (char*)realloc_res;
             memcpy(string + curr_string_size, buffer, received_bytes);
@@ -248,7 +342,8 @@ void receiveStringAlt(int pipe_fd, char *&string, char *buffer, unsigned int buf
     string = (char*)malloc(string_length);
     if (string == NULL)
     {
-        // problem
+        perror("Failed malloc() call.\n");
+        exit(EXIT_FAILURE);
     }
     unsigned long curr_string_size = 0, received_bytes, bytes_to_read, bytes_left = string_length;
     while (bytes_left > 0)
@@ -263,7 +358,8 @@ void receiveStringAlt(int pipe_fd, char *&string, char *buffer, unsigned int buf
             }
             else
             {
-                // problem
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
             }
         }
         else
@@ -298,7 +394,8 @@ void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned in
             }
             else
             {
-                // problem
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
             }
         }
         else
@@ -327,8 +424,9 @@ void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned
             }
             else
             {
-                // problem
-            }            
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
+            }           
         }
         else
         {
@@ -337,6 +435,16 @@ void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned
     }
 }
 
+/**
+ * @brief Reads a Bloom Filter byte array from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and "updates" the byte array of the given Bloom Filter
+ * using bitwise-OR.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param filter The Bloom Filter to be updated based on the received data.
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
@@ -354,7 +462,8 @@ void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned 
             }
             else
             {
-                // problem
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
             }            
         }
         else
@@ -367,6 +476,15 @@ void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned 
     }
 }
 
+/**
+ * @brief Reads a Message Type from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in the given char variable.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param req_type The variable to store the received Message Type.
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
@@ -384,8 +502,9 @@ void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int 
             }
             else
             {
-                // problem
-            }            
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
+            }          
         }
         else
         {
@@ -394,6 +513,15 @@ void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int 
     }
 }
 
+/**
+ * @brief Reads an integer from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in the given integer variable.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param i The variable to store the received integer
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
@@ -411,8 +539,9 @@ void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_
             }
             else
             {
-                // problem
-            }            
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
+            }          
         }
         else
         {
@@ -421,6 +550,15 @@ void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_
     }
 }
 
+/**
+ * @brief Reads a short integer from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in the given short integer variable.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param i The variable to store the received short integer
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveShortInt(int pipe_fd, unsigned short int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
@@ -438,8 +576,9 @@ void receiveShortInt(int pipe_fd, unsigned short int &i, char *buffer, unsigned 
             }
             else
             {
-                // problem
-            }            
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -448,6 +587,15 @@ void receiveShortInt(int pipe_fd, unsigned short int &i, char *buffer, unsigned 
     }
 }
 
+/**
+ * @brief Reads a long integer from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in the given long integer variable.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param i The variable to store the received long integer
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned int buffer_size)
 {
     unsigned int bytes_to_read, bytes_left;
@@ -465,8 +613,9 @@ void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned in
             }
             else
             {
-                // problem
-            }            
+                perror("Fatal error while reading from pipe.\n");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -475,6 +624,15 @@ void receiveLongInt(int pipe_fd, unsigned long int &i, char *buffer, unsigned in
     }
 }
 
+/**
+ * @brief Reads a Date from the fifo pipe with the given file descriptor,
+ * using the given buffer with the specified size, and stores it in the specified Date object.
+ * 
+ * @param pipe_fd The file descriptor of the fifo pipe to read data from.
+ * @param date The date object to store the received date.
+ * @param buffer The buffer to store newly received data from the pipe.
+ * @param buffer_size The size of the buffer.
+ */
 void receiveDate(int pipe_fd, Date &date, char *buffer, unsigned int buffer_size)
 {
     receiveShortInt(pipe_fd, date.day, buffer, buffer_size);

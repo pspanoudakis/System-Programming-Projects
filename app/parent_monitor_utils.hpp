@@ -1,9 +1,13 @@
+/**
+ * File: parent_monitor_utils.hpp
+ * Classes & Routines used by the Parent Monitor.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #ifndef PARENT_MONITOR_UTILS_HPP
 #define PARENT_MONITOR_UTILS_HPP
 
 #include "app_utils.hpp"
-
-class LinkedList;
 
 class MonitorInfo
 {

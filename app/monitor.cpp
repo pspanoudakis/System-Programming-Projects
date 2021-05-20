@@ -1,3 +1,9 @@
+/**
+ * File: parent_monitor.cpp
+ * Child Monitor main app.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -310,8 +316,6 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
 
     switch (msg_type)
     {
-        case BLOOM_TRANSFER:
-            break;
         case TRAVEL_REQUEST:
             serveTravelRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size,
                                citizens, viruses, accepted_requests, rejected_requests);

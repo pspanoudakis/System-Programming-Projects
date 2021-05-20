@@ -1,3 +1,9 @@
+/**
+ * File: parent_monitor.cpp
+ * Parent Monitor main app.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -632,7 +638,7 @@ void createLogFile(CountryMonitor **countries, unsigned int num_countries,
 
 //-------------------------------------------------------------------------------------------------
 /**
- * Checks and stores the program agruments properly.
+ * Checks and stores the program arguments properly.
  * @returns TRUE if the arguments are valid, FALSE otherwise.
  */
 bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigned int &num_monitors,
