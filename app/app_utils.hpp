@@ -146,12 +146,15 @@ class CountryStatus
         void storeNewVaccinationRecord(VaccinationRecord *record);
 };
 
+/**
+ * Used by child Monitors to store information about assigned country directories.
+ */
 class DirectoryInfo
 {
-        unsigned short int numContents;
+        unsigned short int numContents;     // Number of files in the directory
     public:
-        const char *path;
-        LinkedList *contents;
+        const char *path;                   // The full path of the directory
+        LinkedList *contents;               // The directory contents (a list of file names)
         DirectoryInfo(const char *path);
         ~DirectoryInfo();
         void addContents();

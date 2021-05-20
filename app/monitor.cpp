@@ -64,10 +64,12 @@ void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
     if ( (read_pipe_fd = open(argv[1], O_RDONLY)) < 0)
     {
         perror("Failed to open read pipe.\n");
+        exit(EXIT_FAILURE);
     }
     if ( (write_pipe_fd = open(argv[2], O_WRONLY)) < 0)
     {
         perror("Failed to open read pipe.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -89,6 +91,9 @@ void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short 
     delete citizens;
 }
 
+/**
+ * Scans all the files in the given directories and inserts any Vaccination Records found.
+ */
 void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                         HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                         unsigned long bloom_size)
@@ -100,11 +105,14 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     FILE *input_file;
     char *line_buf, *buf_copy, *temp;
     
+    // Iterate over the directories
     for (unsigned short i = 0; i < num_dirs; i++)
-    {        
+    {
+        // Iterate over the contents of each directory
         LinkedList::ListIterator itr = directories[i]->contents->listHead();
         while (!itr.isNull())
         {
+            // Create the full path of the file in order to open it
             char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr.getData()) + 2];
             sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr.getData());
             input_file = fopen(file_path, "r");
@@ -112,6 +120,7 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             {
                 continue;
             }
+            // Read records from the file
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -136,6 +145,7 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 delete[] buf_copy;
                 free(line_buf);
             }
+            // Clean up and proceed to the next file (if there is one)
             delete[] file_path;
             fclose(input_file);
             itr.forward();
@@ -323,14 +333,20 @@ void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
     }
 }
 
+/**
+ * To be called when the Monitor has been notified that the Parent Monitor has
+ * requested information, in order to serve the request.
+ */
 void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                   unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     char msg_type;
+    // Receive the type of the request
     receiveMessageType(read_pipe_fd, msg_type, buffer, buffer_size);
 
     switch (msg_type)
+    // Call the corresponding routine to serve it
     {
         case TRAVEL_REQUEST:
             serveTravelRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size,
@@ -345,13 +361,19 @@ void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned in
     }
 }
 
+/**
+ * Creates the log file for this Monitor. Prints all the countries, as well as
+ * statistics regarding the travel requests handled by the Monitor.
+ */
 void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_requests, LinkedList *countries)
 {
+    // Create the logfile name string
     std::stringstream logfile_name_stream;
     logfile_name_stream << "log_files/log_file." << getpid();
     const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
+    // Create the logfile
     if ((logfile = fopen(logfile_name, "w")) == NULL)
     {
         fprintf(stderr, "Failed to create log file: %s\n", logfile_name);
@@ -360,11 +382,13 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
     }
     
     delete [] logfile_name;
+    // Write all country names in the logfile
     for (LinkedList::ListIterator itr = countries->listHead(); !itr.isNull(); itr.forward())
     {
         CountryStatus *country =  static_cast<CountryStatus*>(itr.getData());
         fprintf(logfile, "%s\n", country->country_name);
     }
+    // Print travel request counters
     fprintf(logfile, "TOTAL TRAVEL REQUESTS %d\n", accepted_requests + rejected_requests);
     fprintf(logfile, "ACCEPTED %d\n", accepted_requests);
     fprintf(logfile, "REJECTED %d\n", rejected_requests);
@@ -374,10 +398,13 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
 
 int main(int argc, char const *argv[])
 {
+    // Register signal handlers
     signal(SIGUSR1, sigusr1_handler);
     signal(SIGUSR2, sigusr2_handler);
     signal(SIGINT, sigint_handler);
     signal(SIGQUIT, sigint_handler);
+
+    // Check arguments and open the fifo pipes assigned to this Monitor
     checkArgc(argc);
     int read_pipe_fd, write_pipe_fd;
     openPipes(read_pipe_fd, write_pipe_fd, argv);
@@ -391,11 +418,12 @@ int main(int argc, char const *argv[])
     // Read Bloom Filter size
     unsigned long bloom_size;
     receiveLongInt(read_pipe_fd, bloom_size, buffer, buffer_size);
-    // Read directory paths
+    // Read number of directories that will be assigned to this monitor
     unsigned int num_dirs;
     receiveInt(read_pipe_fd, num_dirs, buffer, buffer_size);
-
     DirectoryInfo **directories = new DirectoryInfo*[num_dirs];
+
+    // Read num_dirs directory paths, store them and get their contents
     char *str;
     for (unsigned int i = 0; i < num_dirs; i++)
     {
@@ -406,40 +434,44 @@ int main(int argc, char const *argv[])
         free(str);
     }
 
+    // Create structures to be used for storing record-related information
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
+    // Scan all the files and insert all records found
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
+    // Send all the bloom filters to the parent process
     sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
 
+    // Travel request counters
     unsigned int accepted_requests = 0, rejected_requests = 0;
-    //sigset_t set;
-    //sigemptyset(&set);
-    //sigfillset(&set);
-    //int sig;
 
+    // Loop until SIGINT/SIGKILL received
     while ( !terminate )
     {
+        // No non-served signals for now
         if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
+        // Suspend the Monitor until any signal is received
         {
             pause();
-            //sigwait(&set, &sig);
-            //sigsuspend(&set);
         }
         if (dir_update_notifications > 0)
+        // Received indication that new files have been added in the given directories
         {
             dir_update_notifications--;
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size);
             sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
         }
         if (fifo_pipe_queue_messages > 0)
+        // Received indication that the Parent process has requested informations
         {
             fifo_pipe_queue_messages--;
             serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses,
                          accepted_requests, rejected_requests);
         }
     }
+    // Create log file and release resouces
     createLogFile(accepted_requests, rejected_requests, countries);
     releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd);
 
