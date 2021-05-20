@@ -376,65 +376,6 @@ void receiveStringAlt(int pipe_fd, char *&string, char *buffer, unsigned int buf
     }
 }
 
-void receiveString(int pipe_fd, std::string &dest_str, char *buffer, unsigned int buffer_size)
-{
-    // dest_str.clear();
-    unsigned int string_length;
-    receiveInt(pipe_fd, string_length, buffer, buffer_size);
-    unsigned long received_bytes, bytes_to_read, bytes_left = string_length;
-    while (bytes_left > 0)
-    {
-        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
-        received_bytes = read(pipe_fd, buffer, bytes_to_read);
-        if (received_bytes < 0)
-        {
-            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                received_bytes = 0;
-            }
-            else
-            {
-                perror("Fatal error while reading from pipe.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            dest_str.append(buffer, received_bytes);
-        }
-        bytes_left -= received_bytes;
-    }
-    // Null termination?
-}
-
-void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size)
-{
-    unsigned int bytes_to_read, bytes_left;
-    int received_bytes;
-    for(unsigned long int total_bytes = 0; total_bytes < filter.numBytes; total_bytes += received_bytes)
-    {
-        bytes_left = filter.numBytes - total_bytes;
-        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
-        received_bytes = read(pipe_fd, buffer, bytes_to_read);
-        if (received_bytes < 0)
-        {
-            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                received_bytes = 0;
-            }
-            else
-            {
-                perror("Fatal error while reading from pipe.\n");
-                exit(EXIT_FAILURE);
-            }           
-        }
-        else
-        {
-            memcpy(filter.bits + total_bytes, buffer, received_bytes);
-        }
-    }
-}
-
 /**
  * @brief Reads a Bloom Filter byte array from the fifo pipe with the given file descriptor,
  * using the given buffer with the specified size, and "updates" the byte array of the given Bloom Filter

@@ -19,6 +19,8 @@
 class BloomFilter;
 class Date;
 
+/* Routines used for sending data. */
+
 void sendMessageType(int pipe_fd, char req_type, char *buffer, unsigned int buffer_size);
 
 void sendBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size);
@@ -33,12 +35,12 @@ void sendString(int pipe_fd, const char *string, char *buffer, unsigned int buff
 
 void sendDate(int pipe_fd, const Date &date, char *buffer, unsigned int buffer_size);
 
+/* Routines used for receiving data. */
+
 void receiveMessageType(int pipe_fd, char &req_type, char *buffer, unsigned int buffer_size);
 
 void receiveString(int pipe_fd, char *&string, char *buffer, unsigned int buffer_size);
 
-// receive might not be needed
-void receiveBloomFilter(int pipe_fd, BloomFilter &filter, char *buffer, unsigned int buffer_size);
 void updateBloomFilter(int pipe_fd, BloomFilter *filter, char *buffer, unsigned int buffer_size);
 
 void receiveInt(int pipe_fd, unsigned int &i, char *buffer, unsigned int buffer_size);

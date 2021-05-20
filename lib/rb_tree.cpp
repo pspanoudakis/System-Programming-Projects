@@ -351,6 +351,10 @@ unsigned int RedBlackTree::getNumElements()
     return this->num_elements;
 }
 
+/**
+ * Deletes the Tree structure, but also destroys the node data using
+ * the specified destroy function.
+ */
 void RedBlackTree::clear(DestroyFunc destroy)
 {
     if (this->root != NULL)
