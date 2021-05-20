@@ -398,7 +398,7 @@ VirusRecords::~VirusRecords()
 }
 
 /**
- * Stores a message in the specified string, which informs 
+ * Appends a message in the specified string, which informs 
  * whether the Citizen with the specified ID has been Vaccinated or not.
  */
 void VirusRecords::getVaccinationStatusString(int citizenID, std::string &msg_str)

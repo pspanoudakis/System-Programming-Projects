@@ -25,14 +25,13 @@
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 
-int dir_update_notifications = 0;
-int fifo_pipe_queue_messages = 0;
-bool terminate = false;
+int dir_update_notifications = 0;       // Incremented when the Parent has send a signal that indicates directory files update
+int fifo_pipe_queue_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
+bool terminate = false;                 // Set to true when SIGINT/SIGQUIT received
 
 void sigusr1_handler(int s)
 {
     dir_update_notifications++;
-    //printf("Got sigusr1\n");
     signal(SIGUSR1, sigusr1_handler);
 }
 
@@ -59,6 +58,9 @@ void checkArgc(int argc)
     }
 }
 
+/**
+ * Opens the fifo pipes using the paths stored in argv[1] (read pipe) and argv[2] (write pipe)
+ */
 void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
 {
     if ( (read_pipe_fd = open(argv[1], O_RDONLY)) < 0)
@@ -73,6 +75,9 @@ void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
     }
 }
 
+/**
+ * Release the Monitor resources.
+ */
 void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short int num_dirs,
                       HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                       int read_pipe_fd, int write_pipe_fd)
@@ -236,31 +241,41 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     }
 }
 
+/**
+ * Serves a /travelRequest command.
+ */
 void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
                         HashTable *citizens, LinkedList *viruses, unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     unsigned int citizen_id;
+    // Receive citizen ID
     receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
     Date date;
+    // Receive date
     receiveDate(read_pipe_fd, date, buffer, buffer_size);
     Date date6monthsPrior;
+    // Get the date that is 6 months prior
     date6monthsPrior.set6monthsPrior(date);
     char *virus_name;
+    // Get virus name
     receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
     std::string answer;
     char answer_type;
 
+    // Get the VirusRecords structure for the specified virus
     VirusRecords *virus = (VirusRecords*)viruses->getElement(virus_name, compareNameVirusRecord);
     free(virus_name);
     if (virus == NULL)
+    // Virus not found
     {
-        //answer.append("ERROR: The specified virus has no records in the given country")
         answer.append("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
         answer_type = TRAVEL_REQUEST_REJECTED;
         rejected_requests++;
     }
     else
+    // Virus found
     {
+        // Find record for this citizen
         VaccinationRecord *record = static_cast<VaccinationRecord*>(virus->getVaccinationRecord(citizen_id));
         if (record == NULL)
         {
@@ -269,7 +284,9 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
             rejected_requests++;
         }
         else
+        // Record found
         {
+            // Check if the Vaccination date is not more than 6 months older
             if (record->date.isBetween(date6monthsPrior, date))
             {
                 answer.append("REQUEST ACCEPTED - HAPPY TRAVELS\n");
@@ -284,39 +301,51 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
             }            
         }
     }
-    
-    // Only the message type could be sent though...
+    // Send the answer type and the answer string
     sendMessageType(write_pipe_fd, answer_type, buffer, buffer_size);
     sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
 }
 
+/**
+ * Serves a /searchVaccinationStatus request.
+ */
 void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
                               HashTable *citizens, LinkedList *viruses)
 {
+    // Receive the ID of the citizen
     unsigned int citizen_id;
     receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
-    CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));
-    
+    // Try to find the citizen
+    CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));    
     if (citizen == NULL)
+    // Citizen not found
     {
-        //answer.append("A citizen with the specified ID was not found.\n");
         sendMessageType(write_pipe_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
     }
     else
+    // Citizen found
     {
+        // The string with the Vaccination Status of the citizen for
+        // all viruses will be stored here
         std::string answer;
         answer.append(citizen->toString());
 
+        // Iterate over the viruses
         for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
         {
             VirusRecords *virus =  static_cast<VirusRecords*>(itr.getData());
+            // Append the string with the Vaccination Status of the citizen for this virus
             virus->getVaccinationStatusString(citizen_id, answer);
         }
+        // Send the answer to the Parent
         sendMessageType(write_pipe_fd, CITIZEN_FOUND, buffer, buffer_size);
         sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
     }
 }
 
+/**
+ * Sends the Monitor bloom filters to the Parent process.
+ */
 void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
                       LinkedList *viruses)
 {
@@ -447,7 +476,7 @@ int main(int argc, char const *argv[])
     // Travel request counters
     unsigned int accepted_requests = 0, rejected_requests = 0;
 
-    // Loop until SIGINT/SIGKILL received
+    // Loop until SIGINT/SIGQUIT received
     while ( !terminate )
     {
         // No non-served signals for now
