@@ -143,6 +143,10 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     }
 }
 
+/**
+ * Checks if any new files have been added in any country directory,
+ * and scans them for new Vaccination records.
+ */
 void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                   unsigned long bloom_size)
@@ -154,23 +158,33 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
     FILE *input_file;
     char *line_buf, *buf_copy, *temp;
     
+    // Iterate over the directories
     for (unsigned short i = 0; i < num_dirs; i++)
     {
         LinkedList::ListIterator *itr;
         if (directories[i]->contents->isEmpty())
+        // The directory is empty
         {
+            // So update and get an iterator to the beginning of the files list
             directories[i]->updateContents();
             itr = new LinkedList::ListIterator(directories[i]->contents->listHead());
         }
         else
+        // Directory is not empty
         {
+            // Get iterator to the last already stored file
             itr = new LinkedList::ListIterator(directories[i]->contents->listLast());
+            // Update files list
             directories[i]->updateContents();
+            // Make the iterator point to the next element
+            // It will either be NULL (if no new files were added), or the first new file
             itr->forward();
         }
 
         while (!itr->isNull())
+        // New files were added, so iterate over them
         {
+            // Create the full path of the new file in order to open it
             char *file_path = new char[strlen(directories[i]->path) + strlen((char*)itr->getData()) + 2];
             sprintf(file_path, "%s/%s", directories[i]->path, (char*)itr->getData());
             input_file = fopen(file_path, "r");
@@ -178,6 +192,7 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             {
                 continue;
             }
+            // Read records from the file
             while( (line_buf = fgetline(input_file)) != NULL)
             {
                 buf_copy = new char[strlen(line_buf) + 1];
@@ -202,6 +217,7 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                 delete[] buf_copy;
                 free(line_buf);
             }
+            // Clean up and proceed to the next file (if there is one)
             delete[] file_path;
             fclose(input_file);
             itr->forward();

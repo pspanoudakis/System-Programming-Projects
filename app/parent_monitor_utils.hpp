@@ -9,18 +9,24 @@
 
 #include "app_utils.hpp"
 
+/**
+ * Stores information about a specific child Monitor process.
+ */
 class MonitorInfo
 {
     public:
-        int process_id;
-        int read_fd;
-        const char *write_pipe_path;
-        const char *read_pipe_path;
-        LinkedList *subdirs;
+        int process_id;                 // The Monitor process ID.
+        int read_fd;                    // A slot to store a read FD (used when using multiple Monitors).
+        const char *write_pipe_path;    // The path of the fifo pipe used for sending data to the Monitor.
+        const char *read_pipe_path;     // The path of the fifo pipe used for receiving data from the Monitor.
+        LinkedList *subdirs;            // A list with the subdirectories assigned to this Monitor.
         MonitorInfo();
         ~MonitorInfo();
 };
 
+/**
+ * Stores Travel Requests, sorted by date in a Red-Black Tree, about a specific virus.
+ */
 class VirusRequests
 {
     public:
@@ -30,6 +36,10 @@ class VirusRequests
         ~VirusRequests();
 };
 
+/**
+ * Stores the monitor that has access to a specific country directory,
+ * as the VirusRequests objects related to this country.
+ */
 class CountryMonitor
 {
     public:
@@ -40,6 +50,10 @@ class CountryMonitor
         ~CountryMonitor();
 };
 
+/**
+ * Represents a Travel Request in a specific date, which has been
+ * either accepted or rejected.
+ */
 class TravelRequest
 {
     public:
@@ -49,6 +63,9 @@ class TravelRequest
         ~TravelRequest(); 
 };
 
+/**
+ * Stores a Bloom Filter related to a specific virus.
+ */
 class VirusFilter
 {
     public:
@@ -57,6 +74,8 @@ class VirusFilter
         VirusFilter(const char *name, unsigned long size);
         ~VirusFilter();
 };
+
+/* Parent Monitor routines --------------------------------------------------------------------- */
 
 bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
@@ -72,6 +91,8 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
 void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors);
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
                       struct dirent **directories, unsigned int num_dirs, LinkedList *viruses);
+
+/* Comparison functions to be used by ADT's ----------------------------------------------------- */
 
 int compareNameVirusFilter(void *name, void *filter);
 int compareTravelRequests(void *r1, void *r2);

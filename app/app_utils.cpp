@@ -985,14 +985,7 @@ void vaccineStatusBloom(int citizen_id, LinkedList *viruses, char *virus_name)
     }
 }
 
-/**
- * Directory Info functions -----------------------------------------------------------------------
- */
-
-int compareStrings(void *a, void *b)
-{
-    return strcmp((char*)a, (char*)b);
-}
+/* Directory Info functions -------------------------------------------------------------------- */
 
 DirectoryInfo::DirectoryInfo(const char *path_str):
 numContents(0), path(copyString(path_str)), contents(new LinkedList(delete_object_array<char>)) { }
@@ -1003,19 +996,26 @@ DirectoryInfo::~DirectoryInfo()
     delete contents;
 }
 
+/**
+ * Scans the directory associated with this DirectoryInfo, and
+ * adds all found files in the contents list.
+ */
 void DirectoryInfo::addContents()
 {
     int num_contents;
     struct dirent **dir_contents;
 
+    // Scan the directory
     num_contents = scandir(this->path, &dir_contents, NULL, alphasort);
     if (num_contents == -1)
     {
         return;
     }
     this->numContents = num_contents;
+    // Add each file to the contents list
     for (int i = 0; i < num_contents; i++)
     {
+        // Skip "." and ".."
         if (strcmp(dir_contents[i]->d_name, ".") == 0 || strcmp(dir_contents[i]->d_name, "..") == 0)
         {
             continue;
@@ -1026,6 +1026,7 @@ void DirectoryInfo::addContents()
         }
     }
     
+    // Clean up
     for (unsigned int i = 0; i < num_contents; i++)
     {
         free(dir_contents[i]);
@@ -1033,13 +1034,19 @@ void DirectoryInfo::addContents()
     free(dir_contents);
 }
 
+/**
+ * Scans the directory associated with this DirectoryInfo, and
+ * adds any newly found files in the contents list.
+ */
 void DirectoryInfo::updateContents()
 {
     int num_contents;
     struct dirent **dir_contents;
 
+    // Scan the directory
     num_contents = scandir(this->path, &dir_contents, NULL, alphasort);
     if (num_contents == -1 || this->numContents == num_contents)
+    // No new files found, so return
     {
         for (unsigned int i = 0; i < num_contents; i++)
         {
@@ -1048,26 +1055,39 @@ void DirectoryInfo::updateContents()
         free(dir_contents);
         return;
     }
+    // Iterate over all the returned files
     for (int i = 0; i < num_contents; i++)
     {
+        // Skip "." and ".."
         if (strcmp(dir_contents[i]->d_name, ".") == 0 || strcmp(dir_contents[i]->d_name, "..") == 0)
         {
             continue;
         }
         else
         {
+            // If the file is already present, continue
             if (this->contents->getElement(dir_contents[i]->d_name, compareStrings) != NULL)
             {
                 continue;
             }
+            // The file is not present, so add it in the content list
             this->contents->append(copyString(dir_contents[i]->d_name));
             this->numContents++;
         }
     }
 
+    // Clean up
     for (unsigned int i = 0; i < num_contents; i++)
     {
         free(dir_contents[i]);
     }
     free(dir_contents);
+}
+
+/**
+ * An strcmp wrapper with void* arguments in order to be used by ADT's.
+ */
+int compareStrings(void *a, void *b)
+{
+    return strcmp((char*)a, (char*)b);
 }
