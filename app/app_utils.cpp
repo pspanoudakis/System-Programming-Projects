@@ -414,26 +414,14 @@ void VirusRecords::getVaccinationStatusString(int citizenID, std::string &msg_st
     }
     else
     {
-        char rest[19 + 3*sizeof(unsigned short)];
-        sprintf(rest, " VACCINATED ON %hu-%hu-%hu\n", record->date.day, record->date.month, record->date.year);
-        msg_str.append(rest);
+        std::stringstream temp;
+        temp << " VACCINATED ON " << record->date.day << "-" << record->date.month << "-" << record->date.year << "\n";
+        msg_str.append(temp.str());
     }
 }
 
 /**
- * 
- */
-bool VirusRecords::isVaccinated(int citizenID)
-{
-    VaccinationRecord *record;
-    // Search for a Citizen Vaccination Record with this ID in the Vaccinated Skip List
-    record =  static_cast<VaccinationRecord*>(this->vaccinated->find(&citizenID, compareIdToVaccinationRecord));
-
-    return record != NULL;    
-}
-
-/**
- * 
+ * Returns the VaccinationRecord associated with this citizen, or NULL if the citizen is not found.
  */
 VaccinationRecord* VirusRecords::getVaccinationRecord(int citizenID)
 {

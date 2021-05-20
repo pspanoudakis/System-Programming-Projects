@@ -1,5 +1,5 @@
 /**
- * File: parent_monitor.cpp
+ * File: monitor.cpp
  * Child Monitor main app.
  * Pavlos Spanoudakis (sdi1800184)
  */

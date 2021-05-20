@@ -90,7 +90,6 @@ class VirusRecords
                                        FILE *fstream);
         bool checkBloomFilter(char *citizenID);
         void getVaccinationStatusString(int citizenID, std::string &msg_str);
-        bool isVaccinated(int citizenID);
         VaccinationRecord *getVaccinationRecord(int citizenID);
 };
 

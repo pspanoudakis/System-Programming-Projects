@@ -168,7 +168,7 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
                 exit(EXIT_FAILURE);
             case 0:
                 // Child
-                execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
+                execl("./Monitor", "Monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
                 _Exit(EXIT_FAILURE);
             default:
                 // Parent
@@ -209,7 +209,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             exit(EXIT_FAILURE);
         case 0:
             // child
-            execl("./monitor", "monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
+            execl("./Monitor", "Monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
             _Exit(EXIT_FAILURE);
         default:
             // The Parent will send the required information to the new process

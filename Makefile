@@ -5,10 +5,10 @@ CXXFLAGS = -Wall -Wno-sign-compare -std=c++11
 MONITOR_OBJS = build/monitor.o build/app_utils.o build/parse_utils.o build/bloom_filter.o build/hash_functions.o build/hash_table.o build/linked_list.o build/rb_tree.o build/skip_list.o build/pipe_msg.o
 PARENT_OBJS = build/parent_monitor.o build/parent_monitor_utils.o build/app_utils.o build/parse_utils.o build/bloom_filter.o build/hash_functions.o build/hash_table.o build/linked_list.o build/rb_tree.o build/skip_list.o build/pipe_msg.o
 
-all: monitor travelMonitor
+all: Monitor travelMonitor
 
-monitor: $(MONITOR_OBJS)
-	$(CC) $(CXXFLAGS) -o monitor $(MONITOR_OBJS) -lcrypto
+Monitor: $(MONITOR_OBJS)
+	$(CC) $(CXXFLAGS) -o Monitor $(MONITOR_OBJS) -lcrypto
 
 travelMonitor: $(PARENT_OBJS)
 	$(CC) $(CXXFLAGS) -o travelMonitor $(PARENT_OBJS) -lcrypto
@@ -50,4 +50,4 @@ build/pipe_msg.o: app/pipe_msg.cpp
 	$(CC) -c $(CXXFLAGS) app/pipe_msg.cpp -o build/pipe_msg.o
 
 clean:
-	rm monitor travelMonitor build/parent_monitor.o build/parent_monitor_utils.o $(MONITOR_OBJS)
+	rm Monitor travelMonitor build/parent_monitor.o build/parent_monitor_utils.o $(MONITOR_OBJS)
