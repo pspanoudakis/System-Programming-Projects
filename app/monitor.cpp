@@ -23,7 +23,6 @@
 #include "parse_utils.hpp"
 
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
-#define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 
 int dir_update_notifications = 0;       // Incremented when the Parent has send a signal that indicates directory files update
 int fifo_pipe_queue_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request

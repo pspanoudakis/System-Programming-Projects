@@ -11,7 +11,8 @@
 #include <string>
 #include "../include/utils.hpp"
 
-#define MAX_ID_DIGITS 5     // Maximum number of digits allowed in Citizen ID's
+#define MAX_ID_DIGITS 5                 // Maximum number of digits allowed in Citizen ID's
+#define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 
 class LinkedList;
 class RedBlackTree;

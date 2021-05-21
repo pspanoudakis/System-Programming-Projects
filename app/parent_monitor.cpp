@@ -25,7 +25,6 @@
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 
-#define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
 #define MAX_MONITORS 300
 #define MAX_BUFFER_SIZE 1000000
 
@@ -780,7 +779,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
             }
             else
             {
-                fprintf(stderr, "Invalid numMonitors argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
+                fprintf(stderr, "Invalid bufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
                 return false;
             }
         }
@@ -798,7 +797,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
             }
             else
             {
-                fprintf(stderr, "Invalid numMonitors argument. Make sure it is a positive integer up to %d", MAX_BLOOM_SIZE);
+                fprintf(stderr, "Invalid sizeOfBloom argument. Make sure it is a positive integer up to %d", MAX_BLOOM_SIZE);
                 return false;
             }
         }

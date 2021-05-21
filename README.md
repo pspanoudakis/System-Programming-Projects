@@ -49,14 +49,39 @@ When done, run `make clean` to clean up objective files & executable.
     - `DirectoryInfo`: Used by the child Monitors to handle Directories. Stores the corresponding country directory path,
                        as well as a list with the files in the directory.
 
-The Monitor app handles:
+The `Monitor` app handles:
 - A Hash Table containing `CitizenRecord` objects.
 - A Linked List containing `VirusRecords` objects.
 - A Linked List containing `CountryStatus` objects.
+- An Array of `DirectoryInfo` objects to handled assigned country directories.
 
 The `CountryStatus` and `VirusRecords` objects are each associated to a Country and Virus respectively,
 so they are stored in Lists, because the number of Countries and of Viruses is
 quite limited.
+
+The `parentMonitor` app handles:
+- An Array of `MonitorInfo` objects (one for each child Monitor).
+- An Array of `CountryMonitor` objects (one for each Country subdirectory).
+- The `struct dirent` Array returned by `scandir`.
+- A Linked List containing `VirusFilter` objects.
+
+The the number of Countries and of Viruses is quite limited, so the use of an Array and a Linked List respectively
+does not have a big impact in the app performance.
+
+### Monitor and travelMonitor apps
+
+### Pipe I/O & Process communication.
+Each process uses a buffer (with the buffer size the user has selected) to read/write data from/to a pipe.
+The buffer size can be as small as 1 byte. When the parent process wants to request certain information
+from a child Monitor, it writes any required arguments in the Monitor write pipe, and notifies the Monitor
+by sending SIGUSR2. Then the parent monitor opens the read pipe for this Monitor to receive the Monitor answer.
+At the same time, the child Monitor receives the sent information, executes the command and sends the answer to the parent.
+The only exception is in the `/addVaccinationRecords` command, where the parent process just sends a SIGUSR1
+to the Monitor that handles the specified country, and then opens the read pipe to receive the updated Bloom Filters
+from the Monitor.
+In `/searchVaccinationStatus` (as well as in the beginning when receiving all the child Monitor Bloom Filters), the parent
+process uses `select()` to choose the Monitor to receive data from. In this way, a slower Monitor will not prevent the parent
+from receiving the data of other, faster Monitors.
 
 ### ADT's used by the App
 - **Skip List**: It is implemented using an array of pointers to Skip List Nodes, which are the head nodes of each layer.
@@ -74,26 +99,27 @@ quite limited.
 The only ADT that includes element deletion is the Skip List, since deletion is not needed by the App for the other ADT's.
 
 ### Simplifications, Minor Design Choices & Details
-- The app "treats" file records and records inserted by the user in the **exact same way**:
-
+- Regarding Vaccination Record insertion from files:
   If a "NO" record (about a Virus vaccination) has been inserted for a certain Citizen and
   a "YES" record for the same Citizen and Virus is inserted later, the existing record will be **modified**
-  (removal from "non-vaccinated" Skip List, insertion to "vaccinated" Skip List & Bloom FIlter, etc.),
-  whether it was inserted by the user or the input file. Of course the opposite is **not allowed**
-  (a "YES" record being modified to a "NO" record). 
+  (removal from "non-vaccinated" Skip List, insertion to "vaccinated" Skip List & Bloom Filter, etc.).
+  Of course the opposite is **not allowed** (a "YES" record being modified to a "NO" record). 
 - Citizen, Country and Virus Names are **case sensitive**
   (e.g. "Greece", "greece" and "GREECE" are considered 3 different countries).
-- In `/vaccineStatus` command, the app will search the specified Citizen in all "vaccinated" Skip Lists,
-  and will print whether the citizen was found or not (if not found, the citizen will appear as non-vaccinated whether
-  there is a Record in "non-vaccinated" Skip List or not).
 - The Citizen ID's allowed by the app can have up to a certain number of digits,
   which is specified by the `MAX_ID_DIGITS` macro in `app/app_utils.hpp`. It is set to `5` by default.
-- In `app/main.cpp`, macros `HASHTABLE_BUCKETS` (for the Citizen Records Hash Table) and `MAX_BLOOM_SIZE`
-  (for maximum Bloom Filter size) are defined and can be modified. During testing, it was observed that
-  for Bloom Filter sizes > 1000000, bad_alloc exception was thrown at some point (combined with large inputFile size).
+- Macros used by Monitor/travelMonitor:
+  - `app/monitor.cpp`: `HASHTABLE_BUCKETS` to set the number of buckets in Citizen HashTables.
+  - `app/app_utils.hpp` : `MAX_BLOOM_SIZE` and `MAX_ID_DIGITS` for maximum `BloomFilter` size and
+  maximum number of digits allowed in Citizen ID's respectively.
+  - `app/parent_monitor.cpp`: `MAX_MONITORS` and `MAX_BUFFER_SIZE` as upper limits in number of child Monitors
+  and buffer size respectively.
+- As told by the instructors, it is assumed that "third-party" signals (`SIGINT/SIGQUIT` in child Monitors)
+can be sent only when things are "idle/stable". The parent app will block if e.g. it is waiting for
+a child to send some data and such signal is sent to the child before the data has been sent.
 
 ### Performance & Resource Handling
-- The app has been tested extensively with Valgrind and no leaks are reported in multiple scenarios.
+- The app has been tested with Valgrind and no leaks are reported in multiple scenarios.
   Note that that there is a reported "bug" in Valgrind used in certain DIT workstations, regarding C++ memory pooling,
   which causes some bytes to be reported as "still reachable" after the end of the execution of any C++ program.
   When testing with Valgrind in DIT Labs, apart from the above "leak", no other leaks were reported.
