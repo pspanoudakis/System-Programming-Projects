@@ -79,16 +79,41 @@ class VirusFilter
 
 bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
+
 void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors);
+
 void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size,
                   LinkedList *viruses);
+
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                              unsigned long int bloom_size, LinkedList *viruses);
+
 void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                      unsigned long int bloom_size);
+
 void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, LinkedList *viruses,
                            char *buffer, unsigned int buffer_size, unsigned long int bloom_size);
+
+void addVaccinationRecords(const char *country_name, CountryMonitor **countries, unsigned int num_countries,
+                           LinkedList *viruses, char *buffer, unsigned int buffer_size, unsigned long int bloom_size);
+
+void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, unsigned int active_monitors,
+                             char *buffer, unsigned int buffer_size);
+
+void travelRequest(unsigned int citizen_id, Date &date, char *country_from, char *country_to, char *virus_name,
+                   LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
+                   CountryMonitor **countries, unsigned int num_countries,
+                   char *buffer, unsigned int buffer_size, unsigned int &accepted_requests, unsigned int &rejected_requests); 
+
+void getTravelStatsRec(RBTreeNode *root, Date &start, Date &end, unsigned int &accepted, unsigned int &rejected);
+
+void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries);
+
+void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
+                 CountryMonitor **countries, unsigned int num_countries); 
+
 void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors);
+
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
                       struct dirent **directories, unsigned int num_dirs, LinkedList *viruses);
 

@@ -399,6 +399,362 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
 }
 
 /**
+ * Executes the /addVaccinationRecords command, for the specified Country.
+ */
+void addVaccinationRecords(const char *country_name, CountryMonitor **countries, unsigned int num_countries,
+                           LinkedList *viruses, char *buffer, unsigned int buffer_size, unsigned long int bloom_size)
+{
+    // Iterate over the countries
+    for (unsigned int i = 0; i < num_countries; i++)
+    {
+        if (strcmp(country_name, countries[i]->country_name) == 0)
+        // Found the country with this name
+        {
+            // Send SIGUSR1 to child
+            kill(countries[i]->monitor->process_id, SIGUSR1);
+            unsigned int num_filters;
+            // Open the read pipe for this Monitor to receive data
+            countries[i]->monitor->read_fd = open(countries[i]->monitor->read_pipe_path, O_RDONLY);
+            if (countries[i]->monitor->read_fd < 0)
+            {
+                perror("Failed to open read pipe.\n");
+                exit(EXIT_FAILURE);
+            }
+            // Receive the number of bloom filters that were sent
+            receiveInt(countries[i]->monitor->read_fd, num_filters, buffer, buffer_size);
+            // Receive the bloom filters
+            for (unsigned int j = 0; j < num_filters; j++)
+            {
+                char *virus_name;
+                // Get the name of the virus related to this bloom filter
+                receiveString(countries[i]->monitor->read_fd, virus_name, buffer, buffer_size);
+                VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
+                if (virus == NULL)
+                // If a new virus was detected, store a new Bloom Filter for it
+                {
+                    viruses->append(new VirusFilter(virus_name, bloom_size));
+                    virus = static_cast<VirusFilter*>(viruses->getLast());
+                }
+                free(virus_name);
+                // Receive the new Bloom Filter and update the present one
+                updateBloomFilter(countries[i]->monitor->read_fd, virus->filter, buffer, buffer_size);
+            }
+            // Done
+            printf("Records updated successfully.\n");
+            return;
+        }
+    }
+    printf("The specified country was not found.\n");
+}
+
+/**
+ * Executes the /searchVaccinationStatus command, for the specified citizen ID.
+ */
+void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, unsigned int active_monitors,
+                             char *buffer, unsigned int buffer_size)
+{
+    // Setting up structs required by select()
+    fd_set fdset;
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    FD_ZERO(&fdset);
+
+    unsigned int done_monitors = 0;
+    int max_fd = -1;
+    // Open read pipe for each child Monitor
+    for (unsigned int i = 0; i < active_monitors; i++)
+    {
+        // Open read and write pipes form this monitor
+        int read_fd = open(monitors[i]->read_pipe_path, O_RDONLY);
+        if (read_fd < 0)
+        {
+            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->read_pipe_path);
+            exit(EXIT_FAILURE);
+        }
+        int write_fd = open(monitors[i]->write_pipe_path, O_WRONLY);
+        if (write_fd < 0)
+        {
+            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->write_pipe_path);
+            exit(EXIT_FAILURE);
+        }
+        // Send the request to all Monitors and notify with SIGUSR2
+        sendMessageType(write_fd, SEARCH_STATUS, buffer, buffer_size);
+        sendInt(write_fd, citizen_id, buffer, buffer_size);
+        kill(monitors[i]->process_id, SIGUSR2);
+        // No more writing needed
+        close(write_fd);
+        // Add each FD to the set and find max FD to pass to select()
+        FD_SET(read_fd, &fdset);
+        monitors[i]->read_fd = read_fd;
+        if (max_fd < monitors[i]->read_fd)
+        {
+            max_fd = monitors[i]->read_fd;
+        }
+    }
+
+    // Keep looping until all children have answered
+    while (done_monitors != active_monitors)
+    {
+        int ready_fds;
+        // Wait until data has been sent to any pipe
+        ready_fds = select(max_fd + 1, &fdset, NULL, NULL, &timeout);
+        if (ready_fds == -1)
+        {
+            perror("Error/Timeout after waiting to receive travel request answers.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (ready_fds != 0)
+        {
+            // Iterate over all Monitors
+            for (unsigned int i = 0; i < active_monitors; i++)
+            {
+                if (FD_ISSET(monitors[i]->read_fd, &fdset))
+                // The read FD of this monitor is ready
+                {
+                    // Receive answer type
+                    char msg_type;
+                    receiveMessageType(monitors[i]->read_fd, msg_type, buffer, buffer_size);
+                    if (msg_type == CITIZEN_FOUND)
+                    // Citizen found, so receive the answer string
+                    {
+                        char *answer;
+                        receiveString(monitors[i]->read_fd, answer, buffer, buffer_size);
+                        printf("%s", answer);
+                        free(answer);
+                    }
+                    done_monitors++;
+                }
+            }
+        }
+        // Clear the set and add all FD's again
+        FD_ZERO(&fdset);
+        for (unsigned int i = 0; i < active_monitors; i++)
+        {
+            FD_SET(monitors[i]->read_fd, &fdset);
+        }
+    }
+    // Close all the read FD's.
+    for (unsigned int i = 0; i < active_monitors; i++)
+    {
+        close(monitors[i]->read_fd);
+    }
+}
+
+/**
+ * Executes the /travelRequest command with the specified arguments.
+ */
+void travelRequest(unsigned int citizen_id, Date &date, char *country_from, char *country_to, char *virus_name,
+                   LinkedList *viruses, MonitorInfo **monitors, unsigned int active_monitors,
+                   CountryMonitor **countries, unsigned int num_countries,
+                   char *buffer, unsigned int buffer_size, unsigned int &accepted_requests, unsigned int &rejected_requests)
+{
+    // Get the Bloom Filter for the specified virus
+    VirusFilter *target_virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
+    if (target_virus == NULL)
+    // Not found
+    {
+        printf("ERROR: The specified virus was not found.\n");
+    }
+    else
+    {
+        // Get the CountryMonitor structures for the specified countries
+        CountryMonitor *target_country_from = NULL;
+        CountryMonitor *target_country_to = NULL;
+        for (unsigned int i = 0; i < num_countries; i++)
+        {
+            if (strcmp(country_from, countries[i]->country_name) == 0)
+            {
+                target_country_from = countries[i];
+                if (target_country_to != NULL)
+                {
+                    break;
+                }
+            }
+            if (strcmp(country_to, countries[i]->country_name) == 0)
+            {
+                target_country_to = countries[i];
+                if (target_country_from != NULL)
+                {
+                    break;
+                }
+            }
+        }
+        // Error if one of the countries was not found
+        if (target_country_from == NULL)
+        {
+            printf("ERROR: The specified origin country was not found.\n");
+        }
+        else if (target_country_to == NULL)
+        {
+            printf("ERROR: The specified destination country was not found.\n");
+        }
+        else
+        {
+            char char_id[MAX_ID_DIGITS + 1];    // max digits + \0
+            sprintf(char_id, "%d", citizen_id);
+
+            // This indicates whether the request is rejected or accepted
+            bool accepted = false;
+            if (target_virus->filter->isPresent(char_id))
+            // The citizen ID is marked as "maybe present" in the Bloom Filter
+            {
+                // Open pipes for countryFrom Monitor
+                target_country_from->monitor->read_fd = open(target_country_from->monitor->read_pipe_path, O_RDONLY);
+                if (target_country_from->monitor->read_fd < 0)
+                {
+                    fprintf(stderr, "Failed to open pipe: %s\n", target_country_from->monitor->read_pipe_path);
+                    exit(EXIT_FAILURE);
+                }
+                int write_fd = open(target_country_from->monitor->write_pipe_path, O_WRONLY);
+                if (write_fd < 0)
+                {
+                    fprintf(stderr, "Failed to open pipe: %s\n", target_country_from->monitor->write_pipe_path);
+                    exit(EXIT_FAILURE);
+                }
+                char ans_type;
+                char *answer;
+                // Send Request type and required information
+                sendMessageType(write_fd, TRAVEL_REQUEST, buffer, buffer_size);
+                sendInt(write_fd, citizen_id, buffer, buffer_size);
+                sendDate(write_fd, date, buffer, buffer_size);
+                sendString(write_fd, virus_name, buffer, buffer_size);
+                // Notify the Monitor process
+                kill(target_country_from->monitor->process_id, SIGUSR2);
+                
+                // Receive Monitor answer
+                receiveMessageType(target_country_from->monitor->read_fd, ans_type, buffer, buffer_size);
+                receiveString(target_country_from->monitor->read_fd, answer, buffer, buffer_size);
+                printf("%s", answer);
+                free(answer);
+                accepted = (ans_type == TRAVEL_REQUEST_ACCEPTED);
+                close(write_fd);
+                close(target_country_from->monitor->read_fd);
+            }
+            else
+            {
+                printf("REQUEST REJECTED - YOU ARE NOT VACCINATED\n");
+            }
+            // Store the TravelRequest
+            // Find the requests tree for the given virus
+            VirusRequests *requests = static_cast<VirusRequests*>(target_country_to->virus_requests->getElement(virus_name, compareNameVirusRequests));
+            if (requests == NULL)
+            // No requests tree exists for this virus, so create one now
+            {
+                target_country_to->virus_requests->append(new VirusRequests(virus_name));
+                requests = static_cast<VirusRequests*>(target_country_to->virus_requests->getLast());
+            }
+            // Insert the request in the tree
+            requests->requests_tree->insert(new TravelRequest(date, accepted));
+            // Increment the proper counter
+            accepted ? accepted_requests++ : rejected_requests++;
+        }
+    }
+}
+
+/**
+ * While traversing the subtree starting with root recursively, 
+ * counts the number of accepted and rejected requests between the two Dates
+ * and updates the counters properly.
+ */
+void getTravelStatsRec(RBTreeNode *root, Date &start, Date &end, unsigned int &accepted, unsigned int &rejected)
+{
+    if (root == NULL) { return; }
+    // Getting the root Record
+    TravelRequest *root_data = static_cast<TravelRequest*>(root->data);
+
+    if (compareDates(&root_data->date, &start) >= 0)
+    // root Date is greater than start
+    {
+        // so count stats in Left subtree
+        getTravelStatsRec(root->left, start, end, accepted, rejected);
+        if (compareDates(&root_data->date, &end) <= 0)
+        // end is greater than root Date
+        {
+            // root is in range, so update the correct counter
+            root_data->accepted ? accepted++ : rejected++;
+            // and count stats in the right subtree
+            getTravelStatsRec(root->right, start, end, accepted, rejected);
+            return;
+        }
+    }
+    // root is smaller than start, so just search to the right
+    if (compareDates(&root_data->date, &end) <= 0)
+    {
+        getTravelStatsRec(root->right, start, end, accepted, rejected);
+    }
+}
+
+/**
+ * Executes the /travelStats command, with the specified arguments (no country argument).
+ */
+void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **countries, unsigned int num_countries)
+{
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
+    // Iterate over the countries
+    for (int i = 0; i < num_countries; i++)
+    {
+        // Get the requests tree for the target Virus related to each Country
+        VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
+        if (virus_requests != NULL)
+        // Tree found, so count stats
+        {
+            getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
+        }
+    }
+    // Display results
+    printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
+    printf("ACCEPTED %d\n", accepted_requests);
+    printf("REJECTED %d\n", rejected_requests);
+}
+
+/**
+ * Executes the /travelStats command, with the specified arguments.
+ */
+void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
+                 CountryMonitor **countries, unsigned int num_countries)
+{
+    if (country_name == NULL)
+    // No country argument given, so call the no-country travelStats version
+    {
+        travelStats(virus_name, start, end, countries, num_countries);
+        return;
+    }
+    unsigned int accepted_requests = 0;
+    unsigned int rejected_requests = 0;
+    int i;
+    // Iterate over the countries until the Country with the given name is found
+    for (i = 0; i < num_countries; i++)
+    {
+        if (strcmp(country_name, countries[i]->country_name) == 0)
+        // Country found
+        {
+            // Get the requests tree for the target Virus related to this Country
+            VirusRequests *virus_requests = static_cast<VirusRequests*>(countries[i]->virus_requests->getElement(virus_name, compareNameVirusRequests));
+            if (virus_requests != NULL)
+            // Tree found, so count stats
+            {
+                getTravelStatsRec(virus_requests->requests_tree->root, start, end, accepted_requests, rejected_requests);
+            }
+            break;
+        }
+    }
+    if (i == num_countries)
+    // Country not found
+    {
+        printf("ERROR: The specified country was not found.\n");
+    }
+    else
+    // Display results
+    {
+        printf("TOTAL REQUESTS %d\n", accepted_requests + rejected_requests);
+        printf("ACCEPTED %d\n", accepted_requests);
+        printf("REJECTED %d\n", rejected_requests);
+    }
+}
+
+/**
  * Terminates all Monitor processes and deletes the created pipes.
  */
 void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors)
