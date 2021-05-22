@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <cerrno>
 #include <unistd.h>
-#include <string>
 
 #include "pipe_msg.hpp"
 #include "../include/bloom_filter.hpp"

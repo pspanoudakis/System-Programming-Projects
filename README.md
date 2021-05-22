@@ -68,9 +68,19 @@ The `parentMonitor` app handles:
 The the number of Countries and of Viruses is quite limited, so the use of an Array and a Linked List respectively
 does not have a big impact in the app performance.
 
-### Monitor and travelMonitor apps
+### travelMonitor and Monitor execution flow
+The parent process scans the input directory specified by the user for Country directories, and assigns the directories in the
+child Monitors (Round-Robin). If the number of Monitors specified by the user is greater than the number of found directories,
+the parent process will create the same number of children as the countries.
+The parent sends all required information to the created child processes (buffer size, bloom filter size, as well as the
+country directories assign to each child), and then waits to receive each child Bloom Filters (and to "merge" the Bloom Filters related
+to the same Virus).
+Each child process receives the required information by the parent and scans all the files in the assigned directories
+for Vaccination Records, which are processed and stored. When done with file processing, each child sends the Bloom Filters of each
+virus to the parent process, and then enters a "listening" loop to accept and process requests/signals sent by the parent.
+After the parent has obtained all the Bloom Filters, it enters "command line" mode and expects user commands from `stdin`.
 
-### Pipe I/O & Process communication.
+### Pipe I/O & Process communication
 Each process uses a buffer (with the buffer size the user has selected) to read/write data from/to a pipe.
 The buffer size can be as small as 1 byte. When the parent process wants to request certain information
 from a child Monitor, it writes any required arguments in the Monitor write pipe, and notifies the Monitor
@@ -82,6 +92,19 @@ from the Monitor.
 In `/searchVaccinationStatus` (as well as in the beginning when receiving all the child Monitor Bloom Filters), the parent
 process uses `select()` to choose the Monitor to receive data from. In this way, a slower Monitor will not prevent the parent
 from receiving the data of other, faster Monitors.
+
+### Pipe Messaging "protocol"
+`app/pipe_msg` files provide routines for sending and receivng data through fifo pipes.
+There are routines for sending and receiving `unsigned [long]/[short] int` variables,
+ `BloomFilter` objects (the byte arrays are sent/received), `Date` objects (the day/month/year fields),
+ `char*` arrays as well as `char` variables (used for sending/receiving message types).
+
+- When sending/receiving `int` or `char`, just the variable bytes are sent/received wihtout any special operation taking place.
+- When sending a `char*`, the **length** of the string is sent first, followed by the actual string bytes. Symmetrically,
+the receiver first asks for the string length and then receives the string bytes (so as to know when to stop receiving).
+- To send a `BloomFilter`, `sendBloomFilter` just writes the byte array of the filter to the pipe. On the other hand,
+`updateBloomFilter` takes an existing `BloomFilter` as argument, receives the sent filter byte array through the pipe
+and updates the existing one using bitwise-OR.
 
 ### ADT's used by the App
 - **Skip List**: It is implemented using an array of pointers to Skip List Nodes, which are the head nodes of each layer.

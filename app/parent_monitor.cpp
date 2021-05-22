@@ -502,6 +502,7 @@ int main(int argc, char const *argv[])
     unsigned int accepted_requests = 0;
     unsigned int rejected_requests = 0;
     // Loop until SIGINT/SIGQUIT received or users types "/exit"
+    printf("Now in command line mode.\n");
     while ( !terminate )
     {
         printf("------------------------------------------\n");
