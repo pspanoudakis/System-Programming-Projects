@@ -261,7 +261,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
  * Restores any dead child Monitor processes.
  */
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                             unsigned long int bloom_size, LinkedList *viruses)
+                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter)
 {
     int wait_pid;
     for(unsigned int i = 0; i < num_monitors; i++)
@@ -272,6 +272,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
         // It is not, so restore it.
         {
             restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses);
+            sigchld_counter--;
         }
     }
 }

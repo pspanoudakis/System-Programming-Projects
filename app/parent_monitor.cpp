@@ -515,8 +515,7 @@ int main(int argc, char const *argv[])
         if (sigchld_received > 0)
         // One or more child processes has died, so restore them
         {
-            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses);
-            sigchld_received--;
+            checkAndRestoreChildren(monitors, active_monitors, buffer, buffer_size, bloom_size, viruses, sigchld_received);
         }
         if (strcmp(line_buf, "/exit") == 0)
         // Exit if asked by the user
