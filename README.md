@@ -14,6 +14,7 @@
 - `include` directory: Header files for ADT's used by the app.
 - `lib` directory: Source files for ADT's used by the app.
 - `build` directory: Used during app build for objective files.
+- `log_files` directory: Used for storing fifo pipes during the execution. **It must not be removed**.
 - `Makefile`
 - `create_infiles.sh` script to generate Country directories.
 
