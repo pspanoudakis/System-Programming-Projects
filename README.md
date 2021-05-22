@@ -6,9 +6,9 @@
 ### Project Structure
 - `app` directory: Source & Header files used by the Main app.
     - `parent_monitor.cpp`: travelMonitor client program.
-    - `parent_monitor_utils.cpp` & `parent_monitor_utils.hpp`: App Classes, several routines used for Command Execution.
-    - `monitor.cpp`: monitor client program.
-    - `app_utils.cpp` & `app_utils.hpp`: App Classes, several routines used for Command Execution.
+    - `parent_monitor_utils.cpp` & `parent_monitor_utils.hpp`: App Classes, several routines used the parent monitor.
+    - `monitor.cpp`: child monitor client program.
+    - `app_utils.cpp` & `app_utils.hpp`: App Classes, several routines used by the child monitors.
     - `parse_utils.cpp` & `parse_utils.hpp`: Routines used for Input parsing.
     - `pipe_msg.cpp` & `pipe_msg.hpp`: Routines used for fifo pipe reading/writing.
 - `include` directory: Header files for ADT's used by the app.
@@ -23,7 +23,7 @@
 In the project root, run `make` and after the build is done,
 run `./travelMonitor -m <numMonitors> -b <bufferSize> -s <sizeOfBloom> -i <inputDirectory>`
 
-When done, run `make clean` to clean up objective files & executable.
+When done, run `make clean` to clean up objective files & executables.
 
 ### App Classes & Structures
 - **Parent Montor**:
@@ -68,27 +68,34 @@ The `parentMonitor` app handles:
 The the number of Countries and of Viruses is quite limited, so the use of an Array and a Linked List respectively
 does not have a big impact in the app performance.
 
-### travelMonitor and Monitor execution flow
-The parent process scans the input directory specified by the user for Country directories, and assigns the directories in the
+### `travelMonitor` and `Monitor` execution flow
+The parent process scans the input directory specified by the user for Country directories, and assigns the directories to the
 child Monitors (Round-Robin). If the number of Monitors specified by the user is greater than the number of found directories,
 the parent process will create the same number of children as the countries.
+
 The parent sends all required information to the created child processes (buffer size, bloom filter size, as well as the
 country directories assign to each child), and then waits to receive each child Bloom Filters (and to "merge" the Bloom Filters related
 to the same Virus).
+
 Each child process receives the required information by the parent and scans all the files in the assigned directories
 for Vaccination Records, which are processed and stored. When done with file processing, each child sends the Bloom Filters of each
 virus to the parent process, and then enters a "listening" loop to accept and process requests/signals sent by the parent.
+
 After the parent has obtained all the Bloom Filters, it enters "command line" mode and expects user commands from `stdin`.
 
 ### Pipe I/O & Process communication
 Each process uses a buffer (with the buffer size the user has selected) to read/write data from/to a pipe.
-The buffer size can be as small as 1 byte. When the parent process wants to request certain information
-from a child Monitor, it writes any required arguments in the Monitor write pipe, and notifies the Monitor
-by sending SIGUSR2. Then the parent monitor opens the read pipe for this Monitor to receive the Monitor answer.
+The buffer size can be as small as 1 byte.
+
+When the parent process wants to request certain information from a child Monitor,
+it writes any required arguments in the Monitor write pipe, and notifies the Monitor by sending SIGUSR2.
+Then the parent monitor opens the read pipe for this Monitor to receive the Monitor answer.
 At the same time, the child Monitor receives the sent information, executes the command and sends the answer to the parent.
+
 The only exception is in the `/addVaccinationRecords` command, where the parent process just sends a SIGUSR1
 to the Monitor that handles the specified country, and then opens the read pipe to receive the updated Bloom Filters
 from the Monitor.
+
 In `/searchVaccinationStatus` (as well as in the beginning when receiving all the child Monitor Bloom Filters), the parent
 process uses `select()` to choose the Monitor to receive data from. In this way, a slower Monitor will not prevent the parent
 from receiving the data of other, faster Monitors.
@@ -141,14 +148,14 @@ The only ADT that includes element deletion is the Skip List, since deletion is 
 can be sent only when things are "idle/stable". The parent app will block if e.g. it is waiting for
 a child to send some data and such signal is sent to the child before the data has been sent.
 
-### Performance & Resource Handling
-- The app has been tested with Valgrind and no leaks are reported in multiple scenarios.
-  Note that that there is a reported "bug" in Valgrind used in certain DIT workstations, regarding C++ memory pooling,
-  which causes some bytes to be reported as "still reachable" after the end of the execution of any C++ program.
-  When testing with Valgrind in DIT Labs, apart from the above "leak", no other leaks were reported.
-  You can read more here:
-  - http://valgrind.org/docs/manual/faq.html#faq.reports
-  - https://gcc.gnu.org/onlinedocs/libstdc++/faq.html#faq.memory_leaks
+### Resource Handling
+The app has been tested with Valgrind and no leaks are reported in multiple scenarios.
+Note that that there is a reported "bug" in Valgrind used in certain DIT workstations, regarding C++ memory pooling,
+which causes some bytes to be reported as "still reachable" after the end of the execution of any C++ program.
+When testing with Valgrind in DIT Labs, apart from the above "leak", no other leaks were reported.
+You can read more here:
+- http://valgrind.org/docs/manual/faq.html#faq.reports
+- https://gcc.gnu.org/onlinedocs/libstdc++/faq.html#faq.memory_leaks
 
 ### Development & Testing
 Developed & tested in WSL Ubuntu 20.04, using Visual Studio Code.
