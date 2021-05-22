@@ -77,7 +77,7 @@ class VirusFilter
 
 /* Parent Monitor routines --------------------------------------------------------------------- */
 
-bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
+bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
 
 void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors);

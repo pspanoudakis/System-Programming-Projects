@@ -78,15 +78,17 @@ VirusFilter::~VirusFilter()
  * @param monitors An array of pointers to MonitorInfos. When this routine returns, it
  * will contain 1 MonitorInfo for each Monitor to be created.
  */
-bool assignMonitorDirectories(const char *path, CountryMonitor **&countries, MonitorInfo **&monitors,
+bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorInfo **&monitors,
                               unsigned int num_monitors, struct dirent **&directories, unsigned int &num_dirs)
 {
     unsigned int i;
+    directories = NULL;
     // Scan the given directory path
     num_dirs = scandir(path, &directories, NULL, alphasort);
     if (num_dirs == -1)
     {
         fprintf(stderr, "Failed to scan directory: %s\n", path);
+        delete[] path;
         return false;
     }
 

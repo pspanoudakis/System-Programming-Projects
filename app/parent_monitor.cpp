@@ -481,7 +481,7 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
     // Assign country directories to child Monitors
-    if (!assignMonitorDirectories("./countries", countries, monitors, num_monitors, directories, num_dirs))
+    if (!assignMonitorDirectories(directory_path, countries, monitors, num_monitors, directories, num_dirs))
     {
         exit(EXIT_FAILURE);
     }

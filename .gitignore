@@ -17,6 +17,7 @@ app/parent_monitor
 app/monitor
 app/test_dates.cpp
 app/test_dates
+temp/*
 
 
 
