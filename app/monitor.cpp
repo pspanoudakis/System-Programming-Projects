@@ -33,6 +33,7 @@ int dir_update_notifications = 0;       // Incremented when the Parent has send 
 int fifo_pipe_queue_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
 bool terminate = false;                 // Set to true when SIGINT/SIGQUIT received
 
+unsigned int ftok_id;
 int consume_sem_id;
 int produce_sem_id;
 int current_thread = 0;
@@ -179,8 +180,8 @@ void* fileScanner(void *arguments)
                         delete[] temp;
                         delete[] buf_copy;
                         free(line_buf);
-                        fclose(input_file);
                     }
+                    fclose(input_file);
                 }
                 first_not_consumed++;
                 sem_up(consume_sem_id, 0);
@@ -216,8 +217,8 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             itr.forward();
         }        
     }
-    key_t consumer_key = ftok(".", 1);
-    key_t producer_key = ftok(".", 2);
+    key_t consumer_key = ftok(".", ftok_id);
+    key_t producer_key = ftok(".", ftok_id + 1);
     if ( (consume_sem_id = semget(consumer_key, 1, IPC_CREAT|PERMS)) < 0)
     {
         perror("Failed to create consumer semaphore");
@@ -538,6 +539,8 @@ int main(int argc, char const *argv[])
     char temp_buffer[sizeof(unsigned int)];
     receiveInt(read_pipe_fd, buffer_size, temp_buffer, sizeof(unsigned int));
     char *buffer = new char[buffer_size];
+
+    receiveInt(read_pipe_fd, ftok_id, buffer, buffer_size);
 
     // Read Bloom Filter size
     unsigned long bloom_size;

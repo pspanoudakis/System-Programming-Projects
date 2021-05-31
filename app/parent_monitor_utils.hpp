@@ -16,6 +16,7 @@ class MonitorInfo
 {
     public:
         int process_id;                 // The Monitor process ID.
+        int ftok_arg;
         int read_fd;                    // A slot to store a read FD (used when using multiple Monitors).
         const char *write_pipe_path;    // The path of the fifo pipe used for sending data to the Monitor.
         const char *read_pipe_path;     // The path of the fifo pipe used for receiving data from the Monitor.

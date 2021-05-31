@@ -170,7 +170,8 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
                 exit(EXIT_FAILURE);
             case 0:
                 // Child
-                execl("./Monitor", "Monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
+                //execl("./Monitor", "Monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
+                execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
                 _Exit(EXIT_FAILURE);
             default:
                 // Parent
@@ -211,7 +212,8 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             exit(EXIT_FAILURE);
         case 0:
             // child
-            execl("./Monitor", "Monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
+            // execl("./Monitor", "Monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
+            execl("./monitor", "monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
             _Exit(EXIT_FAILURE);
         default:
             // The Parent will send the required information to the new process
@@ -223,6 +225,10 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             }
             // Send buffer size, bloom size and the Country directories assigned to this monitor
             sendInt(fd, buffer_size, buffer, buffer_size);
+
+            // Send int to be given to ftok
+            sendInt(fd, monitor->ftok_arg, buffer, buffer_size);
+
             sendLongInt(fd, bloom_size, buffer, buffer_size);
             sendInt(fd, monitor->subdirs->getNumElements(), buffer, buffer_size);
             for (LinkedList::ListIterator itr = monitor->subdirs->listHead(); !itr.isNull(); itr.forward())
@@ -284,6 +290,7 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *bu
                      unsigned long int bloom_size)
 {
     int fd;
+    int ftok_id = 1;
     // Iterate over the Monitors
     for(unsigned int i = 0; i < num_monitors; i++)
     {
@@ -295,6 +302,13 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *bu
         }
         // Send buffer size
         sendInt(fd, buffer_size, buffer, buffer_size);
+
+        monitors[i]->ftok_arg = ftok_id;
+        // Send int to be given to ftok
+        sendInt(fd, ftok_id, buffer, buffer_size);
+        // ftok_id + 1 will also be used be the child process
+        ftok_id += 2;
+
         // Send bloom filter size
         sendLongInt(fd, bloom_size, buffer, buffer_size);
         // Send number of directories for this monitor
@@ -318,7 +332,7 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
     // Setting up structs required by select()
     fd_set fdset;
     struct timeval timeout;
-    timeout.tv_sec = 30;
+    timeout.tv_sec = 15;
     timeout.tv_usec = 0;
     FD_ZERO(&fdset);
 
@@ -764,7 +778,7 @@ void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors)
 {
     for(unsigned int i = 0; i < num_monitors; i++)
     {
-        kill(monitors[i]->process_id, SIGKILL);
+        kill(monitors[i]->process_id, SIGINT);
         waitpid(monitors[i]->process_id, NULL, 0);
         unlink(monitors[i]->read_pipe_path);
         unlink(monitors[i]->write_pipe_path);
