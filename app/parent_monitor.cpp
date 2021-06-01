@@ -17,7 +17,7 @@
 
 #include <sstream>
 
-#include "pipe_msg.hpp"
+#include "../include/messaging.hpp"
 #include "../include/linked_list.hpp"
 #include "../include/bloom_filter.hpp"
 #include "../include/rb_tree.hpp"
@@ -26,7 +26,6 @@
 #include "parse_utils.hpp"
 
 #define MAX_MONITORS 300
-#define MAX_BUFFER_SIZE 1000000
 
 int sigchld_received = 0;               // If > 0, a child Monitor has died
 bool terminate = false;                 // Will be set to true to indicate termination

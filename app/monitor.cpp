@@ -16,11 +16,15 @@
 #include <sys/stat.h>
 #include <string>
 #include <sstream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
 #include "../include/linked_list.hpp"
 #include "../include/hash_table.hpp"
 #include "../include/utils.hpp"
-#include "pipe_msg.hpp"
+#include "../include/messaging.hpp"
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 #include "sem_utils.hpp"
@@ -77,31 +81,50 @@ void sigint_handler(int s)
     signal(SIGQUIT, sigint_handler);
 }
 
-void checkArgc(int argc)
-{
-    if (argc != 3)
-    {
-        fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitor <read pipe path> <write pipe path>\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
 /**
- * Opens the fifo pipes using the paths stored in argv[1] (read pipe) and argv[2] (write pipe)
+ * //TODO
  */
-void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
+bool socketConnect(int &read_socket_fd, int &write_socket_fd, uint16_t read_port, uint16_t write_port)
 {
-    if ( (read_pipe_fd = open(argv[1], O_RDONLY)) < 0)
-    {
-        perror("Failed to open read pipe.\n");
-        exit(EXIT_FAILURE);
+    struct sockaddr_in servaddr;
+    read_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (read_socket_fd == -1) {
+        fprintf(stderr, "Failed to create read socket\n");
+        return false;
     }
-    if ( (write_pipe_fd = open(argv[2], O_WRONLY)) < 0)
-    {
-        perror("Failed to open read pipe.\n");
-        exit(EXIT_FAILURE);
+    bzero(&servaddr, sizeof(servaddr));
+  
+    struct hostent *read_host = gethostbyname("localhost");
+    servaddr.sin_family = AF_INET;
+    memcpy(&(servaddr.sin_addr), read_host->h_addr, read_host->h_length);
+    servaddr.sin_port = htons(read_port);
+
+    if (connect(read_socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+        fprintf(stderr, "Failed to connect to read socket\n");
+        return false;
     }
+
+    write_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (write_socket_fd == -1) {
+        fprintf(stderr, "Failed to create write socket\n");
+        close(read_socket_fd);
+        return false;
+    }
+    bzero(&servaddr, sizeof(servaddr));
+  
+    // Duplicate?
+    struct hostent *write_host = gethostbyname("localhost");
+    servaddr.sin_family = AF_INET;
+    memcpy(&(servaddr.sin_addr), write_host->h_addr, write_host->h_length);
+    servaddr.sin_port = htons(write_port);
+
+    if (connect(write_socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+        fprintf(stderr, "Failed to connect to write socket\n");
+        close(read_socket_fd);
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -109,7 +132,7 @@ void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
  */
 void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short int num_dirs,
                       HashTable *citizens, LinkedList *countries, LinkedList *viruses,
-                      int read_pipe_fd, int write_pipe_fd, pthread_t *threads, unsigned int num_threads)
+                      int read_socket_fd, int write_socket_fd, pthread_t *threads, unsigned int num_threads)
 {
     delete[] buffer;
     for (unsigned short i = 0; i < num_dirs; i++)
@@ -118,8 +141,8 @@ void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short 
     }
     delete[] directories;
 
-    close(read_pipe_fd);
-    close(write_pipe_fd);
+    close(read_socket_fd);
+    close(write_socket_fd);
     delete countries;
     delete viruses;
     delete citizens;
@@ -314,21 +337,21 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
 /**
  * Serves a /travelRequest command.
  */
-void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveTravelRequest(int read_socket_fd, int write_socket_fd, char *buffer, unsigned int buffer_size,
                         HashTable *citizens, LinkedList *viruses, unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     unsigned int citizen_id;
     // Receive citizen ID
-    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    receiveInt(read_socket_fd, citizen_id, buffer, buffer_size);
     Date date;
     // Receive date
-    receiveDate(read_pipe_fd, date, buffer, buffer_size);
+    receiveDate(read_socket_fd, date, buffer, buffer_size);
     Date date6monthsPrior;
     // Get the date that is 6 months prior
     date6monthsPrior.set6monthsPrior(date);
     char *virus_name;
     // Get virus name
-    receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
+    receiveString(read_socket_fd, virus_name, buffer, buffer_size);
     std::string answer;
     char answer_type;
 
@@ -372,25 +395,25 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
         }
     }
     // Send the answer type and the answer string
-    sendMessageType(write_pipe_fd, answer_type, buffer, buffer_size);
-    sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
+    sendMessageType(write_socket_fd, answer_type, buffer, buffer_size);
+    sendString(write_socket_fd, answer.c_str(), buffer, buffer_size);
 }
 
 /**
  * Serves a /searchVaccinationStatus request.
  */
-void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveSearchStatusRequest(int read_socket_fd, int write_socket_fd, char *buffer, unsigned int buffer_size,
                               HashTable *citizens, LinkedList *viruses)
 {
     // Receive the ID of the citizen
     unsigned int citizen_id;
-    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    receiveInt(read_socket_fd, citizen_id, buffer, buffer_size);
     // Try to find the citizen
     CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));    
     if (citizen == NULL)
     // Citizen not found
     {
-        sendMessageType(write_pipe_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
+        sendMessageType(write_socket_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
     }
     else
     // Citizen found
@@ -408,27 +431,27 @@ void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer,
             virus->getVaccinationStatusString(citizen_id, answer);
         }
         // Send the answer to the Parent
-        sendMessageType(write_pipe_fd, CITIZEN_FOUND, buffer, buffer_size);
-        sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
+        sendMessageType(write_socket_fd, CITIZEN_FOUND, buffer, buffer_size);
+        sendString(write_socket_fd, answer.c_str(), buffer, buffer_size);
     }
 }
 
 /**
  * Sends the Monitor bloom filters to the Parent process.
  */
-void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void sendBloomFilters(int write_socket_fd, char *buffer, unsigned int buffer_size,
                       LinkedList *viruses)
 {
     // Inform how many bloom filters will be sent
-    sendInt(write_pipe_fd, viruses->getNumElements(), buffer, buffer_size);    
+    sendInt(write_socket_fd, viruses->getNumElements(), buffer, buffer_size);    
 
     for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
     {
         VirusRecords *virus = static_cast<VirusRecords*>(itr.getData());
         // Send the name of the virus that the bloom filter refers to
-        sendString(write_pipe_fd, virus->virus_name, buffer, buffer_size);
+        sendString(write_socket_fd, virus->virus_name, buffer, buffer_size);
         // Send the bloom filter
-        sendBloomFilter(write_pipe_fd, virus->filter, buffer, buffer_size);
+        sendBloomFilter(write_socket_fd, virus->filter, buffer, buffer_size);
     }
 }
 
@@ -436,24 +459,26 @@ void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
  * To be called when the Monitor has been notified that the Parent Monitor has
  * requested information, in order to serve the request.
  */
-void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveRequest(int read_socket_fd, int write_socket_fd, char *buffer, unsigned int buffer_size,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                   unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     char msg_type;
     // Receive the type of the request
-    receiveMessageType(read_pipe_fd, msg_type, buffer, buffer_size);
+    receiveMessageType(read_socket_fd, msg_type, buffer, buffer_size);
 
     switch (msg_type)
     // Call the corresponding routine to serve it
     {
         case TRAVEL_REQUEST:
-            serveTravelRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size,
+            serveTravelRequest(read_socket_fd, write_socket_fd, buffer, buffer_size,
                                citizens, viruses, accepted_requests, rejected_requests);
             break;  
         case SEARCH_STATUS:
-            serveSearchStatusRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, viruses);
+            serveSearchStatusRequest(read_socket_fd, write_socket_fd, buffer, buffer_size, citizens, viruses);
             break;
+        case MONITOR_CLIENT_EXIT:
+            terminate = true;
         default:
             // Should never be reached, or something is wrong
             break;
@@ -495,22 +520,112 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
     fclose(logfile);
 }
 
-void parseArgs(int argc, char const *argv[], uint16_t &port, unsigned int &num_threads, unsigned int &buffer_size,
-               unsigned int &cyclic_buffer_size, DirectoryInfo **&directories, unsigned long &bloom_size)
+bool parseArgs(int argc, char const *argv[], uint16_t &read_port, uint16_t &write_port,
+               unsigned int &num_threads, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
+               DirectoryInfo **&directories, unsigned long &bloom_size, unsigned int &num_dirs)
 {
-    if (argc < 11)
+    if (argc < 12)
     {
         fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitor <read pipe path> <write pipe path>\n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Usage: ./monitorServer -p readPort writePort -t numThreads -b socketBufferSize \
+        -c cyclicBufferSize -s sizeOfBloom <path1> ... <pathN>\n");
+        return false;
     }
-    int num_dirs = argc - 11;
+
+    // Flags to make sure no arguments are given more than once
+    bool got_port = false, got_num_threads = false, got_socket_buf_size = false;
+    bool got_cyclic_buf_size = false, got_bloom_size = false;
+    for (int i = 1; i < 12; i+=2)
+    {
+        if ( strcmp(argv[i], "-p") == 0 )
+        {
+            if (got_port) {
+                fprintf(stderr, "Duplicate port number argument detected.\n");
+                return false; 
+            }
+            read_port = atoi(argv[i + 1]);
+            read_port = atoi(argv[i + 2]);
+            i++;
+            got_port = true;
+        }
+        else if ( strcmp(argv[i], "-t") == 0 )
+        {
+            if (got_num_threads) {
+                fprintf(stderr, "Duplicate numThreads argument detected.\n");
+                return false;
+            }
+            num_threads = atoi(argv[i + 1]);
+            got_num_threads = true;
+        }
+        else if ( strcmp(argv[i], "-b") == 0 )
+        {
+            if (got_socket_buf_size) { 
+                fprintf(stderr, "Duplicate socketBufferSize argument detected.\n");
+                return false; 
+            }
+            int temp = atoi(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
+            {
+                buffer_size = temp;
+                got_socket_buf_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid socketBufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
+                return false;
+            }
+        }
+        else if ( strcmp(argv[i], "-c") == 0 )
+        {
+            if (got_cyclic_buf_size) { 
+                fprintf(stderr, "Duplicate cyclicBufferSize argument detected.\n");
+                return false; 
+            }
+            int temp = atoi(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
+            {
+                cyclic_buffer_size = temp;
+                got_cyclic_buf_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid cyclicBufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
+                return false;
+            }
+        }
+        else if ( strcmp(argv[i], "-s") == 0 )
+        {
+            if (got_bloom_size) { 
+                fprintf(stderr, "Duplicate sizeOfBloom argument detected.\n");
+                return false;
+            }
+            long temp = atol(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_BLOOM_SIZE)
+            {
+                bloom_size = temp;
+                got_bloom_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid sizeOfBloom argument. Make sure it is a positive integer up to %d", MAX_BLOOM_SIZE);
+                return false;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Invalid argument detected.\n");
+            return false;
+        }
+    }
+
+    num_dirs = argc - 11;
     directories = new DirectoryInfo*[num_dirs];
     for (unsigned int i = 0; i < num_dirs; i++)
     {
         directories[i] = new DirectoryInfo(argv[11 + i]);
         directories[i]->addContents();
     }
+    return true;
 }
 
 int main(int argc, char const *argv[])
@@ -521,55 +636,38 @@ int main(int argc, char const *argv[])
     signal(SIGINT, sigint_handler);
     signal(SIGQUIT, sigint_handler);
 
-    // Check arguments and open the fifo pipes assigned to this Monitor
-    checkArgc(argc);
-    int read_pipe_fd, write_pipe_fd;
-    openPipes(read_pipe_fd, write_pipe_fd, argv);
-
-    unsigned int num_threads = 3;
-    pthread_t *threads = new pthread_t[num_threads];
-
-    // Getting buffer size & creating the buffer to use for pipe I/O
-    unsigned int buffer_size;
-    char temp_buffer[sizeof(unsigned int)];
-    receiveInt(read_pipe_fd, buffer_size, temp_buffer, sizeof(unsigned int));
-    char *buffer = new char[buffer_size];
-
-    receiveInt(read_pipe_fd, ftok_id, buffer, buffer_size);
-
-    // Read Bloom Filter size
+    int read_socket_fd, write_socket_fd;
+    unsigned int num_dirs, buffer_size, cyclic_buffer_size, num_threads;
     unsigned long bloom_size;
-    receiveLongInt(read_pipe_fd, bloom_size, buffer, buffer_size);
-    // Read number of directories that will be assigned to this monitor
-    unsigned int num_dirs;
-    receiveInt(read_pipe_fd, num_dirs, buffer, buffer_size);
-    DirectoryInfo **directories = new DirectoryInfo*[num_dirs];
+    uint16_t read_port, write_port;
+    DirectoryInfo **directories;
 
-    // Read num_dirs directory paths, store them and get their contents
-    char *str;
-    for (unsigned int i = 0; i < num_dirs; i++)
+    if (!parseArgs(argc, argv, read_port, write_port, num_threads, buffer_size,
+                   cyclic_buffer_size, directories, bloom_size, num_dirs))
     {
-        str = NULL;
-        receiveString(read_pipe_fd, str, buffer, buffer_size);
-        directories[i] = new DirectoryInfo(str);
-        directories[i]->addContents();
-        free(str);
+        exit(EXIT_FAILURE);
     }
+
+    if (!socketConnect(read_socket_fd, write_socket_fd, read_port, write_port))
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    pthread_t *threads = new pthread_t[num_threads];
+    char *buffer = new char[buffer_size];
 
     // Create structures to be used for storing record-related information
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
-    // Cyclic Buffer
-    int cyclic_buffer_size = 4;
     char **cyclic_buffer = new char*[cyclic_buffer_size];
 
     // Scan all the files and insert all records found
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size,
                  num_threads, threads);
     // Send all the bloom filters to the parent process
-    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    sendBloomFilters(write_socket_fd, buffer, buffer_size, viruses);
 
     // Travel request counters
     unsigned int accepted_requests = 0, rejected_requests = 0;
@@ -588,13 +686,13 @@ int main(int argc, char const *argv[])
         {
             dir_update_notifications--;
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size);
-            sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+            sendBloomFilters(write_socket_fd, buffer, buffer_size, viruses);
         }
         if (fifo_pipe_queue_messages > 0)
         // Received indication that the Parent process has requested informations
         {
             fifo_pipe_queue_messages--;
-            serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses,
+            serveRequest(read_socket_fd, write_socket_fd, buffer, buffer_size, citizens, countries, viruses,
                          accepted_requests, rejected_requests);
         }
     }
@@ -604,7 +702,7 @@ int main(int argc, char const *argv[])
     // Create log file and release resouces
     createLogFile(accepted_requests, rejected_requests, countries);
     delete[] cyclic_buffer;
-    releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd,
+    releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_socket_fd, write_socket_fd,
                      threads, num_threads);
 
     return 0;

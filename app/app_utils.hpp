@@ -11,8 +11,20 @@
 #include <string>
 #include "../include/utils.hpp"
 
+#define MAX_BUFFER_SIZE 1000000
+
 #define MAX_ID_DIGITS 5                 // Maximum number of digits allowed in Citizen ID's
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed
+
+/* Defined Message Type codes. */
+#define TRAVEL_REQUEST 1
+#define SEARCH_STATUS 2
+#define TRAVEL_REQUEST_ACCEPTED 3
+#define TRAVEL_REQUEST_REJECTED 4
+#define TRAVEL_REQUEST_INVALID 5
+#define CITIZEN_FOUND 6
+#define CITIZEN_NOT_FOUND 7
+#define MONITOR_CLIENT_EXIT 8
 
 class LinkedList;
 class RedBlackTree;

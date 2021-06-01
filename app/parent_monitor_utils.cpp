@@ -23,7 +23,7 @@
 #include "../include/utils.hpp"
 #include "parent_monitor_utils.hpp"
 #include "app_utils.hpp"
-#include "pipe_msg.hpp"
+#include "../include/messaging.hpp"
 
 MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), write_pipe_path(NULL), read_pipe_path(NULL),
 subdirs(new LinkedList(delete_object_array<char>)) { }
