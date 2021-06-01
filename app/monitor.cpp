@@ -150,7 +150,6 @@ void* fileScanner(void *arguments)
             }
             else
             {
-                sleep(1);
                 printf("index: %d\n", first_not_consumed);
                 printf("%d: %s\n", current, args->cyclic_buffer[first_not_consumed]);
 
@@ -608,6 +607,7 @@ int main(int argc, char const *argv[])
     sem_delete(produce_sem_id);
     // Create log file and release resouces
     createLogFile(accepted_requests, rejected_requests, countries);
+    delete[] cyclic_buffer;
     releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd,
                      threads, num_threads);
 
