@@ -140,53 +140,49 @@ void* fileScanner(void *arguments)
     Date date;
     FILE *input_file;
     int current = current_thread++;
-    while(true)
+    while(sem_down(consume_sem_id, 0) != -1)
     {
-        if (sem_down(consume_sem_id, 0) != -1)
+        if (first_not_consumed == cyclic_buffer_elements)
         {
-            if (first_not_consumed == cyclic_buffer_elements)
-            {
-                sem_up(produce_sem_id, 0);
-            }
-            else
-            {
-                printf("index: %d\n", first_not_consumed);
-                printf("%d: %s\n", current, args->cyclic_buffer[first_not_consumed]);
-
-                input_file = fopen(args->cyclic_buffer[first_not_consumed], "r");
-                if (input_file != NULL) {
-                    // Read records from the file
-                    while( (line_buf = fgetline(input_file)) != NULL)
-                    {
-                        buf_copy = new char[strlen(line_buf) + 1];
-                        temp = new char[strlen(line_buf) + 3];
-                        sprintf(temp, "~ %s", line_buf);            // just a "hack" so that the parsing function
-                                                                    // can get all the line tokens using strtok.
-                        strcpy(buf_copy, line_buf);
-                        
-                        strtok(temp, " ");       
-
-                        // Parse the line
-                        if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
-                        // If parsing was successful, try to insert the Record.
-                        {
-                            insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
-                                                    args->countries, args->viruses, args->citizens, args->bloom_size, NULL);
-                        }
-                        delete[] citizen_name;
-                        delete[] country_name;
-                        delete[] virus_name;
-                        delete[] temp;
-                        delete[] buf_copy;
-                        free(line_buf);
-                    }
-                    fclose(input_file);
-                }
-                first_not_consumed++;
-                sem_up(consume_sem_id, 0);
-            }
+            sem_up(produce_sem_id, 0);
         }
-        else { break; }
+        else
+        {
+            printf("index: %d\n", first_not_consumed);
+            printf("%d: %s\n", current, args->cyclic_buffer[first_not_consumed]);
+
+            input_file = fopen(args->cyclic_buffer[first_not_consumed], "r");
+            if (input_file != NULL) {
+                // Read records from the file
+                while( (line_buf = fgetline(input_file)) != NULL)
+                {
+                    buf_copy = new char[strlen(line_buf) + 1];
+                    temp = new char[strlen(line_buf) + 3];
+                    sprintf(temp, "~ %s", line_buf);            // just a "hack" so that the parsing function
+                                                                // can get all the line tokens using strtok.
+                    strcpy(buf_copy, line_buf);
+                    
+                    strtok(temp, " ");       
+
+                    // Parse the line
+                    if (insertCitizenRecordParse(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date, NULL))
+                    // If parsing was successful, try to insert the Record.
+                    {
+                        insertVaccinationRecord(citizen_id, citizen_name, country_name, age, virus_name, vaccinated, date,
+                                                args->countries, args->viruses, args->citizens, args->bloom_size, NULL);
+                    }
+                    delete[] citizen_name;
+                    delete[] country_name;
+                    delete[] virus_name;
+                    delete[] temp;
+                    delete[] buf_copy;
+                    free(line_buf);
+                }
+                fclose(input_file);
+            }
+            first_not_consumed++;
+            sem_up(consume_sem_id, 0);
+        }
     }
     delete args;
     pthread_exit(NULL);
