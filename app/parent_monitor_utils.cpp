@@ -6,6 +6,9 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <string>
+#include <sstream>
+
 #include <unistd.h>
 #include <wait.h>
 #include <dirent.h>
@@ -13,9 +16,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include <string>
-#include <sstream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
 #include "../include/linked_list.hpp"
 #include "../include/bloom_filter.hpp"
@@ -23,16 +27,65 @@
 #include "../include/utils.hpp"
 #include "parent_monitor_utils.hpp"
 #include "app_utils.hpp"
-#include "pipe_msg.hpp"
+#include "../include/messaging.hpp"
 
-MonitorInfo::MonitorInfo(): process_id(-1), read_fd(-1), write_pipe_path(NULL), read_pipe_path(NULL),
+#define CHILD_EXEC_NAME "monitor"
+#define CHILD_EXEC_PATH "./app/monitor"
+
+MonitorInfo::MonitorInfo(): io_fd(-1), socket_fd(-1), process_id(-1), ftok_arg(-1),
 subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
 {
-    delete[] read_pipe_path;
-    delete[] write_pipe_path;
     delete subdirs;
+}
+
+bool MonitorInfo::createSocket(uint16_t &port)
+{
+    socklen_t len;
+    struct sockaddr_in servaddr, cli;
+    
+    if( (this->socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        perror("Failed to create child socket");
+        return false;
+    }
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = 0;
+
+    if (bind(this->socket_fd, (sockaddr*)&servaddr, sizeof(servaddr)) == -1)
+    {
+        perror("Failed to bind child socket");
+        return false;
+    }
+    if (listen(this->socket_fd, 2) == -1)
+    {
+        perror("Failed to listen child socket");
+        return false;
+    }
+    //len = sizeof(servaddr);
+    getsockname(this->socket_fd, (sockaddr*)&servaddr, &len);
+    port = ntohs(servaddr.sin_port);
+    return true;
+}
+
+bool MonitorInfo::establishConnection()
+{
+    struct sockaddr_in cli;
+    socklen_t len;
+    if ( (this->io_fd = accept(this->socket_fd, (sockaddr*)&cli, &len)) == -1)
+    {
+        perror("Failed to accept child connection");
+        return false;
+    }
+    return true;
+}
+
+void MonitorInfo::terminateConnection()
+{
+    close(socket_fd);
 }
 
 VirusRequests::VirusRequests(const char *name):
@@ -114,25 +167,7 @@ bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorIn
         if (monitors[i] == NULL)
         // This monitor has not been created yet
         {
-            // Create and store pipe paths
-            std::stringstream read_name_stream;
-            std::stringstream write_name_stream;
             monitors[i] = new MonitorInfo();
-            read_name_stream << "./fifo_pipes/read" << i;
-            write_name_stream << "./fifo_pipes/write" << i; 
-            monitors[i]->read_pipe_path = copyString(read_name_stream.str().c_str());
-            monitors[i]->write_pipe_path = copyString(write_name_stream.str().c_str());
-            // Make the pipes
-            if (mkfifo(monitors[i]->write_pipe_path, 0666) < 0 )
-            {
-                fprintf(stderr, "Error creating fifo: %s\n", monitors[i]->write_pipe_path);
-                return false;
-            }
-            if (mkfifo(monitors[i]->read_pipe_path, 0666) < 0 )
-            {
-                fprintf(stderr, "Error creating fifo: %s\n", monitors[i]->read_pipe_path);
-                return false;
-            }
         }
         // Create the full path of the current Country Directory
         std::string directory_path(path);
@@ -150,10 +185,70 @@ bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorIn
     return true;
 }
 
+void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_size,
+                    unsigned int cyclic_buffer_size, unsigned long bloom_size)
+{
+    argv = static_cast<char**>(malloc(sizeof(char*) * 12));
+    if (argv == NULL)
+    {
+        fprintf(stderr, "child argv malloc failed");
+        exit(EXIT_FAILURE);
+    }
+    argv[0] = copyString(CHILD_EXEC_NAME);
+    argv[1] = copyString("-p");
+    // port is different for every child process, so let buildChildArgv set it
+    argv[2] = NULL;
+    argv[3] = copyString("-t");
+    argv[4] = copyString(std::to_string(num_threads).c_str());
+    argv[5] = copyString("-b");
+    argv[6] = copyString(std::to_string(buffer_size).c_str());
+    argv[7] = copyString("-c");
+    argv[8] = copyString(std::to_string(cyclic_buffer_size).c_str());
+    argv[9] = copyString("-s");
+    argv[10] = copyString(std::to_string(bloom_size).c_str());
+    // One more element will be set to NULL by buildChildArgv
+}
+
+void deleteBasicArgv(char **argv)
+{
+    int i = 0;
+    do
+    {
+        delete[] argv[i];
+    } 
+    while (++i < 11);
+    free(argv);
+}
+
+void buildChildArgv(char **&argv, MonitorInfo *monitor, uint16_t port)
+{
+    argv[2] = copyString(std::to_string(port).c_str());
+    int argc = 12 + monitor->subdirs->getNumElements();
+
+    if (argc > 12)
+    {
+        void *realloc_res = realloc(argv, sizeof(char*) * argc);
+        if (realloc_res == NULL)
+        {
+            fprintf(stderr, "child argv realloc failed");
+            exit(EXIT_FAILURE);
+        }
+        argv = static_cast<char**>(realloc_res);
+        LinkedList::ListIterator itr = monitor->subdirs->listHead();
+        for (int i = 11; i < argc; i++)
+        {
+            argv[i] = static_cast<char*>(itr.getData());
+            itr.forward();
+        }
+    }
+    argv[argc - 1] = NULL;
+}
+
 /**
  * Creates the child Monitor processes. Stores the number of created processes in active_monitors.
  */
-void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors)
+void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors,
+                    char **child_argv)
 {
     int pid;
     unsigned int i;
@@ -161,6 +256,11 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
     // it means no more Monitors have been created, so stop creating more children.
     for(i = 0; (i < num_monitors && monitors[i] != NULL); i++)
     {
+        uint16_t port;
+        if ( !monitors[i]->createSocket(port) )
+        {
+            exit(EXIT_FAILURE);
+        }
         pid = fork();
         switch (pid)
         {
@@ -170,13 +270,17 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
                 exit(EXIT_FAILURE);
             case 0:
                 // Child
-                //execl("./Monitor", "Monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
-                execl("./monitor", "monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
+                buildChildArgv(child_argv, monitors[i], port);
+                execvp(CHILD_EXEC_PATH, child_argv);
+                fprintf(stderr, "execvp failed\n");
                 _Exit(EXIT_FAILURE);
             default:
                 // Parent
+                if (!monitors[i]->establishConnection())
+                {
+                    exit(EXIT_FAILURE);
+                }
                 monitors[i]->process_id = pid;
-                // send subdirs to child...
         }
     }
     // The Monitor array may have some empty slots, so store the number of the non-empty slots.
@@ -187,19 +291,12 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
  * Replaces a dead child Monitor with a new one.
  */
 void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size,
-                  LinkedList *viruses)
+                  LinkedList *viruses, char **child_argv)
 {
-    // Delete the Monitor pipes and create them again.
-    unlink(monitor->write_pipe_path);
-    unlink(monitor->read_pipe_path);
-    if (mkfifo(monitor->write_pipe_path, 0666) < 0 )
+    uint16_t port;
+    monitor->terminateConnection();
+    if ( !monitor->createSocket(port) )
     {
-        perror("Error creating fifo");
-        exit(EXIT_FAILURE);
-    }
-    if (mkfifo(monitor->read_pipe_path, 0666) < 0 )
-    {
-        perror("Error creating fifo");
         exit(EXIT_FAILURE);
     }
     // Create a new child Monitor
@@ -212,44 +309,26 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             exit(EXIT_FAILURE);
         case 0:
             // child
-            // execl("./Monitor", "Monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
-            execl("./monitor", "monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
+            buildChildArgv(child_argv, monitor, port);
+            execvp(CHILD_EXEC_PATH, child_argv);
             _Exit(EXIT_FAILURE);
         default:
             // The Parent will send the required information to the new process
             monitor->process_id = new_pid;
-            int fd = open(monitor->write_pipe_path, O_WRONLY);
-            if (fd < 0)
+            if ( !monitor->establishConnection() )
             {
-                fprintf(stderr, "Failed to open pipe: %s\n", monitor->write_pipe_path);
-            }
-            // Send buffer size, bloom size and the Country directories assigned to this monitor
-            sendInt(fd, buffer_size, buffer, buffer_size);
-
-            // Send int to be given to ftok
-            sendInt(fd, monitor->ftok_arg, buffer, buffer_size);
-
-            sendLongInt(fd, bloom_size, buffer, buffer_size);
-            sendInt(fd, monitor->subdirs->getNumElements(), buffer, buffer_size);
-            for (LinkedList::ListIterator itr = monitor->subdirs->listHead(); !itr.isNull(); itr.forward())
-            {
-                sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
-            }
-            close(fd);
-
-            // Receive Bloom Filters
-            unsigned int num_filters;
-            monitor->read_fd = open(monitor->read_pipe_path, O_RDONLY);
-            if (monitor->read_fd < 0)
-            {
-                fprintf(stderr, "Failed to open pipe: %s\n", monitor->write_pipe_path);
                 exit(EXIT_FAILURE);
             }
-            receiveInt(monitor->read_fd, num_filters, buffer, buffer_size);
+
+            // Send int to be given to ftok
+            sendInt(monitor->io_fd, monitor->ftok_arg, buffer, buffer_size);
+            // Receive Bloom Filters
+            unsigned int num_filters;
+            receiveInt(monitor->io_fd, num_filters, buffer, buffer_size);
             for (unsigned int j = 0; j < num_filters; j++)
             {
                 char *virus_name;
-                receiveString(monitor->read_fd, virus_name, buffer, buffer_size);
+                receiveString(monitor->io_fd, virus_name, buffer, buffer_size);
                 VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
                 if (virus == NULL)
                 {
@@ -257,9 +336,8 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
                     virus = static_cast<VirusFilter*>(viruses->getLast());
                 }
                 free(virus_name);
-                updateBloomFilter(monitor->read_fd, virus->filter, buffer, buffer_size);
+                updateBloomFilter(monitor->io_fd, virus->filter, buffer, buffer_size);
             }
-            close(monitor->read_fd);
     }
 }
 
@@ -267,7 +345,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
  * Restores any dead child Monitor processes.
  */
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter)
+                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter, char **child_argv)
 {
     int wait_pid;
     for(unsigned int i = 0; i < num_monitors; i++)
@@ -277,7 +355,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
         if(wait_pid > 0)
         // It is not, so restore it.
         {
-            restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses);
+            restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses, child_argv);
             sigchld_counter--;
         }
     }
@@ -286,39 +364,16 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
 /**
  * Sends required information to the child Monitors.
  */
-void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                     unsigned long int bloom_size)
+void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size)
 {
-    int fd;
     int ftok_id = 1;
     // Iterate over the Monitors
     for(unsigned int i = 0; i < num_monitors; i++)
     {
-        fd = open(monitors[i]->write_pipe_path, O_WRONLY);
-        if (fd < 0)
-        {
-            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->write_pipe_path);
-            exit(EXIT_FAILURE);
-        }
-        // Send buffer size
-        sendInt(fd, buffer_size, buffer, buffer_size);
-
         monitors[i]->ftok_arg = ftok_id;
-        // Send int to be given to ftok
-        sendInt(fd, ftok_id, buffer, buffer_size);
+        sendInt(monitors[i]->io_fd, ftok_id, buffer, buffer_size);
         // ftok_id + 1 will also be used be the child process
         ftok_id += 2;
-
-        // Send bloom filter size
-        sendLongInt(fd, bloom_size, buffer, buffer_size);
-        // Send number of directories for this monitor
-        sendInt(fd, monitors[i]->subdirs->getNumElements(), buffer, buffer_size);
-        // Send the directory paths
-        for (LinkedList::ListIterator itr = monitors[i]->subdirs->listHead(); !itr.isNull(); itr.forward())
-        {
-            sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
-        }
-        close(fd);
     }
 }
 
@@ -341,18 +396,11 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
     // Open read pipe for each child Monitor
     for (unsigned int i = 0; i < num_monitors; i++)
     {
-        int fd = open(monitors[i]->read_pipe_path, O_RDONLY);
-        if (fd < 0)
-        {
-            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->write_pipe_path);
-            exit(EXIT_FAILURE);
-        }
         // Add each FD to the set and find max FD to pass to select()
-        FD_SET(fd, &fdset);
-        monitors[i]->read_fd = fd;
-        if (max_fd < monitors[i]->read_fd)
+        FD_SET(monitors[i]->io_fd, &fdset);
+        if (max_fd < monitors[i]->io_fd)
         {
-            max_fd = monitors[i]->read_fd;
+            max_fd = monitors[i]->io_fd;
         }
     }
 
@@ -372,18 +420,18 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
             // Iterate over all Monitors
             for (unsigned int i = 0; i < num_monitors; i++)
             {
-                if (FD_ISSET(monitors[i]->read_fd, &fdset))
+                if (FD_ISSET(monitors[i]->io_fd, &fdset))
                 // The read FD of this monitor is ready
                 {
                     // Receive the Bloom Filters sent by this Monitor
                     unsigned int num_filters;
                     // Receive number of sent Bloom Filters
-                    receiveInt(monitors[i]->read_fd, num_filters, buffer, buffer_size);
+                    receiveInt(monitors[i]->io_fd, num_filters, buffer, buffer_size);
                     for (unsigned int j = 0; j < num_filters; j++)
                     {
                         char *virus_name;
                         // Receive the name of the virus related with this Bloom Filter
-                        receiveString(monitors[i]->read_fd, virus_name, buffer, buffer_size);
+                        receiveString(monitors[i]->io_fd, virus_name, buffer, buffer_size);
                         // Try to find the VirusFilter for this virus
                         VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
                         if (virus == NULL)
@@ -394,7 +442,7 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
                         }
                         free(virus_name);
                         // Receive the BloomFilter and update the stored one.
-                        updateBloomFilter(monitors[i]->read_fd, virus->filter, buffer, buffer_size);
+                        updateBloomFilter(monitors[i]->io_fd, virus->filter, buffer, buffer_size);
                     }
                     done_monitors++;
                 }
@@ -404,14 +452,8 @@ void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, Li
         FD_ZERO(&fdset);
         for (unsigned int i = 0; i < num_monitors; i++)
         {
-            FD_SET(monitors[i]->read_fd, &fdset);
+            FD_SET(monitors[i]->io_fd, &fdset);
         }
-    }
-
-    // Close all the read FD's.
-    for (unsigned int i = 0; i < num_monitors; i++)
-    {
-        close(monitors[i]->read_fd);
     }
 }
 
@@ -430,21 +472,14 @@ void addVaccinationRecords(const char *country_name, CountryMonitor **countries,
             // Send SIGUSR1 to child
             kill(countries[i]->monitor->process_id, SIGUSR1);
             unsigned int num_filters;
-            // Open the read pipe for this Monitor to receive data
-            countries[i]->monitor->read_fd = open(countries[i]->monitor->read_pipe_path, O_RDONLY);
-            if (countries[i]->monitor->read_fd < 0)
-            {
-                perror("Failed to open read pipe.\n");
-                exit(EXIT_FAILURE);
-            }
             // Receive the number of bloom filters that were sent
-            receiveInt(countries[i]->monitor->read_fd, num_filters, buffer, buffer_size);
+            receiveInt(countries[i]->monitor->io_fd, num_filters, buffer, buffer_size);
             // Receive the bloom filters
             for (unsigned int j = 0; j < num_filters; j++)
             {
                 char *virus_name;
                 // Get the name of the virus related to this bloom filter
-                receiveString(countries[i]->monitor->read_fd, virus_name, buffer, buffer_size);
+                receiveString(countries[i]->monitor->io_fd, virus_name, buffer, buffer_size);
                 VirusFilter *virus = static_cast<VirusFilter*>(viruses->getElement(virus_name, compareNameVirusFilter));
                 if (virus == NULL)
                 // If a new virus was detected, store a new Bloom Filter for it
@@ -454,7 +489,7 @@ void addVaccinationRecords(const char *country_name, CountryMonitor **countries,
                 }
                 free(virus_name);
                 // Receive the new Bloom Filter and update the present one
-                updateBloomFilter(countries[i]->monitor->read_fd, virus->filter, buffer, buffer_size);
+                updateBloomFilter(countries[i]->monitor->io_fd, virus->filter, buffer, buffer_size);
             }
             // Done
             printf("Records updated successfully.\n");
@@ -482,31 +517,15 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
     // Open read pipe for each child Monitor
     for (unsigned int i = 0; i < active_monitors; i++)
     {
-        // Open read and write pipes form this monitor
-        int read_fd = open(monitors[i]->read_pipe_path, O_RDONLY);
-        if (read_fd < 0)
-        {
-            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->read_pipe_path);
-            exit(EXIT_FAILURE);
-        }
-        int write_fd = open(monitors[i]->write_pipe_path, O_WRONLY);
-        if (write_fd < 0)
-        {
-            fprintf(stderr, "Failed to open pipe: %s\n", monitors[i]->write_pipe_path);
-            exit(EXIT_FAILURE);
-        }
         // Send the request to all Monitors and notify with SIGUSR2
-        sendMessageType(write_fd, SEARCH_STATUS, buffer, buffer_size);
-        sendInt(write_fd, citizen_id, buffer, buffer_size);
+        sendMessageType(monitors[i]->io_fd, SEARCH_STATUS, buffer, buffer_size);
+        sendInt(monitors[i]->io_fd, citizen_id, buffer, buffer_size);
         kill(monitors[i]->process_id, SIGUSR2);
-        // No more writing needed
-        close(write_fd);
         // Add each FD to the set and find max FD to pass to select()
-        FD_SET(read_fd, &fdset);
-        monitors[i]->read_fd = read_fd;
-        if (max_fd < monitors[i]->read_fd)
+        FD_SET(monitors[i]->io_fd, &fdset);
+        if (max_fd < monitors[i]->io_fd)
         {
-            max_fd = monitors[i]->read_fd;
+            max_fd = monitors[i]->io_fd;
         }
     }
 
@@ -526,17 +545,17 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
             // Iterate over all Monitors
             for (unsigned int i = 0; i < active_monitors; i++)
             {
-                if (FD_ISSET(monitors[i]->read_fd, &fdset))
+                if (FD_ISSET(monitors[i]->io_fd, &fdset))
                 // The read FD of this monitor is ready
                 {
                     // Receive answer type
                     char msg_type;
-                    receiveMessageType(monitors[i]->read_fd, msg_type, buffer, buffer_size);
+                    receiveMessageType(monitors[i]->io_fd, msg_type, buffer, buffer_size);
                     if (msg_type == CITIZEN_FOUND)
                     // Citizen found, so receive the answer string
                     {
                         char *answer;
-                        receiveString(monitors[i]->read_fd, answer, buffer, buffer_size);
+                        receiveString(monitors[i]->io_fd, answer, buffer, buffer_size);
                         printf("%s", answer);
                         free(answer);
                     }
@@ -548,13 +567,8 @@ void searchVaccinationStatus(unsigned int citizen_id, MonitorInfo **monitors, un
         FD_ZERO(&fdset);
         for (unsigned int i = 0; i < active_monitors; i++)
         {
-            FD_SET(monitors[i]->read_fd, &fdset);
+            FD_SET(monitors[i]->io_fd, &fdset);
         }
-    }
-    // Close all the read FD's.
-    for (unsigned int i = 0; i < active_monitors; i++)
-    {
-        close(monitors[i]->read_fd);
     }
 }
 
@@ -616,37 +630,22 @@ void travelRequest(unsigned int citizen_id, Date &date, char *country_from, char
             if (target_virus->filter->isPresent(char_id))
             // The citizen ID is marked as "maybe present" in the Bloom Filter
             {
-                // Open pipes for countryFrom Monitor
-                target_country_from->monitor->read_fd = open(target_country_from->monitor->read_pipe_path, O_RDONLY);
-                if (target_country_from->monitor->read_fd < 0)
-                {
-                    fprintf(stderr, "Failed to open pipe: %s\n", target_country_from->monitor->read_pipe_path);
-                    exit(EXIT_FAILURE);
-                }
-                int write_fd = open(target_country_from->monitor->write_pipe_path, O_WRONLY);
-                if (write_fd < 0)
-                {
-                    fprintf(stderr, "Failed to open pipe: %s\n", target_country_from->monitor->write_pipe_path);
-                    exit(EXIT_FAILURE);
-                }
                 char ans_type;
                 char *answer;
                 // Send Request type and required information
-                sendMessageType(write_fd, TRAVEL_REQUEST, buffer, buffer_size);
-                sendInt(write_fd, citizen_id, buffer, buffer_size);
-                sendDate(write_fd, date, buffer, buffer_size);
-                sendString(write_fd, virus_name, buffer, buffer_size);
+                sendMessageType(target_country_from->monitor->io_fd, TRAVEL_REQUEST, buffer, buffer_size);
+                sendInt(target_country_from->monitor->io_fd, citizen_id, buffer, buffer_size);
+                sendDate(target_country_from->monitor->io_fd, date, buffer, buffer_size);
+                sendString(target_country_from->monitor->io_fd, virus_name, buffer, buffer_size);
                 // Notify the Monitor process
                 kill(target_country_from->monitor->process_id, SIGUSR2);
                 
                 // Receive Monitor answer
-                receiveMessageType(target_country_from->monitor->read_fd, ans_type, buffer, buffer_size);
-                receiveString(target_country_from->monitor->read_fd, answer, buffer, buffer_size);
+                receiveMessageType(target_country_from->monitor->io_fd, ans_type, buffer, buffer_size);
+                receiveString(target_country_from->monitor->io_fd, answer, buffer, buffer_size);
                 printf("%s", answer);
                 free(answer);
                 accepted = (ans_type == TRAVEL_REQUEST_ACCEPTED);
-                close(write_fd);
-                close(target_country_from->monitor->read_fd);
             }
             else
             {
@@ -774,14 +773,14 @@ void travelStats(char *virus_name, Date &start, Date &end, const char *country_n
 /**
  * Terminates all Monitor processes and deletes the created pipes.
  */
-void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors)
+void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size)
 {
     for(unsigned int i = 0; i < num_monitors; i++)
     {
-        kill(monitors[i]->process_id, SIGINT);
+        kill(monitors[i]->process_id, SIGUSR2);
+        sendMessageType(monitors[i]->io_fd, MONITOR_EXIT, buffer, buffer_size);
         waitpid(monitors[i]->process_id, NULL, 0);
-        unlink(monitors[i]->read_pipe_path);
-        unlink(monitors[i]->write_pipe_path);
+        monitors[i]->terminateConnection();
     }
 }
 
@@ -789,7 +788,7 @@ void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors)
  * Deletes the structures/ADT's used by the Parent Monitor.
  */
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
-                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses)
+                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses, char **child_argv)
 {
     unsigned int i;
     // Delete CountryMonitors
@@ -814,6 +813,8 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsign
     free(directories);
     
     delete viruses;
+
+    deleteBasicArgv(child_argv);
 }
 
 /* Comparison functions used by ADT's */

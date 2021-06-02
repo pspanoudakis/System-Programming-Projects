@@ -14,15 +14,18 @@
  */
 class MonitorInfo
 {
+        int socket_fd;
     public:
         int process_id;                 // The Monitor process ID.
         int ftok_arg;
-        int read_fd;                    // A slot to store a read FD (used when using multiple Monitors).
-        const char *write_pipe_path;    // The path of the fifo pipe used for sending data to the Monitor.
-        const char *read_pipe_path;     // The path of the fifo pipe used for receiving data from the Monitor.
-        LinkedList *subdirs;            // A list with the subdirectories assigned to this Monitor.
+        int io_fd;
+        
+        LinkedList *subdirs;            // A list with the subdirectories (paths) assigned to this Monitor
         MonitorInfo();
         ~MonitorInfo();
+        bool createSocket(uint16_t &port);
+        bool establishConnection();
+        void terminateConnection();
 };
 
 /**
@@ -81,16 +84,23 @@ class VirusFilter
 bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorInfo **&monitors, unsigned int num_monitors,
                               struct dirent **&files, unsigned int &num_files);
 
-void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors);
+void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_size,
+                    unsigned int cyclic_buffer_size, unsigned long bloom_size);
+
+void deleteBasicArgv(char **argv);
+
+void buildChildArgv(char **&argv, MonitorInfo *monitor, uint16_t port);
+
+void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors,
+                    char **child_argv);
 
 void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size,
-                  LinkedList *viruses);
+                  LinkedList *viruses, char **child_argv);
 
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter);
+                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter, char **child_argv);
 
-void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                     unsigned long int bloom_size);
+void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size);
 
 void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, LinkedList *viruses,
                            char *buffer, unsigned int buffer_size, unsigned long int bloom_size);
@@ -113,10 +123,10 @@ void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **coun
 void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
                  CountryMonitor **countries, unsigned int num_countries); 
 
-void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors);
+void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size);
 
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
-                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses);
+                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses, char **child_argv);
 
 /* Comparison functions to be used by ADT's ----------------------------------------------------- */
 

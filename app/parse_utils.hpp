@@ -24,14 +24,21 @@ bool parseDateString(const char *string, Date &date);
 
 bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
                               int &citizen_age, char *&virus_name, bool &vaccinated, Date &date, FILE *fstream);
-bool vaccinateNowParse(int &citizen_id, char *&citizen_fullname, char *&country_name,
-                       int &citizen_age, char *&virus_name);
-bool vaccineStatusBloomParse(int &citizen_id, char *&virus_name);
 
-bool vaccineStatusParse(int &citizen_id, char *&virus_name);
+bool parentCheckParseArgs(int argc, char const *argv[], char *&directory_path, unsigned int &num_monitors,
+                    unsigned long &bloom_size, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
+                    unsigned int &num_threads);
 
-bool populationStatusParse(char *&country_name, char *&virus_name, Date &start, Date &end);
+bool childCheckparseArgs(int argc, char const *argv[], uint16_t &port,
+               unsigned int &num_threads, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
+               DirectoryInfo **&directories, unsigned long &bloom_size, unsigned int &num_dirs);
 
-bool listNonVaccinatedParse(char *&virus_name);
+bool addVaccinationRecordsParse(char *&country_name);
+
+bool searchVaccinationStatusParse(unsigned int &citizen_id);
+
+bool travelRequestParse(unsigned int &citizen_id, Date &date, char *&countryFrom, char *&countryTo, char *&virus_name);
+
+bool travelStatsParse(char *&virus_name, Date &start, Date &end, char *&country_name);
 
 #endif

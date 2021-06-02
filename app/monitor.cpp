@@ -16,11 +16,15 @@
 #include <sys/stat.h>
 #include <string>
 #include <sstream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
 #include "../include/linked_list.hpp"
 #include "../include/hash_table.hpp"
 #include "../include/utils.hpp"
-#include "pipe_msg.hpp"
+#include "../include/messaging.hpp"
 #include "app_utils.hpp"
 #include "parse_utils.hpp"
 #include "sem_utils.hpp"
@@ -30,7 +34,7 @@
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 
 int dir_update_notifications = 0;       // Incremented when the Parent has send a signal that indicates directory files update
-int fifo_pipe_queue_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
+int pending_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
 bool terminate = false;                 // Set to true when SIGINT/SIGQUIT received
 
 unsigned int ftok_id;
@@ -66,7 +70,7 @@ void sigusr1_handler(int s)
 
 void sigusr2_handler(int s)
 {
-    fifo_pipe_queue_messages++;
+    pending_messages++;
     signal(SIGUSR2, sigusr2_handler);
 }
 
@@ -77,31 +81,29 @@ void sigint_handler(int s)
     signal(SIGQUIT, sigint_handler);
 }
 
-void checkArgc(int argc)
-{
-    if (argc != 3)
-    {
-        fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitor <read pipe path> <write pipe path>\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
 /**
- * Opens the fifo pipes using the paths stored in argv[1] (read pipe) and argv[2] (write pipe)
+ * //TODO
  */
-void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
+bool socketConnect(int &socket_fd, uint16_t port)
 {
-    if ( (read_pipe_fd = open(argv[1], O_RDONLY)) < 0)
-    {
-        perror("Failed to open read pipe.\n");
-        exit(EXIT_FAILURE);
+    struct sockaddr_in servaddr;
+    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_fd == -1) {
+        fprintf(stderr, "Failed to create socket\n");
+        return false;
     }
-    if ( (write_pipe_fd = open(argv[2], O_WRONLY)) < 0)
-    {
-        perror("Failed to open read pipe.\n");
-        exit(EXIT_FAILURE);
+    bzero(&servaddr, sizeof(servaddr));
+  
+    struct hostent *host = gethostbyname("localhost");
+    servaddr.sin_family = AF_INET;
+    memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
+    servaddr.sin_port = htons(port);
+
+    if (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+        fprintf(stderr, "Failed to connect to socket\n");
+        return false;
     }
+    return true;
 }
 
 /**
@@ -109,7 +111,7 @@ void openPipes(int &read_pipe_fd, int &write_pipe_fd, char const *argv[])
  */
 void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short int num_dirs,
                       HashTable *citizens, LinkedList *countries, LinkedList *viruses,
-                      int read_pipe_fd, int write_pipe_fd, pthread_t *threads, unsigned int num_threads)
+                      int socket_fd, pthread_t *threads, unsigned int num_threads)
 {
     delete[] buffer;
     for (unsigned short i = 0; i < num_dirs; i++)
@@ -118,8 +120,7 @@ void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short 
     }
     delete[] directories;
 
-    close(read_pipe_fd);
-    close(write_pipe_fd);
+    close(socket_fd);
     delete countries;
     delete viruses;
     delete citizens;
@@ -314,21 +315,21 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
 /**
  * Serves a /travelRequest command.
  */
-void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveTravelRequest(int socket_fd, char *buffer, unsigned int buffer_size,
                         HashTable *citizens, LinkedList *viruses, unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     unsigned int citizen_id;
     // Receive citizen ID
-    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    receiveInt(socket_fd, citizen_id, buffer, buffer_size);
     Date date;
     // Receive date
-    receiveDate(read_pipe_fd, date, buffer, buffer_size);
+    receiveDate(socket_fd, date, buffer, buffer_size);
     Date date6monthsPrior;
     // Get the date that is 6 months prior
     date6monthsPrior.set6monthsPrior(date);
     char *virus_name;
     // Get virus name
-    receiveString(read_pipe_fd, virus_name, buffer, buffer_size);
+    receiveString(socket_fd, virus_name, buffer, buffer_size);
     std::string answer;
     char answer_type;
 
@@ -372,25 +373,25 @@ void serveTravelRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsig
         }
     }
     // Send the answer type and the answer string
-    sendMessageType(write_pipe_fd, answer_type, buffer, buffer_size);
-    sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
+    sendMessageType(socket_fd, answer_type, buffer, buffer_size);
+    sendString(socket_fd, answer.c_str(), buffer, buffer_size);
 }
 
 /**
  * Serves a /searchVaccinationStatus request.
  */
-void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveSearchStatusRequest(int socket_fd, char *buffer, unsigned int buffer_size,
                               HashTable *citizens, LinkedList *viruses)
 {
     // Receive the ID of the citizen
     unsigned int citizen_id;
-    receiveInt(read_pipe_fd, citizen_id, buffer, buffer_size);
+    receiveInt(socket_fd, citizen_id, buffer, buffer_size);
     // Try to find the citizen
     CitizenRecord *citizen = static_cast<CitizenRecord*>(citizens->getElement(&citizen_id, compareIdToCitizen));    
     if (citizen == NULL)
     // Citizen not found
     {
-        sendMessageType(write_pipe_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
+        sendMessageType(socket_fd, CITIZEN_NOT_FOUND, buffer, buffer_size);
     }
     else
     // Citizen found
@@ -408,27 +409,27 @@ void serveSearchStatusRequest(int read_pipe_fd, int write_pipe_fd, char *buffer,
             virus->getVaccinationStatusString(citizen_id, answer);
         }
         // Send the answer to the Parent
-        sendMessageType(write_pipe_fd, CITIZEN_FOUND, buffer, buffer_size);
-        sendString(write_pipe_fd, answer.c_str(), buffer, buffer_size);
+        sendMessageType(socket_fd, CITIZEN_FOUND, buffer, buffer_size);
+        sendString(socket_fd, answer.c_str(), buffer, buffer_size);
     }
 }
 
 /**
  * Sends the Monitor bloom filters to the Parent process.
  */
-void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void sendBloomFilters(int socket_fd, char *buffer, unsigned int buffer_size,
                       LinkedList *viruses)
 {
     // Inform how many bloom filters will be sent
-    sendInt(write_pipe_fd, viruses->getNumElements(), buffer, buffer_size);    
+    sendInt(socket_fd, viruses->getNumElements(), buffer, buffer_size);    
 
     for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
     {
         VirusRecords *virus = static_cast<VirusRecords*>(itr.getData());
         // Send the name of the virus that the bloom filter refers to
-        sendString(write_pipe_fd, virus->virus_name, buffer, buffer_size);
+        sendString(socket_fd, virus->virus_name, buffer, buffer_size);
         // Send the bloom filter
-        sendBloomFilter(write_pipe_fd, virus->filter, buffer, buffer_size);
+        sendBloomFilter(socket_fd, virus->filter, buffer, buffer_size);
     }
 }
 
@@ -436,23 +437,26 @@ void sendBloomFilters(int write_pipe_fd, char *buffer, unsigned int buffer_size,
  * To be called when the Monitor has been notified that the Parent Monitor has
  * requested information, in order to serve the request.
  */
-void serveRequest(int read_pipe_fd, int write_pipe_fd, char *buffer, unsigned int buffer_size,
+void serveRequest(int socket_fd, char *buffer, unsigned int buffer_size,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                   unsigned int &accepted_requests, unsigned int &rejected_requests)
 {
     char msg_type;
     // Receive the type of the request
-    receiveMessageType(read_pipe_fd, msg_type, buffer, buffer_size);
+    receiveMessageType(socket_fd, msg_type, buffer, buffer_size);
 
     switch (msg_type)
     // Call the corresponding routine to serve it
     {
         case TRAVEL_REQUEST:
-            serveTravelRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size,
+            serveTravelRequest(socket_fd, buffer, buffer_size,
                                citizens, viruses, accepted_requests, rejected_requests);
             break;  
         case SEARCH_STATUS:
-            serveSearchStatusRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, viruses);
+            serveSearchStatusRequest(socket_fd, buffer, buffer_size, citizens, viruses);
+            break;
+        case MONITOR_EXIT:
+            terminate = true;
             break;
         default:
             // Should never be reached, or something is wrong
@@ -468,7 +472,7 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
 {
     // Create the logfile name string
     std::stringstream logfile_name_stream;
-    logfile_name_stream << "log_files/log_file." << getpid();
+    logfile_name_stream << "./log_files/log_file." << getpid();
     const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
@@ -495,24 +499,6 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
     fclose(logfile);
 }
 
-void parseArgs(int argc, char const *argv[], uint16_t &port, unsigned int &num_threads, unsigned int &buffer_size,
-               unsigned int &cyclic_buffer_size, DirectoryInfo **&directories, unsigned long &bloom_size)
-{
-    if (argc < 11)
-    {
-        fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitor <read pipe path> <write pipe path>\n");
-        exit(EXIT_FAILURE);
-    }
-    int num_dirs = argc - 11;
-    directories = new DirectoryInfo*[num_dirs];
-    for (unsigned int i = 0; i < num_dirs; i++)
-    {
-        directories[i] = new DirectoryInfo(argv[11 + i]);
-        directories[i]->addContents();
-    }
-}
-
 int main(int argc, char const *argv[])
 {
     // Register signal handlers
@@ -521,55 +507,39 @@ int main(int argc, char const *argv[])
     signal(SIGINT, sigint_handler);
     signal(SIGQUIT, sigint_handler);
 
-    // Check arguments and open the fifo pipes assigned to this Monitor
-    checkArgc(argc);
-    int read_pipe_fd, write_pipe_fd;
-    openPipes(read_pipe_fd, write_pipe_fd, argv);
-
-    unsigned int num_threads = 3;
-    pthread_t *threads = new pthread_t[num_threads];
-
-    // Getting buffer size & creating the buffer to use for pipe I/O
-    unsigned int buffer_size;
-    char temp_buffer[sizeof(unsigned int)];
-    receiveInt(read_pipe_fd, buffer_size, temp_buffer, sizeof(unsigned int));
-    char *buffer = new char[buffer_size];
-
-    receiveInt(read_pipe_fd, ftok_id, buffer, buffer_size);
-
-    // Read Bloom Filter size
+    int socket_fd;
+    unsigned int num_dirs, buffer_size, cyclic_buffer_size, num_threads;
     unsigned long bloom_size;
-    receiveLongInt(read_pipe_fd, bloom_size, buffer, buffer_size);
-    // Read number of directories that will be assigned to this monitor
-    unsigned int num_dirs;
-    receiveInt(read_pipe_fd, num_dirs, buffer, buffer_size);
-    DirectoryInfo **directories = new DirectoryInfo*[num_dirs];
+    uint16_t port;
+    DirectoryInfo **directories;
 
-    // Read num_dirs directory paths, store them and get their contents
-    char *str;
-    for (unsigned int i = 0; i < num_dirs; i++)
+    if (!childCheckparseArgs(argc, argv, port, num_threads, buffer_size,
+                   cyclic_buffer_size, directories, bloom_size, num_dirs))
     {
-        str = NULL;
-        receiveString(read_pipe_fd, str, buffer, buffer_size);
-        directories[i] = new DirectoryInfo(str);
-        directories[i]->addContents();
-        free(str);
+        exit(EXIT_FAILURE);
     }
+
+    if (!socketConnect(socket_fd, port))
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    pthread_t *threads = new pthread_t[num_threads];
+    char *buffer = new char[buffer_size];
 
     // Create structures to be used for storing record-related information
     HashTable *citizens = new HashTable(HASHTABLE_BUCKETS, delete_object<CitizenRecord>, citizenHashObject);
     LinkedList *countries = new LinkedList(delete_object<CountryStatus>);
     LinkedList *viruses = new LinkedList(delete_object<VirusRecords>);
 
-    // Cyclic Buffer
-    int cyclic_buffer_size = 4;
     char **cyclic_buffer = new char*[cyclic_buffer_size];
 
+    receiveInt(socket_fd, ftok_id, buffer, buffer_size);
     // Scan all the files and insert all records found
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size,
                  num_threads, threads);
     // Send all the bloom filters to the parent process
-    sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+    sendBloomFilters(socket_fd, buffer, buffer_size, viruses);
 
     // Travel request counters
     unsigned int accepted_requests = 0, rejected_requests = 0;
@@ -578,7 +548,7 @@ int main(int argc, char const *argv[])
     while ( !terminate )
     {
         // No non-served signals for now
-        if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
+        if (dir_update_notifications == 0 && pending_messages == 0)
         // Suspend the Monitor until any signal is received
         {
             pause();
@@ -588,13 +558,13 @@ int main(int argc, char const *argv[])
         {
             dir_update_notifications--;
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size);
-            sendBloomFilters(write_pipe_fd, buffer, buffer_size, viruses);
+            sendBloomFilters(socket_fd, buffer, buffer_size, viruses);
         }
-        if (fifo_pipe_queue_messages > 0)
+        if (pending_messages > 0)
         // Received indication that the Parent process has requested informations
         {
-            fifo_pipe_queue_messages--;
-            serveRequest(read_pipe_fd, write_pipe_fd, buffer, buffer_size, citizens, countries, viruses,
+            pending_messages--;
+            serveRequest(socket_fd, buffer, buffer_size, citizens, countries, viruses,
                          accepted_requests, rejected_requests);
         }
     }
@@ -604,7 +574,7 @@ int main(int argc, char const *argv[])
     // Create log file and release resouces
     createLogFile(accepted_requests, rejected_requests, countries);
     delete[] cyclic_buffer;
-    releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, read_pipe_fd, write_pipe_fd,
+    releaseResources(buffer, directories, num_dirs, citizens, countries, viruses, socket_fd,
                      threads, num_threads);
 
     return 0;
