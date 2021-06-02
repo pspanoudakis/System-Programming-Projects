@@ -31,6 +31,7 @@
 #include "parse_utils.hpp"
 
 #define MAX_MONITORS 300
+#define MAX_THREADS 1000
 
 int sigchld_received = 0;               // If > 0, a child Monitor has died
 bool terminate = false;                 // Will be set to true to indicate termination
@@ -373,7 +374,8 @@ void createLogFile(CountryMonitor **countries, unsigned int num_countries,
  * @returns TRUE if the arguments are valid, FALSE otherwise.
  */
 bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigned int &num_monitors,
-                    unsigned long &bloom_size, unsigned int &buffer_size)
+                    unsigned long &bloom_size, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
+                    unsigned int &num_threads)
 {
     directory_path = NULL;
     if (argc != 9)
@@ -386,15 +388,17 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
     // Flags to make sure no arguments are given more than once
     bool got_num_monitors = false;
     bool got_buffer_size = false;
+    bool got_cyclic_buffer_size = false;
     bool got_bloom_size = false;
     bool got_input_dir = false;
+    bool got_num_threads = false;
 
     for (int i = 1; i < 8; i+=2)
     {
         if ( strcmp(argv[i], "-m") == 0 )
         {
             if (got_num_monitors) {
-                perror("Duplicate numMonitors argument detected.\n");
+                fprintf(stderr, "Duplicate numMonitors argument detected.\n");
                 return false; 
             }
             int temp = atoi(argv[i + 1]);
@@ -412,7 +416,7 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
         else if ( strcmp(argv[i], "-b") == 0 )
         {
             if (got_buffer_size) { 
-                perror("Duplicate bufferSize argument detected.\n");
+                fprintf(stderr, "Duplicate bufferSize argument detected.\n");
                 return false; 
             }
             int temp = atoi(argv[i + 1]);
@@ -427,10 +431,28 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
                 return false;
             }
         }
+        else if ( strcmp(argv[i], "-c") == 0 )
+        {
+            if (got_buffer_size) { 
+                fprintf(stderr, "Duplicate cyclicBufferSize argument detected.\n");
+                return false; 
+            }
+            int temp = atoi(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
+            {
+                cyclic_buffer_size = temp;
+                got_buffer_size = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid cyclicBufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
+                return false;
+            }
+        }
         else if ( strcmp(argv[i], "-s") == 0 )
         {
             if (got_bloom_size) { 
-                perror("Duplicate sizeOfBloom argument detected.\n");
+                fprintf(stderr, "Duplicate sizeOfBloom argument detected.\n");
                 return false;
             }
             long temp = atol(argv[i + 1]);
@@ -448,15 +470,33 @@ bool checkParseArgs(int argc, char const *argv[], char *&directory_path, unsigne
         else if ( strcmp(argv[i], "-i") == 0 )
         {
             if (got_input_dir) {
-                perror("Duplicate input_dir argument detected.\n");
+                fprintf(stderr, "Duplicate input_dir argument detected.\n");
                 return false;
             }
             directory_path = copyString(argv[i + 1]);
             got_input_dir = true;
         }
+        else if ( strcmp(argv[i], "-t") == 0 )
+        {
+            if (got_num_threads) { 
+                fprintf(stderr, "Duplicate numThreads argument detected.\n");
+                return false;
+            }
+            long temp = atol(argv[i + 1]);
+            if (temp > 0 && temp <= MAX_THREADS)
+            {
+                num_threads = temp;
+                got_num_threads = true;
+            }
+            else
+            {
+                fprintf(stderr, "Invalid numThreads argument. Make sure it is a positive integer up to %d", MAX_THREADS);
+                return false;
+            }
+        }
         else
         {
-            perror("Invalid argument detected.\n");
+            fprintf(stderr, "Invalid argument detected.\n");
             return false;
         }
     }
@@ -470,7 +510,7 @@ int main(int argc, char const *argv[])
     signal(SIGQUIT, sigint_handler);
     signal(SIGCHLD, sigchld_handler);
 
-    unsigned int num_monitors, active_monitors, num_dirs, num_countries, buffer_size;
+    unsigned int num_monitors, active_monitors, num_dirs, num_countries, buffer_size, cyclic_buffer_size, num_threads;
     unsigned long bloom_size;
     char *directory_path;
     MonitorInfo **monitors;
@@ -479,7 +519,7 @@ int main(int argc, char const *argv[])
     struct dirent **directories;
     
     // Check given arguments and store them
-    if (!checkParseArgs(argc, argv, directory_path, num_monitors, bloom_size, buffer_size))
+    if (!checkParseArgs(argc, argv, directory_path, num_monitors, bloom_size, buffer_size, cyclic_buffer_size, num_threads))
     {
         delete[] directory_path;
         exit(EXIT_FAILURE);

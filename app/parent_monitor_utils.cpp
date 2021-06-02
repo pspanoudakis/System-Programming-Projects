@@ -226,7 +226,6 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
                   LinkedList *viruses)
 {
     uint16_t port;
-    // Delete the Monitor pipes and create them again.
     monitor->terminateConnection();
     if ( !monitor->createSocket(port) )
     {
@@ -316,15 +315,16 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *bu
     // Iterate over the Monitors
     for(unsigned int i = 0; i < num_monitors; i++)
     {
+        /*
         // Send buffer size
         sendInt(monitors[i]->io_fd, buffer_size, buffer, buffer_size);
-
+        */
         monitors[i]->ftok_arg = ftok_id;
         // Send int to be given to ftok
         sendInt(monitors[i]->io_fd, ftok_id, buffer, buffer_size);
         // ftok_id + 1 will also be used be the child process
         ftok_id += 2;
-
+        /*
         // Send bloom filter size
         sendLongInt(monitors[i]->io_fd, bloom_size, buffer, buffer_size);
         // Send number of directories for this monitor
@@ -334,6 +334,7 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *bu
         {
             sendString(monitors[i]->io_fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
         }
+        */
     }
 }
 

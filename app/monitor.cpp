@@ -34,7 +34,7 @@
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 
 int dir_update_notifications = 0;       // Incremented when the Parent has send a signal that indicates directory files update
-int fifo_pipe_queue_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
+int pending_messages = 0;       // Incremented when the Parent has send a signal that indicates pending information request
 bool terminate = false;                 // Set to true when SIGINT/SIGQUIT received
 
 unsigned int ftok_id;
@@ -70,7 +70,7 @@ void sigusr1_handler(int s)
 
 void sigusr2_handler(int s)
 {
-    fifo_pipe_queue_messages++;
+    pending_messages++;
     signal(SIGUSR2, sigusr2_handler);
 }
 
@@ -89,18 +89,18 @@ bool socketConnect(int &socket_fd, uint16_t port)
     struct sockaddr_in servaddr;
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
-        fprintf(stderr, "Failed to create read socket\n");
+        fprintf(stderr, "Failed to create socket\n");
         return false;
     }
     bzero(&servaddr, sizeof(servaddr));
   
-    struct hostent *read_host = gethostbyname("localhost");
+    struct hostent *host = gethostbyname("localhost");
     servaddr.sin_family = AF_INET;
-    memcpy(&(servaddr.sin_addr), read_host->h_addr, read_host->h_length);
+    memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
     servaddr.sin_port = htons(port);
 
     if (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-        fprintf(stderr, "Failed to connect to read socket\n");
+        fprintf(stderr, "Failed to connect to socket\n");
         return false;
     }
     return true;
@@ -417,19 +417,19 @@ void serveSearchStatusRequest(int socket_fd, char *buffer, unsigned int buffer_s
 /**
  * Sends the Monitor bloom filters to the Parent process.
  */
-void sendBloomFilters(int write_socket_fd, char *buffer, unsigned int buffer_size,
+void sendBloomFilters(int socket_fd, char *buffer, unsigned int buffer_size,
                       LinkedList *viruses)
 {
     // Inform how many bloom filters will be sent
-    sendInt(write_socket_fd, viruses->getNumElements(), buffer, buffer_size);    
+    sendInt(socket_fd, viruses->getNumElements(), buffer, buffer_size);    
 
     for (LinkedList::ListIterator itr = viruses->listHead(); !itr.isNull(); itr.forward())
     {
         VirusRecords *virus = static_cast<VirusRecords*>(itr.getData());
         // Send the name of the virus that the bloom filter refers to
-        sendString(write_socket_fd, virus->virus_name, buffer, buffer_size);
+        sendString(socket_fd, virus->virus_name, buffer, buffer_size);
         // Send the bloom filter
-        sendBloomFilter(write_socket_fd, virus->filter, buffer, buffer_size);
+        sendBloomFilter(socket_fd, virus->filter, buffer, buffer_size);
     }
 }
 
@@ -505,7 +505,7 @@ bool parseArgs(int argc, char const *argv[], uint16_t &port,
     if (argc < 11)
     {
         fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitorServer -p readPort writePort -t numThreads -b socketBufferSize \
+        fprintf(stderr, "Usage: ./monitorServer -p port -t numThreads -b socketBufferSize \
         -c cyclicBufferSize -s sizeOfBloom <path1> ... <pathN>\n");
         return false;
     }
@@ -652,7 +652,7 @@ int main(int argc, char const *argv[])
     while ( !terminate )
     {
         // No non-served signals for now
-        if (dir_update_notifications == 0 && fifo_pipe_queue_messages == 0)
+        if (dir_update_notifications == 0 && pending_messages == 0)
         // Suspend the Monitor until any signal is received
         {
             pause();
@@ -664,10 +664,10 @@ int main(int argc, char const *argv[])
             scanNewFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size);
             sendBloomFilters(socket_fd, buffer, buffer_size, viruses);
         }
-        if (fifo_pipe_queue_messages > 0)
+        if (pending_messages > 0)
         // Received indication that the Parent process has requested informations
         {
-            fifo_pipe_queue_messages--;
+            pending_messages--;
             serveRequest(socket_fd, buffer, buffer_size, citizens, countries, viruses,
                          accepted_requests, rejected_requests);
         }
