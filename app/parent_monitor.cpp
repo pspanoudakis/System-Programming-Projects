@@ -15,6 +15,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
 #include <sstream>
 
 #include "../include/messaging.hpp"
@@ -531,7 +536,7 @@ int main(int argc, char const *argv[])
 
     // Kill child Monitors, create logfile and release resources
 
-    terminateChildren(monitors, active_monitors);
+    terminateChildren(monitors, active_monitors, buffer, buffer_size);
     createLogFile(countries, num_countries, accepted_requests, rejected_requests);
 
     delete[] directory_path;

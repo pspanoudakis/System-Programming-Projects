@@ -24,7 +24,7 @@
 #define TRAVEL_REQUEST_INVALID 5
 #define CITIZEN_FOUND 6
 #define CITIZEN_NOT_FOUND 7
-#define MONITOR_CLIENT_EXIT 8
+#define MONITOR_EXIT 8
 
 class LinkedList;
 class RedBlackTree;

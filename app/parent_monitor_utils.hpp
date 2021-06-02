@@ -14,15 +14,18 @@
  */
 class MonitorInfo
 {
+        int socket_fd;
     public:
         int process_id;                 // The Monitor process ID.
         int ftok_arg;
-        int read_fd;                    // A slot to store a read FD (used when using multiple Monitors).
-        const char *write_pipe_path;    // The path of the fifo pipe used for sending data to the Monitor.
-        const char *read_pipe_path;     // The path of the fifo pipe used for receiving data from the Monitor.
+        int io_fd;
+        
         LinkedList *subdirs;            // A list with the subdirectories assigned to this Monitor.
         MonitorInfo();
         ~MonitorInfo();
+        bool createSocket(uint16_t &port);
+        bool establishConnection();
+        void terminateConnection();
 };
 
 /**
@@ -113,7 +116,7 @@ void travelStats(char *virus_name, Date &start, Date &end, CountryMonitor **coun
 void travelStats(char *virus_name, Date &start, Date &end, const char *country_name,
                  CountryMonitor **countries, unsigned int num_countries); 
 
-void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors);
+void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size);
 
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
                       struct dirent **directories, unsigned int num_dirs, LinkedList *viruses);

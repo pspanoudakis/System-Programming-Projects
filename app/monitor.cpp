@@ -477,7 +477,7 @@ void serveRequest(int read_socket_fd, int write_socket_fd, char *buffer, unsigne
         case SEARCH_STATUS:
             serveSearchStatusRequest(read_socket_fd, write_socket_fd, buffer, buffer_size, citizens, viruses);
             break;
-        case MONITOR_CLIENT_EXIT:
+        case MONITOR_EXIT:
             terminate = true;
         default:
             // Should never be reached, or something is wrong
