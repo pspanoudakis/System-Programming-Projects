@@ -115,7 +115,7 @@ void createLogFile(CountryMonitor **countries, unsigned int num_countries,
 {
     // Create logfile name
     std::stringstream logfile_name_stream;
-    logfile_name_stream << "log_files/log_file." << getpid();
+    logfile_name_stream << "./log_files/log_file." << getpid();
     const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
@@ -176,7 +176,7 @@ int main(int argc, char const *argv[])
 
     char *buffer = new char[buffer_size];
     // Send required information to child Monitors
-    sendMonitorData(monitors, active_monitors, buffer, buffer_size, bloom_size);
+    sendMonitorData(monitors, active_monitors, buffer, buffer_size);
 
     viruses = new LinkedList(delete_object<VirusFilter>);
     // Receive and "merge" Monitor bloom filters

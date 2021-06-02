@@ -30,7 +30,7 @@
 #include "../include/messaging.hpp"
 
 #define CHILD_EXEC_NAME "monitor"
-#define CHILD_EXEC_PATH "./monitor"
+#define CHILD_EXEC_PATH "./app/monitor"
 
 MonitorInfo::MonitorInfo(): io_fd(-1), socket_fd(-1), process_id(-1), ftok_arg(-1),
 subdirs(new LinkedList(delete_object_array<char>)) { }
@@ -45,7 +45,7 @@ bool MonitorInfo::createSocket(uint16_t &port)
     socklen_t len;
     struct sockaddr_in servaddr, cli;
     
-    if( (this->io_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if( (this->socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("Failed to create child socket");
         return false;
@@ -55,18 +55,18 @@ bool MonitorInfo::createSocket(uint16_t &port)
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = 0;
 
-    if (bind(this->io_fd, (sockaddr*)&servaddr, sizeof(servaddr)) == -1)
+    if (bind(this->socket_fd, (sockaddr*)&servaddr, sizeof(servaddr)) == -1)
     {
         perror("Failed to bind child socket");
         return false;
     }
-    if (listen(this->io_fd, 1) == -1)
+    if (listen(this->socket_fd, 2) == -1)
     {
         perror("Failed to listen child socket");
         return false;
     }
     //len = sizeof(servaddr);
-    getsockname(this->io_fd, (sockaddr*)&servaddr, &len);
+    getsockname(this->socket_fd, (sockaddr*)&servaddr, &len);
     port = ntohs(servaddr.sin_port);
     return true;
 }
@@ -195,8 +195,9 @@ void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_
         exit(EXIT_FAILURE);
     }
     argv[0] = copyString(CHILD_EXEC_NAME);
-    // port is different for every child process, so let buildChildArgv set it
     argv[1] = copyString("-p");
+    // port is different for every child process, so let buildChildArgv set it
+    argv[2] = NULL;
     argv[3] = copyString("-t");
     argv[4] = copyString(std::to_string(num_threads).c_str());
     argv[5] = copyString("-b");
@@ -363,33 +364,16 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
 /**
  * Sends required information to the child Monitors.
  */
-void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                     unsigned long int bloom_size)
+void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size)
 {
     int ftok_id = 1;
     // Iterate over the Monitors
     for(unsigned int i = 0; i < num_monitors; i++)
     {
-        /*
-        // Send buffer size
-        sendInt(monitors[i]->io_fd, buffer_size, buffer, buffer_size);
-        */
         monitors[i]->ftok_arg = ftok_id;
-        // Send int to be given to ftok
         sendInt(monitors[i]->io_fd, ftok_id, buffer, buffer_size);
         // ftok_id + 1 will also be used be the child process
         ftok_id += 2;
-        /*
-        // Send bloom filter size
-        sendLongInt(monitors[i]->io_fd, bloom_size, buffer, buffer_size);
-        // Send number of directories for this monitor
-        sendInt(monitors[i]->io_fd, monitors[i]->subdirs->getNumElements(), buffer, buffer_size);
-        // Send the directory paths
-        for (LinkedList::ListIterator itr = monitors[i]->subdirs->listHead(); !itr.isNull(); itr.forward())
-        {
-            sendString(monitors[i]->io_fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
-        }
-        */
     }
 }
 
@@ -793,7 +777,7 @@ void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *
 {
     for(unsigned int i = 0; i < num_monitors; i++)
     {
-        //kill(monitors[i]->process_id, SIGINT);
+        kill(monitors[i]->process_id, SIGUSR2);
         sendMessageType(monitors[i]->io_fd, MONITOR_EXIT, buffer, buffer_size);
         waitpid(monitors[i]->process_id, NULL, 0);
         monitors[i]->terminateConnection();

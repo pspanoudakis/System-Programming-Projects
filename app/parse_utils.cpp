@@ -326,9 +326,9 @@ bool parentCheckParseArgs(int argc, char const *argv[], char *&directory_path, u
                     unsigned int &num_threads)
 {
     directory_path = NULL;
-    if (argc != 9)
+    if (argc != 13)
     {
-        perror("Insufficient/Unexpected number of arguments given.\n");
+        fprintf(stderr, "Insufficient/Unexpected number of arguments given.\n");
         printf("Usage: ./travelMonitor -m numMonitors -b bufferSize -s sizeOfBloom -i input_dir\n");
         return false;
     }
@@ -341,7 +341,7 @@ bool parentCheckParseArgs(int argc, char const *argv[], char *&directory_path, u
     bool got_input_dir = false;
     bool got_num_threads = false;
 
-    for (int i = 1; i < 8; i+=2)
+    for (int i = 1; i < 13; i+=2)
     {
         if ( strcmp(argv[i], "-m") == 0 )
         {

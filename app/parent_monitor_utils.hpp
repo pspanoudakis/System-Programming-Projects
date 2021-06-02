@@ -100,8 +100,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
                              unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter, char **child_argv);
 
-void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                     unsigned long int bloom_size);
+void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size);
 
 void receiveMonitorFilters(MonitorInfo **monitors, unsigned int num_monitors, LinkedList *viruses,
                            char *buffer, unsigned int buffer_size, unsigned long int bloom_size);

@@ -457,6 +457,7 @@ void serveRequest(int socket_fd, char *buffer, unsigned int buffer_size,
             break;
         case MONITOR_EXIT:
             terminate = true;
+            break;
         default:
             // Should never be reached, or something is wrong
             break;
@@ -471,7 +472,7 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
 {
     // Create the logfile name string
     std::stringstream logfile_name_stream;
-    logfile_name_stream << "log_files/log_file." << getpid();
+    logfile_name_stream << "./log_files/log_file." << getpid();
     const char *logfile_name = copyString(logfile_name_stream.str().c_str());
     FILE *logfile;
 
@@ -533,6 +534,7 @@ int main(int argc, char const *argv[])
 
     char **cyclic_buffer = new char*[cyclic_buffer_size];
 
+    receiveInt(socket_fd, ftok_id, buffer, buffer_size);
     // Scan all the files and insert all records found
     scanAllFiles(directories, num_dirs, citizens, countries, viruses, bloom_size, cyclic_buffer, cyclic_buffer_size,
                  num_threads, threads);
