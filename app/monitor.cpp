@@ -498,112 +498,6 @@ void createLogFile(unsigned int &accepted_requests, unsigned int &rejected_reque
     fclose(logfile);
 }
 
-bool parseArgs(int argc, char const *argv[], uint16_t &port,
-               unsigned int &num_threads, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
-               DirectoryInfo **&directories, unsigned long &bloom_size, unsigned int &num_dirs)
-{
-    if (argc < 11)
-    {
-        fprintf(stderr, "Invalid number of arguments given.\n");
-        fprintf(stderr, "Usage: ./monitorServer -p port -t numThreads -b socketBufferSize \
-        -c cyclicBufferSize -s sizeOfBloom <path1> ... <pathN>\n");
-        return false;
-    }
-
-    // Flags to make sure no arguments are given more than once
-    bool got_port = false, got_num_threads = false, got_socket_buf_size = false;
-    bool got_cyclic_buf_size = false, got_bloom_size = false;
-    for (int i = 1; i < 11; i+=2)
-    {
-        if ( strcmp(argv[i], "-p") == 0 )
-        {
-            if (got_port) {
-                fprintf(stderr, "Duplicate port number argument detected.\n");
-                return false; 
-            }
-            port = atoi(argv[i + 1]);
-            got_port = true;
-        }
-        else if ( strcmp(argv[i], "-t") == 0 )
-        {
-            if (got_num_threads) {
-                fprintf(stderr, "Duplicate numThreads argument detected.\n");
-                return false;
-            }
-            num_threads = atoi(argv[i + 1]);
-            got_num_threads = true;
-        }
-        else if ( strcmp(argv[i], "-b") == 0 )
-        {
-            if (got_socket_buf_size) { 
-                fprintf(stderr, "Duplicate socketBufferSize argument detected.\n");
-                return false; 
-            }
-            int temp = atoi(argv[i + 1]);
-            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
-            {
-                buffer_size = temp;
-                got_socket_buf_size = true;
-            }
-            else
-            {
-                fprintf(stderr, "Invalid socketBufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
-                return false;
-            }
-        }
-        else if ( strcmp(argv[i], "-c") == 0 )
-        {
-            if (got_cyclic_buf_size) { 
-                fprintf(stderr, "Duplicate cyclicBufferSize argument detected.\n");
-                return false; 
-            }
-            int temp = atoi(argv[i + 1]);
-            if (temp > 0 && temp <= MAX_BUFFER_SIZE)
-            {
-                cyclic_buffer_size = temp;
-                got_cyclic_buf_size = true;
-            }
-            else
-            {
-                fprintf(stderr, "Invalid cyclicBufferSize argument. Make sure it is a positive integer up to %d", MAX_BUFFER_SIZE);
-                return false;
-            }
-        }
-        else if ( strcmp(argv[i], "-s") == 0 )
-        {
-            if (got_bloom_size) { 
-                fprintf(stderr, "Duplicate sizeOfBloom argument detected.\n");
-                return false;
-            }
-            long temp = atol(argv[i + 1]);
-            if (temp > 0 && temp <= MAX_BLOOM_SIZE)
-            {
-                bloom_size = temp;
-                got_bloom_size = true;
-            }
-            else
-            {
-                fprintf(stderr, "Invalid sizeOfBloom argument. Make sure it is a positive integer up to %d", MAX_BLOOM_SIZE);
-                return false;
-            }
-        }
-        else
-        {
-            fprintf(stderr, "Invalid argument detected.\n");
-            return false;
-        }
-    }
-
-    num_dirs = argc - 11;
-    directories = new DirectoryInfo*[num_dirs];
-    for (unsigned int i = 0; i < num_dirs; i++)
-    {
-        directories[i] = new DirectoryInfo(argv[11 + i]);
-        directories[i]->addContents();
-    }
-    return true;
-}
-
 int main(int argc, char const *argv[])
 {
     // Register signal handlers
@@ -618,7 +512,7 @@ int main(int argc, char const *argv[])
     uint16_t port;
     DirectoryInfo **directories;
 
-    if (!parseArgs(argc, argv, port, num_threads, buffer_size,
+    if (!childCheckparseArgs(argc, argv, port, num_threads, buffer_size,
                    cyclic_buffer_size, directories, bloom_size, num_dirs))
     {
         exit(EXIT_FAILURE);

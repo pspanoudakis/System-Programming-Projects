@@ -6,6 +6,9 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <string>
+#include <sstream>
+
 #include <unistd.h>
 #include <wait.h>
 #include <dirent.h>
@@ -13,14 +16,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-
-#include <string>
-#include <sstream>
 
 #include "../include/linked_list.hpp"
 #include "../include/bloom_filter.hpp"
@@ -29,6 +28,9 @@
 #include "parent_monitor_utils.hpp"
 #include "app_utils.hpp"
 #include "../include/messaging.hpp"
+
+#define CHILD_EXEC_NAME "monitor"
+#define CHILD_EXEC_PATH "./monitor"
 
 MonitorInfo::MonitorInfo(): io_fd(-1), socket_fd(-1), process_id(-1), ftok_arg(-1),
 subdirs(new LinkedList(delete_object_array<char>)) { }
@@ -183,10 +185,69 @@ bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorIn
     return true;
 }
 
+void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_size,
+                    unsigned int cyclic_buffer_size, unsigned long bloom_size)
+{
+    argv = static_cast<char**>(malloc(sizeof(char*) * 12));
+    if (argv == NULL)
+    {
+        fprintf(stderr, "child argv malloc failed");
+        exit(EXIT_FAILURE);
+    }
+    argv[0] = copyString(CHILD_EXEC_NAME);
+    // port is different for every child process, so let buildChildArgv set it
+    argv[1] = copyString("-p");
+    argv[3] = copyString("-t");
+    argv[4] = copyString(std::to_string(num_threads).c_str());
+    argv[5] = copyString("-b");
+    argv[6] = copyString(std::to_string(buffer_size).c_str());
+    argv[7] = copyString("-c");
+    argv[8] = copyString(std::to_string(cyclic_buffer_size).c_str());
+    argv[9] = copyString("-s");
+    argv[10] = copyString(std::to_string(bloom_size).c_str());
+    // One more element will be set to NULL by buildChildArgv
+}
+
+void deleteBasicArgv(char **argv)
+{
+    int i = 0;
+    do
+    {
+        delete[] argv[i];
+    } 
+    while (++i < 11);
+    free(argv);
+}
+
+void buildChildArgv(char **&argv, MonitorInfo *monitor, uint16_t port)
+{
+    argv[2] = copyString(std::to_string(port).c_str());
+    int argc = 12 + monitor->subdirs->getNumElements();
+
+    if (argc > 12)
+    {
+        void *realloc_res = realloc(argv, sizeof(char*) * argc);
+        if (realloc_res == NULL)
+        {
+            fprintf(stderr, "child argv realloc failed");
+            exit(EXIT_FAILURE);
+        }
+        argv = static_cast<char**>(realloc_res);
+        LinkedList::ListIterator itr = monitor->subdirs->listHead();
+        for (int i = 11; i < argc; i++)
+        {
+            argv[i] = static_cast<char*>(itr.getData());
+            itr.forward();
+        }
+    }
+    argv[argc - 1] = NULL;
+}
+
 /**
  * Creates the child Monitor processes. Stores the number of created processes in active_monitors.
  */
-void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors)
+void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned int &active_monitors,
+                    char **child_argv)
 {
     int pid;
     unsigned int i;
@@ -194,6 +255,11 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
     // it means no more Monitors have been created, so stop creating more children.
     for(i = 0; (i < num_monitors && monitors[i] != NULL); i++)
     {
+        uint16_t port;
+        if ( !monitors[i]->createSocket(port) )
+        {
+            exit(EXIT_FAILURE);
+        }
         pid = fork();
         switch (pid)
         {
@@ -203,8 +269,9 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
                 exit(EXIT_FAILURE);
             case 0:
                 // Child
-                //execl("./Monitor", "Monitor", monitors[i]->write_pipe_path, monitors[i]->read_pipe_path, NULL);
-                execl("./monitor", "monitor", NULL);
+                buildChildArgv(child_argv, monitors[i], port);
+                execvp(CHILD_EXEC_PATH, child_argv);
+                fprintf(stderr, "execvp failed\n");
                 _Exit(EXIT_FAILURE);
             default:
                 // Parent
@@ -223,7 +290,7 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
  * Replaces a dead child Monitor with a new one.
  */
 void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, unsigned long int bloom_size,
-                  LinkedList *viruses)
+                  LinkedList *viruses, char **child_argv)
 {
     uint16_t port;
     monitor->terminateConnection();
@@ -241,8 +308,8 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             exit(EXIT_FAILURE);
         case 0:
             // child
-            // execl("./Monitor", "Monitor", monitor->write_pipe_path, monitor->read_pipe_path, NULL);
-            execl("./monitor", "monitor", NULL);
+            buildChildArgv(child_argv, monitor, port);
+            execvp(CHILD_EXEC_PATH, child_argv);
             _Exit(EXIT_FAILURE);
         default:
             // The Parent will send the required information to the new process
@@ -251,21 +318,9 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
             {
                 exit(EXIT_FAILURE);
             }
-            // Send buffer size, bloom size and the Country directories assigned to this monitor
-            //sendInt(fd, buffer_size, buffer, buffer_size);
 
             // Send int to be given to ftok
             sendInt(monitor->io_fd, monitor->ftok_arg, buffer, buffer_size);
-
-            /*
-            sendLongInt(fd, bloom_size, buffer, buffer_size);
-            sendInt(fd, monitor->subdirs->getNumElements(), buffer, buffer_size);
-            for (LinkedList::ListIterator itr = monitor->subdirs->listHead(); !itr.isNull(); itr.forward())
-            {
-                sendString(fd, static_cast<char*>(itr.getData()), buffer, buffer_size);
-            }
-            close(fd);
-            */
             // Receive Bloom Filters
             unsigned int num_filters;
             receiveInt(monitor->io_fd, num_filters, buffer, buffer_size);
@@ -289,7 +344,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
  * Restores any dead child Monitor processes.
  */
 void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, char *buffer, unsigned int buffer_size,
-                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter)
+                             unsigned long int bloom_size, LinkedList *viruses, int &sigchld_counter, char **child_argv)
 {
     int wait_pid;
     for(unsigned int i = 0; i < num_monitors; i++)
@@ -299,7 +354,7 @@ void checkAndRestoreChildren(MonitorInfo **monitors, unsigned int num_monitors, 
         if(wait_pid > 0)
         // It is not, so restore it.
         {
-            restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses);
+            restoreChild(monitors[i], buffer, buffer_size, bloom_size, viruses, child_argv);
             sigchld_counter--;
         }
     }
@@ -749,7 +804,7 @@ void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *
  * Deletes the structures/ADT's used by the Parent Monitor.
  */
 void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsigned int num_monitors,
-                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses)
+                      struct dirent **directories, unsigned int num_dirs, LinkedList *viruses, char **child_argv)
 {
     unsigned int i;
     // Delete CountryMonitors
@@ -774,6 +829,8 @@ void releaseResources(CountryMonitor **countries, MonitorInfo **monitors, unsign
     free(directories);
     
     delete viruses;
+
+    deleteBasicArgv(child_argv);
 }
 
 /* Comparison functions used by ADT's */
