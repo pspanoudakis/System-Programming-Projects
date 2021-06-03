@@ -13,7 +13,17 @@ build/rb_tree.o \
 build/skip_list.o \
 build/messaging.o \
 build/sem_utils.o
-PARENT_OBJS = build/parent_monitor.o build/parent_monitor_utils.o build/app_utils.o build/parse_utils.o build/bloom_filter.o build/hash_functions.o build/hash_table.o build/linked_list.o build/rb_tree.o build/skip_list.o build/messaging.o
+PARENT_OBJS = build/parent_monitor.o \
+build/parent_monitor_utils.o \
+build/app_utils.o \
+build/parse_utils.o \
+build/bloom_filter.o \
+build/hash_functions.o \
+build/hash_table.o \
+build/linked_list.o \
+build/rb_tree.o \
+build/skip_list.o \
+build/messaging.o
 
 all: monitorServer travelMonitorClient
 

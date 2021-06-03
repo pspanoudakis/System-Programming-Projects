@@ -11,7 +11,7 @@ travelMonitor
 monitor
 parent_monitor
 monitorServer
-travelMonitorCLient
+travelMonitorClient
 
 !app/*
 !lib/*
