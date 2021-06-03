@@ -31,6 +31,7 @@
 
 #define PERMS 0660
 
+#define CONNECTION_TIMEOUT_SECS 5
 #define HASHTABLE_BUCKETS 10000         // Number of buckets for the Citizen Hash Table
 
 int dir_update_notifications = 0;       // Incremented when the Parent has send a signal that indicates directory files update
@@ -99,15 +100,11 @@ bool socketConnect(int &socket_fd, uint16_t port)
     memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
     servaddr.sin_port = htons(port);
 
-    /*
+    // The parent process socket already listens, so just try to connect once.
     if (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1) {
-        //fprintf(stderr, "Failed to connect to socket\n");
         perror("Failed to connect to socket");
         return false;
-    }*/
-    
-    while (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1);
-    
+    }    
     return true;
 }
 

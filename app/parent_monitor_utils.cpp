@@ -3,7 +3,7 @@
  * Implementations of Classes & Routines used by the Parent Monitor.
  * Pavlos Spanoudakis (sdi1800184)
  */
-#include <cassert>
+
 #include <cstring>
 #include <cstdlib>
 #include <string>
@@ -73,7 +73,6 @@ bool MonitorInfo::createSocket(uint16_t &port)
         exit(EXIT_FAILURE);
     }
     port = ntohs(servaddr.sin_port);
-    assert(port > 0);
     return true;
 }
 
