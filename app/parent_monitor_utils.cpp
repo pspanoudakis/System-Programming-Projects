@@ -3,7 +3,7 @@
  * Implementations of Classes & Routines used by the Parent Monitor.
  * Pavlos Spanoudakis (sdi1800184)
  */
-
+#include <cassert>
 #include <cstring>
 #include <cstdlib>
 #include <string>
@@ -30,7 +30,7 @@
 #include "../include/messaging.hpp"
 
 #define CHILD_EXEC_NAME "monitor"
-#define CHILD_EXEC_PATH "./app/monitor"
+#define CHILD_EXEC_PATH "./monitor"
 
 MonitorInfo::MonitorInfo(): io_fd(-1), socket_fd(-1), process_id(-1), ftok_arg(-1),
 subdirs(new LinkedList(delete_object_array<char>)) { }
@@ -65,16 +65,22 @@ bool MonitorInfo::createSocket(uint16_t &port)
         perror("Failed to listen child socket");
         return false;
     }
-    //len = sizeof(servaddr);
-    getsockname(this->socket_fd, (sockaddr*)&servaddr, &len);
+    len = sizeof(servaddr);
+    bzero(&servaddr, sizeof(servaddr));
+    if (getsockname(this->socket_fd, (sockaddr*)&servaddr, &len) == -1)
+    {
+        perror("getsockname");
+        exit(EXIT_FAILURE);
+    }
     port = ntohs(servaddr.sin_port);
+    assert(port > 0);
     return true;
 }
 
 bool MonitorInfo::establishConnection()
 {
     struct sockaddr_in cli;
-    socklen_t len;
+    socklen_t len = sizeof(cli);
     if ( (this->io_fd = accept(this->socket_fd, (sockaddr*)&cli, &len)) == -1)
     {
         perror("Failed to accept child connection");

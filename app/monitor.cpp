@@ -99,10 +99,15 @@ bool socketConnect(int &socket_fd, uint16_t port)
     memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
     servaddr.sin_port = htons(port);
 
-    if (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-        fprintf(stderr, "Failed to connect to socket\n");
+    /*
+    if (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1) {
+        //fprintf(stderr, "Failed to connect to socket\n");
+        perror("Failed to connect to socket");
         return false;
-    }
+    }*/
+    
+    while (connect(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1);
+    
     return true;
 }
 

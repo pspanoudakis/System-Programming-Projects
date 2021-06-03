@@ -8,6 +8,8 @@ countries/*
 build/*
 Monitor
 travelMonitor
+monitor
+parent_monitor
 
 !app/*
 !lib/*
