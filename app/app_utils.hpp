@@ -11,6 +11,9 @@
 #include <string>
 #include "../include/utils.hpp"
 
+#define CHILD_EXEC_NAME "monitorServer"
+#define CHILD_EXEC_PATH "./monitorServer"
+
 #define MAX_BUFFER_SIZE 1000000
 #define MAX_MONITORS 300
 #define MAX_THREADS 1000

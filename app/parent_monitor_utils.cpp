@@ -29,10 +29,7 @@
 #include "app_utils.hpp"
 #include "../include/messaging.hpp"
 
-#define CHILD_EXEC_NAME "monitor"
-#define CHILD_EXEC_PATH "./monitor"
-
-MonitorInfo::MonitorInfo(): io_fd(-1), socket_fd(-1), process_id(-1), ftok_arg(-1),
+MonitorInfo::MonitorInfo(): socket_fd(-1), process_id(-1), ftok_arg(-1), io_fd(-1),
 subdirs(new LinkedList(delete_object_array<char>)) { }
 
 MonitorInfo::~MonitorInfo()
@@ -43,7 +40,7 @@ MonitorInfo::~MonitorInfo()
 bool MonitorInfo::createSocket(uint16_t &port)
 {
     socklen_t len;
-    struct sockaddr_in servaddr, cli;
+    struct sockaddr_in servaddr;
     
     if( (this->socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
