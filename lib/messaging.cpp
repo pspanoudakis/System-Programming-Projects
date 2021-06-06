@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <unistd.h>
+#include <netinet/in.h>
 
 #include "../include/messaging.hpp"
 #include "../include/bloom_filter.hpp"
@@ -105,15 +106,16 @@ void sendBloomFilter(int fd, BloomFilter *filter, char *buffer, unsigned int buf
  * @param buffer The buffer to copy the data before writing to the file.
  * @param buffer_size The size of the buffer.
  */
-void sendInt(int fd, const unsigned int &i, char *buffer, unsigned int buffer_size)
+void sendInt(int fd, const unsigned int i, char *buffer, unsigned int buffer_size)
 {
+    uint32_t net_i = ntohl(i);
     unsigned int bytes_to_write, bytes_left;
     int written;
-    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(unsigned int); sent_bytes += bytes_to_write)
+    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(uint32_t); sent_bytes += bytes_to_write)
     {
-        bytes_left = sizeof(unsigned int) - sent_bytes;
+        bytes_left = sizeof(uint32_t) - sent_bytes;
         bytes_to_write = bytes_left < buffer_size ? bytes_left : buffer_size;
-        memcpy(buffer, (char*)&i + sent_bytes, bytes_to_write);
+        memcpy(buffer, (char*)&net_i + sent_bytes, bytes_to_write);
         written = write(fd, buffer, bytes_to_write);
         if (written < bytes_to_write)
         {
@@ -146,56 +148,16 @@ void sendInt(int fd, const unsigned int &i, char *buffer, unsigned int buffer_si
  * @param buffer The buffer to copy the data before writing to the file.
  * @param buffer_size The size of the buffer.
  */
-void sendShortInt(int fd, const unsigned short int &i, char *buffer, unsigned int buffer_size)
+void sendShortInt(int fd, const unsigned short int i, char *buffer, unsigned int buffer_size)
 {
+    uint16_t net_i = htons(i);
     unsigned int bytes_to_write, bytes_left;
     int written;
-    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(unsigned short int); sent_bytes += bytes_to_write)
+    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(uint16_t); sent_bytes += bytes_to_write)
     {
-        bytes_left = sizeof(unsigned short int) - sent_bytes;
+        bytes_left = sizeof(uint16_t) - sent_bytes;
         bytes_to_write = bytes_left < buffer_size ? bytes_left : buffer_size;
-        memcpy(buffer, (char*)&i + sent_bytes, bytes_to_write);
-        written = write(fd, buffer, bytes_to_write);
-        if (written < bytes_to_write)
-        {
-            if (written == -1)
-            {
-                if (errno == EINTR)
-                {
-                    bytes_to_write = 0;
-                }
-                else
-                {
-                    perror("Fatal error while writing to file.\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            else
-            {
-                bytes_to_write = written;
-            }
-        }
-    }
-}
-
-/**
- * @brief Writes the specified long integer in the file
- *  with the given file descriptor, using the given buffer with the specified size.
- * 
- * @param fd The file descriptor of the file to write the data.
- * @param i The long integer to send.
- * @param buffer The buffer to copy the data before writing to the file.
- * @param buffer_size The size of the buffer.
- */
-void sendLongInt(int fd, const unsigned long int &i, char *buffer, unsigned int buffer_size)
-{
-    unsigned int bytes_to_write, bytes_left;
-    int written;
-    for(unsigned int sent_bytes = 0; sent_bytes < sizeof(unsigned long int); sent_bytes += bytes_to_write)
-    {
-        bytes_left = sizeof(unsigned long int) - sent_bytes;
-        bytes_to_write = bytes_left < buffer_size ? bytes_left : buffer_size;
-        memcpy(buffer, (char*)&i + sent_bytes, bytes_to_write);
+        memcpy(buffer, (char*)&net_i + sent_bytes, bytes_to_write);
         written = write(fd, buffer, bytes_to_write);
         if (written < bytes_to_write)
         {
@@ -279,7 +241,6 @@ void sendDate(int fd, const Date &date, char *buffer, unsigned int buffer_size)
     sendShortInt(fd, date.year, buffer, buffer_size);
 }
 
-
 /**
  * @brief Reads a string from the file with the given file descriptor,
  * using the given buffer with the specified size, and stores it in a heap character array
@@ -291,50 +252,6 @@ void sendDate(int fd, const Date &date, char *buffer, unsigned int buffer_size)
  * @param buffer_size The size of the buffer.
  */
 void receiveString(int fd, char *&string, char *buffer, unsigned int buffer_size)
-{
-    unsigned int string_length;
-    receiveInt(fd, string_length, buffer, buffer_size);
-    string = NULL;
-    void *realloc_res;
-    unsigned long curr_string_size = 0, received_bytes, bytes_to_read, bytes_left = string_length;
-    while (bytes_left > 0)
-    {
-        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
-        received_bytes = read(fd, buffer, bytes_to_read);
-        if (received_bytes < 0)
-        {
-            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                received_bytes = 0;
-            }
-            else
-            {
-                perror("Fatal error while reading from file.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            realloc_res = realloc(string, curr_string_size + received_bytes);
-            if (realloc_res == NULL)
-            {
-                perror("Failed realloc() call.\n");
-                exit(EXIT_FAILURE);
-            }
-            string = (char*)realloc_res;
-            memcpy(string + curr_string_size, buffer, received_bytes);
-        }
-        bytes_left -= received_bytes;
-        curr_string_size += received_bytes;
-    }
-    if (string[string_length - 1] != '\0')
-    // In case something went wrong...
-    {
-        string[string_length - 1] = '\0';
-    }
-}
-
-void receiveStringAlt(int fd, char *&string, char *buffer, unsigned int buffer_size)
 {
     unsigned int string_length;
     receiveInt(fd, string_length, buffer, buffer_size);
@@ -464,6 +381,7 @@ void receiveMessageType(int fd, char &req_type, char *buffer, unsigned int buffe
  */
 void receiveInt(int fd, unsigned int &i, char *buffer, unsigned int buffer_size)
 {
+    uint32_t net_i;
     unsigned int bytes_to_read, bytes_left;
     int received_bytes;
     for(unsigned long total_bytes = 0; total_bytes < sizeof(unsigned int); total_bytes += received_bytes)
@@ -485,9 +403,10 @@ void receiveInt(int fd, unsigned int &i, char *buffer, unsigned int buffer_size)
         }
         else
         {
-            memcpy((char*)&i + total_bytes, buffer, received_bytes);
+            memcpy((char*)&net_i + total_bytes, buffer, received_bytes);
         }
     }
+    i = ntohl(net_i);
 }
 
 /**
@@ -501,6 +420,7 @@ void receiveInt(int fd, unsigned int &i, char *buffer, unsigned int buffer_size)
  */
 void receiveShortInt(int fd, unsigned short int &i, char *buffer, unsigned int buffer_size)
 {
+    uint16_t net_i;
     unsigned int bytes_to_read, bytes_left;
     int received_bytes;
     for(unsigned long total_bytes = 0; total_bytes < sizeof(unsigned short int); total_bytes += received_bytes)
@@ -522,46 +442,10 @@ void receiveShortInt(int fd, unsigned short int &i, char *buffer, unsigned int b
         }
         else
         {
-            memcpy((char*)&i + total_bytes, buffer, received_bytes);
+            memcpy((char*)&net_i + total_bytes, buffer, received_bytes);
         }
     }
-}
-
-/**
- * @brief Reads a long integer from the file with the given file descriptor,
- * using the given buffer with the specified size, and stores it in the given long integer variable.
- * 
- * @param fd The file descriptor of the file to read data from.
- * @param i The variable to store the received long integer
- * @param buffer The buffer to store newly received data from the file.
- * @param buffer_size The size of the buffer.
- */
-void receiveLongInt(int fd, unsigned long int &i, char *buffer, unsigned int buffer_size)
-{
-    unsigned int bytes_to_read, bytes_left;
-    int received_bytes;
-    for(unsigned long total_bytes = 0; total_bytes < sizeof(unsigned long int); total_bytes += received_bytes)
-    {
-        bytes_left = sizeof(unsigned long int) - total_bytes;
-        bytes_to_read = bytes_left < buffer_size ? bytes_left : buffer_size;
-        received_bytes = read(fd, buffer, bytes_to_read);
-        if (received_bytes < 0)
-        {
-            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                received_bytes = 0;
-            }
-            else
-            {
-                perror("Fatal error while reading from file.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            memcpy((char*)&i + total_bytes, buffer, received_bytes);
-        }
-    }
+    i = ntohs(net_i);
 }
 
 /**

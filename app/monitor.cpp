@@ -53,14 +53,13 @@ struct ThreadArgs {
     char **cyclic_buffer;
 
     ThreadArgs(HashTable *cit, LinkedList *countr, LinkedList *v,
-               unsigned long bloom_s, char **buffer)
-    {
-        this->citizens = cit;
-        this->countries = countr;
-        this->viruses = v;
-        this->bloom_size = bloom_s;
-        this->cyclic_buffer = buffer;
-    }
+               unsigned long bloom_s, char **buffer) :
+        citizens(cit),
+        countries(countr),
+        viruses(v),
+        bloom_size(bloom_s),
+        cyclic_buffer(buffer)
+        { }
 };
 
 void sigusr1_handler(int s)

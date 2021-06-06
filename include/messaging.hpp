@@ -16,11 +16,9 @@ void sendMessageType(int fd, char req_type, char *buffer, unsigned int buffer_si
 
 void sendBloomFilter(int fd, BloomFilter *filter, char *buffer, unsigned int buffer_size);
 
-void sendInt(int fd, const unsigned int &i, char *buffer, unsigned int buffer_size);
+void sendInt(int fd, const unsigned int i, char *buffer, unsigned int buffer_size);
 
-void sendShortInt(int fd, const unsigned short int &i, char *buffer, unsigned int buffer_size);
-
-void sendLongInt(int fd, const unsigned long int &i, char *buffer, unsigned int buffer_size);
+void sendShortInt(int fd, const unsigned short int i, char *buffer, unsigned int buffer_size);
 
 void sendString(int fd, const char *string, char *buffer, unsigned int buffer_size);
 
@@ -37,8 +35,6 @@ void updateBloomFilter(int fd, BloomFilter *filter, char *buffer, unsigned int b
 void receiveInt(int fd, unsigned int &i, char *buffer, unsigned int buffer_size);
 
 void receiveShortInt(int fd, unsigned short int &i, char *buffer, unsigned int buffer_size);
-
-void receiveLongInt(int fd, unsigned long int &i, char *buffer, unsigned int buffer_size);
 
 void receiveDate(int fd, Date &date, char *buffer, unsigned int buffer_size);
 
