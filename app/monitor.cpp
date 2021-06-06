@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <climits>
 
 #include "../include/linked_list.hpp"
 #include "../include/hash_table.hpp"
@@ -93,8 +94,11 @@ bool socketConnect(int &socket_fd, uint16_t port)
         return false;
     }
     bzero(&servaddr, sizeof(servaddr));
-  
-    struct hostent *host = gethostbyname("localhost");
+    
+    char hostname[HOST_NAME_MAX];
+    gethostname(hostname, HOST_NAME_MAX);
+    printf("hostname: %s", hostname);
+    struct hostent *host = gethostbyname(hostname);
     servaddr.sin_family = AF_INET;
     memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
     servaddr.sin_port = htons(port);
