@@ -40,26 +40,30 @@ int pending_messages = 0;       // Incremented when the Parent has send a signal
 bool terminate = false;                 // Set to true when SIGINT/SIGQUIT received
 
 unsigned int ftok_id;
-int consume_sem_id;
-int produce_sem_id;
-int current_thread = 0;
+int sem_id;
 int first_not_consumed;                 // The index of the first buffer element that has not been consumed
 int cyclic_buffer_elements;             // total_elements - 1 is the index of the last element to be consumed
 
+/**
+ * The struct to be passed to the threads, with all the required structures
+ * and information.
+ */
 struct ThreadArgs {
     HashTable *citizens;
     LinkedList *countries;
     LinkedList *viruses;
     unsigned long bloom_size;
     char **cyclic_buffer;
+    int thread_num;
 
     ThreadArgs(HashTable *cit, LinkedList *countr, LinkedList *v,
-               unsigned long bloom_s, char **buffer) :
+               unsigned long bloom_s, char **buffer, int i) :
         citizens(cit),
         countries(countr),
         viruses(v),
         bloom_size(bloom_s),
-        cyclic_buffer(buffer)
+        cyclic_buffer(buffer),
+        thread_num(i)
         { }
 };
 
@@ -83,7 +87,9 @@ void sigint_handler(int s)
 }
 
 /**
- * //TODO
+ * Connects to the socket in the given port.
+ * 
+ * @return TRUE if the connection was successful, FALSE otherwise.
  */
 bool socketConnect(int &socket_fd, uint16_t port)
 {
@@ -97,7 +103,7 @@ bool socketConnect(int &socket_fd, uint16_t port)
     
     char hostname[HOST_NAME_MAX];
     gethostname(hostname, HOST_NAME_MAX);
-    printf("hostname: %s", hostname);
+    printf("hostname: %s\n", hostname);
     struct hostent *host = gethostbyname(hostname);
     servaddr.sin_family = AF_INET;
     memcpy(&(servaddr.sin_addr), host->h_addr, host->h_length);
@@ -137,6 +143,16 @@ void releaseResources(char *buffer, DirectoryInfo **directories, unsigned short 
     delete[] threads;    
 }
 
+/**
+ * @brief The cyclic buffer consuming threads routine.
+ * 
+ * Attempts to consume a file path from the given buffer.
+ * If a path is successfully consumed, the file is opened and scanned for new Vaccination Records.
+ * If the buffer is found as fully consumed, the parent thread will be notified
+ * to place more file paths in it.
+ * 
+ * @param arguments A dynamically created ThreadArgs struct.
+ */
 void* fileScanner(void *arguments)
 {
     ThreadArgs *args = static_cast<ThreadArgs*>(arguments);
@@ -145,22 +161,30 @@ void* fileScanner(void *arguments)
     bool vaccinated;
     Date date;
     FILE *input_file;
-    int current = current_thread++;
-    while(sem_down(consume_sem_id, 0) != -1)
+    // Attempt to consume a buffer element
+    while(sem_down(sem_id, 0) != -1)
     {
         if (first_not_consumed == cyclic_buffer_elements)
+        // No available elements
         {
-            sem_up(produce_sem_id, 0);
+            // So notify the parent thread that the buffer is empty
+            sem_up(sem_id, 1);
+            // And continue with the loop
         }
         else
+        // There is an available element
         {
+            #ifdef SHOW_CYCLIC_BUFFER_MSG
             printf("index: %d\n", first_not_consumed);
-            printf("%d: %s\n", current, args->cyclic_buffer[first_not_consumed]);
+            printf("Thread %d: %s\n", args->thread_num, args->cyclic_buffer[first_not_consumed]);
+            #endif
 
+            // Open the file in the buffer element path
             input_file = fopen(args->cyclic_buffer[first_not_consumed], "r");
             if (input_file != NULL) {
                 // Read records from the file
                 while( (line_buf = fgetline(input_file)) != NULL)
+                // Read the file line by line
                 {
                     buf_copy = new char[strlen(line_buf) + 1];
                     temp = new char[strlen(line_buf) + 3];
@@ -186,9 +210,18 @@ void* fileScanner(void *arguments)
                 }
                 fclose(input_file);
             }
+            // Mark the next element as the first not consumed element
             first_not_consumed++;
-            sem_up(consume_sem_id, 0);
+            // End of critical section
+            sem_up(sem_id, 0);
         }
+    }
+    // At this point we expect that the semaphore set has been deleted by
+    // the parent thread.
+    if (errno != EIDRM)
+    // If this is not the case, indicate it.
+    {
+        perror("semdown");
     }
     delete args;
     pthread_exit(NULL);
@@ -202,6 +235,7 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                         unsigned long bloom_size, char **cyclic_buffer, unsigned int cyclic_buffer_size,
                         unsigned int num_threads, pthread_t *threads)
 {
+    // All files will be stored here
     LinkedList files(delete_object_array<char>);
     
     // Iterate over the directories
@@ -218,41 +252,48 @@ void scanAllFiles(DirectoryInfo **directories, unsigned short int num_dirs,
             itr.forward();
         }        
     }
-    key_t consumer_key = ftok(".", ftok_id);
-    key_t producer_key = ftok(".", ftok_id + 1);
-    if ( (consume_sem_id = semget(consumer_key, 1, IPC_CREAT|PERMS)) < 0)
+    // Create semaphore set
+    key_t sem_key = ftok(".", ftok_id);
+    // Get 2 semapthores
+    if ( (sem_id = semget(sem_key, 2, IPC_CREAT|PERMS)) < 0)
     {
-        perror("Failed to create consumer semaphore");
+        perror("Failed to create semaphore set");
         exit(EXIT_FAILURE);
     }
-    if ( (produce_sem_id = semget(producer_key, 1, IPC_CREAT|PERMS)) < 0)
-    {
-        sem_delete(consume_sem_id);
-        perror("Failed to create producer semaphore");
-        exit(EXIT_FAILURE);
-    }
-    sem_init(consume_sem_id, 0, 0);
-    sem_init(produce_sem_id, 0, 1);
+    // Initialize semaphore 0 to 0, and semaphore 1 to 1.
+    sem_init(sem_id, 0, 0);     // when this is up, it means someone can safely read (or attempt to read)
+    sem_init(sem_id, 1, 1);     // when this is up, it means the parent thread can fill up the buffer with new files
     for (unsigned int i = 0; i < num_threads; i++)
     {
-        pthread_create(&threads[i], NULL, fileScanner, new ThreadArgs(citizens, countries, viruses, bloom_size, cyclic_buffer));
+        // Each thread handles its own argument struct, and deletes it before terminating.
+        pthread_create(&threads[i], NULL, fileScanner, new ThreadArgs(citizens, countries, viruses, bloom_size, cyclic_buffer, i));
     }
-    
+    // Start iterating over the files
     LinkedList::ListIterator itr = files.listHead();
     while(!itr.isNull())
     {
-        sem_down(produce_sem_id, 0);
+        // Attempt to fill up buffer with new files
+        sem_down(sem_id, 1);
+
+        #ifdef SHOW_CYCLIC_BUFFER_MSG
         printf("Now producing\n");
+        #endif
+
         int i;
+        // Fill up the buffer with new files (or place them all if the buffer has enough space)
         for (i = 0; (i < cyclic_buffer_size) && (!itr.isNull()); itr.forward(), i++)
         {
             cyclic_buffer[i] = static_cast<char*>(itr.getData());
         }
+        // Make sure no one reads more than i elements
         cyclic_buffer_elements = i;
         first_not_consumed = 0;
-        sem_up(consume_sem_id, 0);
+
+        // Notify the threads to consume the buffer elememts
+        sem_up(sem_id, 0);
     }
-    sem_down(produce_sem_id, 0);
+    // Wait for all elements to be consumed
+    sem_down(sem_id, 1);
 }
 
 /**
@@ -263,6 +304,7 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
                   HashTable *citizens, LinkedList *countries, LinkedList *viruses,
                   unsigned long bloom_size, char **cyclic_buffer, unsigned int cyclic_buffer_size)
 {
+    // All new files will be stored here
     LinkedList files(delete_object_array<char>);
     
     // Iterate over the directories
@@ -298,23 +340,30 @@ void scanNewFiles(DirectoryInfo **directories, unsigned short int num_dirs,
         }
         delete itr;
     }
+    // Start iterating over the new files
     LinkedList::ListIterator itr = files.listHead();
     while(!itr.isNull())
     {
-        //sem_down(produce_sem_id, 0);
+        // Semaphore 1 is already down, so new files can be added to the buffer
+        #ifdef SHOW_CYCLIC_BUFFER_MSG
         printf("Now producing\n");
+        #endif
+
         int i;
+        // Fill up the buffer with new files (or place them all if the buffer has enough space)
         for (i = 0; (i < cyclic_buffer_size) && (!itr.isNull()); itr.forward(), i++)
         {
             cyclic_buffer[i] = static_cast<char*>(itr.getData());
         }
+        // Make sure no one reads more than i elements
         cyclic_buffer_elements = i;
         first_not_consumed = 0;
-        sem_up(consume_sem_id, 0);
-        // -----------------------------
-        sem_down(produce_sem_id, 0);
+
+        // Notify the threads to consume the buffer elememts
+        sem_up(sem_id, 0);
+        // Wait till all elements have been consumed
+        sem_down(sem_id, 1);
     }
-    //sem_down(produce_sem_id, 0);
 }
 
 /**
@@ -518,12 +567,13 @@ int main(int argc, char const *argv[])
     uint16_t port;
     DirectoryInfo **directories;
 
+    // Check, parse and store the arguments
     if (!childCheckparseArgs(argc, argv, port, num_threads, buffer_size,
                    cyclic_buffer_size, directories, bloom_size, num_dirs))
     {
         exit(EXIT_FAILURE);
     }
-
+    // Connect to socket at the given port
     if (!socketConnect(socket_fd, port))
     {
         exit(EXIT_FAILURE);
@@ -574,8 +624,8 @@ int main(int argc, char const *argv[])
         }
     }
 
-    sem_delete(consume_sem_id);
-    sem_delete(produce_sem_id);
+    // By deleting the semaphore set, the threads will terminate (see fileScanner routine)
+    sem_delete(sem_id);
     // Create log file and release resouces
     createLogFile(accepted_requests, rejected_requests, countries);
     delete[] cyclic_buffer;

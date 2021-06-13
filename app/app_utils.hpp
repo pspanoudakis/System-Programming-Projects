@@ -14,8 +14,9 @@
 #define CHILD_EXEC_NAME "monitorServer"
 #define CHILD_EXEC_PATH "./monitorServer"
 
-#define MAX_BUFFER_SIZE 1000000
-#define MAX_MONITORS 300
+#define SHOW_CYCLIC_BUFFER_MSG          // Comment out this to disable messages regarding cyclic buffer.
+#define MAX_BUFFER_SIZE 1000000         // Maximum size for buffers
+#define MAX_MONITORS 250
 #define MAX_THREADS 1000
 #define MAX_ID_DIGITS 5                 // Maximum number of digits allowed in Citizen ID's
 #define MAX_BLOOM_SIZE 1000000          // Maximum Bloom Filter size allowed

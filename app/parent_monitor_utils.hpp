@@ -14,11 +14,11 @@
  */
 class MonitorInfo
 {
-        int socket_fd;
+        int socket_fd;                  // The FD returned by socket() will be stored here.
     public:
         int process_id;                 // The Monitor process ID.
-        int ftok_arg;
-        int io_fd;
+        int ftok_arg;                   // The int argument to passed to ftok() by the monitor (must be unique for each child)
+        int io_fd;                      // The FD returned be accept(), used for reading/writing data.
         
         LinkedList *subdirs;            // A list with the subdirectories (paths) assigned to this Monitor
         MonitorInfo();

@@ -37,6 +37,12 @@ MonitorInfo::~MonitorInfo()
     delete subdirs;
 }
 
+/**
+ * Creates a new socket, stores the FD returned by socket() in this->socket_fd, 
+ * and stores the port (auto assigned) in the given parameter.
+ * 
+ * @return TRUE if the socket was successfully created, FALSE otherwise.
+ */
 bool MonitorInfo::createSocket(uint16_t &port)
 {
     socklen_t len;
@@ -49,6 +55,7 @@ bool MonitorInfo::createSocket(uint16_t &port)
     }
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
+    // Auto assign address/port
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = 0;
 
@@ -57,11 +64,12 @@ bool MonitorInfo::createSocket(uint16_t &port)
         perror("Failed to bind child socket");
         return false;
     }
-    if (listen(this->socket_fd, 2) == -1)
+    if (listen(this->socket_fd, 1) == -1)
     {
         perror("Failed to listen child socket");
         return false;
     }
+    // Using getsockname() to gain access to the port
     len = sizeof(servaddr);
     bzero(&servaddr, sizeof(servaddr));
     if (getsockname(this->socket_fd, (sockaddr*)&servaddr, &len) == -1)
@@ -69,10 +77,16 @@ bool MonitorInfo::createSocket(uint16_t &port)
         perror("getsockname");
         exit(EXIT_FAILURE);
     }
+    // Storing the port
     port = ntohs(servaddr.sin_port);
     return true;
 }
 
+/**
+ * Establishes the connection between the parent and this monitor.
+ * 
+ * @return TRUE if the connection was established successfully, FALSE otherwise.
+ */
 bool MonitorInfo::establishConnection()
 {
     struct sockaddr_in cli;
@@ -85,6 +99,9 @@ bool MonitorInfo::establishConnection()
     return true;
 }
 
+/**
+ * Closes the connection between the parent and this monitor.
+ */
 void MonitorInfo::terminateConnection()
 {
     close(socket_fd);
@@ -187,9 +204,16 @@ bool assignMonitorDirectories(char *path, CountryMonitor **&countries, MonitorIn
     return true;
 }
 
+/**
+ * Creates an argv array that can be used as a skeleton,
+ * since the first paremeters are the same for all monitors.
+ * 
+ * @param argv The argv skeleton will be stored here.
+ */
 void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_size,
                     unsigned int cyclic_buffer_size, unsigned long bloom_size)
 {
+    // We need at least 12 elements (11 parameters + NULL)
     argv = static_cast<char**>(malloc(sizeof(char*) * 12));
     if (argv == NULL)
     {
@@ -211,6 +235,9 @@ void buildBasicArgv(char **&argv, unsigned int num_threads, unsigned int buffer_
     // One more element will be set to NULL by buildChildArgv
 }
 
+/**
+ * Used to delete the skeleton argv created by buildBasicArgv().
+ */
 void deleteBasicArgv(char **argv)
 {
     int i = 0;
@@ -222,13 +249,19 @@ void deleteBasicArgv(char **argv)
     free(argv);
 }
 
+/**
+ * Expands the given argv, adding the specific paremeters for the given Monitor.
+ */
 void buildChildArgv(char **&argv, MonitorInfo *monitor, uint16_t port)
 {
+    // Store port number
     argv[2] = copyString(std::to_string(port).c_str());
     int argc = 12 + monitor->subdirs->getNumElements();
 
     if (argc > 12)
+    // There are directory paths to be passed to the Monitor
     {
+        // Increase argv size by the number of paths
         void *realloc_res = realloc(argv, sizeof(char*) * argc);
         if (realloc_res == NULL)
         {
@@ -238,11 +271,13 @@ void buildChildArgv(char **&argv, MonitorInfo *monitor, uint16_t port)
         argv = static_cast<char**>(realloc_res);
         LinkedList::ListIterator itr = monitor->subdirs->listHead();
         for (int i = 11; i < argc; i++)
+        // Add all the directory paths assigned to this Monitor
         {
             argv[i] = static_cast<char*>(itr.getData());
             itr.forward();
         }
     }
+    // Store NULL in the end
     argv[argc - 1] = NULL;
 }
 
@@ -259,6 +294,7 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
     for(i = 0; (i < num_monitors && monitors[i] != NULL); i++)
     {
         uint16_t port;
+        // Create socket for this monitor
         if ( !monitors[i]->createSocket(port) )
         {
             exit(EXIT_FAILURE);
@@ -272,12 +308,15 @@ void createMonitors(MonitorInfo **monitors, unsigned int num_monitors, unsigned 
                 exit(EXIT_FAILURE);
             case 0:
                 // Child
+                // Create argv for the Monitor
                 buildChildArgv(child_argv, monitors[i], port);
+                // Create Monitor
                 execvp(CHILD_EXEC_PATH, child_argv);
                 fprintf(stderr, "execvp failed\n");
                 _Exit(EXIT_FAILURE);
             default:
                 // Parent
+                // Connect with the Monitor
                 if (!monitors[i]->establishConnection())
                 {
                     exit(EXIT_FAILURE);
@@ -296,6 +335,7 @@ void restoreChild(MonitorInfo *monitor, char *buffer, unsigned int buffer_size, 
                   LinkedList *viruses, char **child_argv)
 {
     uint16_t port;
+    // Close existing socket and create a new one
     monitor->terminateConnection();
     if ( !monitor->createSocket(port) )
     {
@@ -374,8 +414,7 @@ void sendMonitorData(MonitorInfo **monitors, unsigned int num_monitors, char *bu
     {
         monitors[i]->ftok_arg = ftok_id;
         sendInt(monitors[i]->io_fd, ftok_id, buffer, buffer_size);
-        // ftok_id + 1 will also be used be the child process
-        ftok_id += 2;
+        ftok_id++;
     }
 }
 
@@ -779,9 +818,12 @@ void terminateChildren(MonitorInfo **monitors, unsigned int num_monitors, char *
 {
     for(unsigned int i = 0; i < num_monitors; i++)
     {
+        // Notify and send exit message
         kill(monitors[i]->process_id, SIGUSR2);
         sendMessageType(monitors[i]->io_fd, MONITOR_EXIT, buffer, buffer_size);
+        // Wait for the Monitor to terminate
         waitpid(monitors[i]->process_id, NULL, 0);
+        // Close socket
         monitors[i]->terminateConnection();
     }
 }

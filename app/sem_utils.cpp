@@ -1,3 +1,9 @@
+/**
+ * File: sem_utils.cpp
+ * Wrapper routines for semop() and semctl() that are used by the app for semaphore operations.
+ * Pavlos Spanoudakis (sdi1800184)
+ */
+
 #include <sys/sem.h>
 #include <sys/types.h>
 
@@ -9,7 +15,6 @@ union semun
     struct semid_ds *buff;
     unsigned short *array;
 };
-
 
 /**
  * Initiallizes the semaphore the semaphore with index == semnum in

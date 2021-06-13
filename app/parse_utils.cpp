@@ -211,6 +211,10 @@ bool insertCitizenRecordParse(int &citizen_id, char *&citizen_fullname, char *&c
     return false;
 }
 
+/**
+ * Checks and stores the Monitor arguments properly.
+ * @returns TRUE if the arguments are valid, FALSE otherwise.
+ */
 bool childCheckparseArgs(int argc, char const *argv[], uint16_t &port,
                unsigned int &num_threads, unsigned int &buffer_size, unsigned int &cyclic_buffer_size,
                DirectoryInfo **&directories, unsigned long &bloom_size, unsigned int &num_dirs)
@@ -306,12 +310,13 @@ bool childCheckparseArgs(int argc, char const *argv[], uint16_t &port,
             return false;
         }
     }
-
+    // Create a DirectoryInfo object for each of the received directory pahts.
     num_dirs = argc - 11;
     directories = new DirectoryInfo*[num_dirs];
     for (unsigned int i = 0; i < num_dirs; i++)
     {
         directories[i] = new DirectoryInfo(argv[11 + i]);
+        // Add the directory contents in the contents list
         directories[i]->addContents();
     }
     return true;
