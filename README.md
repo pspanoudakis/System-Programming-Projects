@@ -5,9 +5,9 @@
 
 ### Project Structure
 - `app` directory: Source & Header files used by the Main app.
-    - `parent_monitor.cpp`: travelMonitor client program.
+    - `parent_monitor.cpp`: `travelMonitorClient` program.
     - `parent_monitor_utils.cpp` & `parent_monitor_utils.hpp`: App Classes, several routines used the parent monitor.
-    - `monitor.cpp`: child monitor client program.
+    - `monitor.cpp`: `monitorServer` child program.
     - `app_utils.cpp` & `app_utils.hpp`: App Classes, several routines used by the child monitors.
     - `parse_utils.cpp` & `parse_utils.hpp`: Routines used for Input parsing.
     - `sem_utils.cpp` & `sem_utils.hpp`: Wrapper routines used for semaphore operations.
@@ -22,7 +22,7 @@
 **make**, **g++** and **openssl** are required (all installed in DIT workstations)
 
 In the project root, run `make` and after the build is done,
-run `./travelMonitor -m <numMonitors> -b <bufferSize> -s <sizeOfBloom> -i <inputDirectory>`
+run `./travelMonitorClient -m <numMonitors> -b <socketBufferSize> -c <cyclicBufferSize> -s <sizeOfBloom> -i <input_dir> -t <numThreads>`
 
 When done, run `make clean` to clean up objective files & executables.
 

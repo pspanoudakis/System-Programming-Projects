@@ -334,7 +334,8 @@ bool parentCheckParseArgs(int argc, char const *argv[], char *&directory_path, u
     if (argc != 13)
     {
         fprintf(stderr, "Insufficient/Unexpected number of arguments given.\n");
-        printf("Usage: ./travelMonitor -m numMonitors -b bufferSize -s sizeOfBloom -i input_dir\n");
+        printf("Usage: ./travelMonitorClient -m numMonitors -b socketBufferSize -c cyclicBufferSize \
+                -s sizeOfBloom -i input_dir -t numThreads\n");
         return false;
     }
 

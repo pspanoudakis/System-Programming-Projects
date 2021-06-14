@@ -14,7 +14,7 @@
 #define CHILD_EXEC_NAME "monitorServer"
 #define CHILD_EXEC_PATH "./monitorServer"
 
-#define SHOW_CYCLIC_BUFFER_MSG          // Comment out this to disable messages regarding cyclic buffer.
+//#define SHOW_CYCLIC_BUFFER_MSG          // Comment out this to disable messages regarding cyclic buffer.
 #define MAX_BUFFER_SIZE 1000000         // Maximum size for buffers
 #define MAX_MONITORS 250
 #define MAX_THREADS 1000
