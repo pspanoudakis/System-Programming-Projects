@@ -26,7 +26,7 @@ class LinkedList {
         ListNode* head;
         ListNode* last;
         DestroyFunc destroy;    // Used for destroying elements when the list is being destroyed.
-        unsigned int num_elements;
+        unsigned int numElements;
 
     public:
         /**
@@ -39,20 +39,20 @@ class LinkedList {
             public:
                 ListIterator(ListNode *list_node);
                 ListIterator(const ListIterator &itr);
-                void* getData();
+                void* getData() const;
                 void forward();
-                bool isNull();
+                bool isNull() const;
         };
         
         LinkedList(DestroyFunc dest);
         ~LinkedList();
         void append(void *element);
-        void* getElement(void *element, CompareFunc compare);
-        void *getLast();
-        bool isEmpty();
-        unsigned int getNumElements();
-        ListIterator listHead();
-        ListIterator listLast();
+        void* getElement(void *element, CompareFunc compare) const;
+        void *getLast() const;
+        bool isEmpty() const;
+        unsigned int getNumElements() const;
+        ListIterator listHead() const;
+        ListIterator listLast() const;
 };
 
 #endif

@@ -44,7 +44,7 @@ HashTable::~HashTable()
  * @param data The data to get the hashcode for.
  * @param mod Used to perform modulo operation on the hashcode.
  */
-unsigned int HashTable::getHashCode(void *data, unsigned int mod)
+unsigned int HashTable::getHashCode(void *data, unsigned int mod) const
 {
     unsigned int result;
 
@@ -93,7 +93,7 @@ void HashTable::insert(void *element)
  * according to the specified comparison function.
  * If such element was not found, returns NULL.
  */
-void* HashTable::getElement(void *key, CompareFunc compare_func)
+void* HashTable::getElement(void *key, CompareFunc compare_func) const
 {
     // Get the key hashcode
     unsigned int hash_code = getHashCode(key, this->size);

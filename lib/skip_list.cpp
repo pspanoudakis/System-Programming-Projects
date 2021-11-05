@@ -67,7 +67,7 @@ SkipList::SkipListNode::~SkipListNode()
  * 
  * @return The element that was found if the search was successful, otherwise NULL.
  */
-void* SkipList::find(void *element, CompareFunc compare)
+void* SkipList::find(void *element, CompareFunc compare) const
 {
     // The current node.
     SkipListNode *current;
@@ -316,7 +316,7 @@ void SkipList::remove(void *element, void **present, CompareFunc compare)
  * Returns a random layer number. The number can be between 0 and current level + 1,
  * but never above the maximum layer allowed.
  */
-int SkipList::getRandomLayer(void)
+int SkipList::getRandomLayer(void) const
 {
     //int limit = ( ( (curr_layer + 1) < max_layer) ? (curr_layer + 1) : max_layer);
     int limit = ( ( (curr_layer + 1) < max_layer - 1) ? (curr_layer + 1) : max_layer - 1);
@@ -333,7 +333,7 @@ int SkipList::getRandomLayer(void)
  * iterating over the nodes of layer 0.
  * @param print The function used for printing the node data.
  */
-void SkipList::displayElements(DisplayFunc print)
+void SkipList::displayElements(DisplayFunc print) const
 {
     SkipListNode *current = layer_heads[0];
 

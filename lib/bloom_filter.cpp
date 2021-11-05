@@ -57,7 +57,7 @@ void BloomFilter::setBit(unsigned long n)
  * Returns TRUE if the n-th bit is set to 1, FALSE otherwise.
  * If this bit does not exist, returns FALSE as well.
  */
-bool BloomFilter::getBit(unsigned long n)
+bool BloomFilter::getBit(unsigned long n) const
 {
     if (n >= this->numBits) { return false; }
 
@@ -76,7 +76,7 @@ bool BloomFilter::getBit(unsigned long n)
  * Returns TRUE if all the Bloom Filter bits for the specified data
  * have been set to 1, FALSE otherwise.
  */
-bool BloomFilter::isPresent(void *data)
+bool BloomFilter::isPresent(void *data) const
 {
     unsigned long bit_num;      // The bit number to check every time
     for (int i = 0; i < K_MAX; i++)

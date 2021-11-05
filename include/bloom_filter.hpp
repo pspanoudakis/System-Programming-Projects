@@ -18,14 +18,14 @@ class BloomFilter
     private:
         const unsigned long numBits;        // The numer of bits in the Bloom Filter.
         void setBit(unsigned long n);
-        bool getBit(unsigned long n);
+        bool getBit(unsigned long n) const;
     public:
         const unsigned long numBytes;
         unsigned char *bits;                // The bits of the Bloom Filter (an array of unsigned chars).
         BloomFilter(unsigned long n);
         BloomFilter(unsigned char *bits, unsigned long n);
         ~BloomFilter();        
-        bool isPresent(void *data);
+        bool isPresent(void *data) const;
         void markAsPresent(void *data);
         void copy(const BloomFilter& other);
         void copy(const unsigned char *bits, const unsigned long n);
