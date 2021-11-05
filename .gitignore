@@ -5,7 +5,6 @@ inputFile*
 log_files/*
 fifo_pipes/*
 countries/*
-build/*
 Monitor
 travelMonitor
 monitor

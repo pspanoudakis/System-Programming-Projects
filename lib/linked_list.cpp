@@ -21,7 +21,7 @@ LinkedList::ListNode::ListNode(): next(NULL), data(NULL) {}
  * @param dest The function to be used for destroying elements when the list is being destroyed.
  */
 LinkedList::LinkedList(DestroyFunc dest):
- head(NULL), last(NULL), destroy(dest), num_elements(0) { }
+ head(NULL), last(NULL), destroy(dest), numElements(0) { }
 
 LinkedList::~LinkedList()
 {
@@ -42,7 +42,7 @@ LinkedList::~LinkedList()
  * Returns the first list element which is equal to the specified one,
  * based on the provided comparison function. Returns NULL if such element is not found.
  */
-void* LinkedList::getElement(void *element, CompareFunc compare)
+void* LinkedList::getElement(void *element, CompareFunc compare) const
 {
     ListNode* current = this->head;
     while (current != NULL)
@@ -69,7 +69,7 @@ void LinkedList::append(void *element)
         last->next = new ListNode();
         last->next->data = element;
         last = last->next;
-        this->num_elements++;
+        this->numElements++;
         return;
     }
 
@@ -77,13 +77,13 @@ void LinkedList::append(void *element)
     head = new ListNode();
     head->data = element;
     last = head;
-    this->num_elements++;    
+    this->numElements++;    
 }
 
 /**
  * Returns the last element in the list.
  */
-void* LinkedList::getLast()
+void* LinkedList::getLast() const
 {
     return last->data;
 }
@@ -108,11 +108,12 @@ void* LinkedList::popFirst()
         ret = this->head->data;
         this->head = this->head->next;
         delete target;
+        this->numElements--;
     }
     return ret;
 }
 
-bool LinkedList::isEmpty()
+bool LinkedList::isEmpty() const
 {
     return this->head == NULL;
 }
@@ -120,7 +121,7 @@ bool LinkedList::isEmpty()
 /**
  * Returns an iterator to the head of the list.
  */
-LinkedList::ListIterator LinkedList::listHead()
+LinkedList::ListIterator LinkedList::listHead() const
 {
     return ListIterator(this->head);
 }
@@ -128,14 +129,14 @@ LinkedList::ListIterator LinkedList::listHead()
 /**
  * Returns an iterator to the last element of the list.
  */
-LinkedList::ListIterator LinkedList::listLast()
+LinkedList::ListIterator LinkedList::listLast() const
 {
     return ListIterator(this->last);
 }
 
-unsigned int LinkedList::getNumElements()
+unsigned int LinkedList::getNumElements() const
 {
-    return this->num_elements;
+    return this->numElements;
 }
 
 /**
@@ -154,7 +155,7 @@ node(itr.node) { }
 /**
  * Returns the data of the node pointed by the iterator.
  */
-void* LinkedList::ListIterator::getData()
+void* LinkedList::ListIterator::getData() const
 {
     if (this->node == NULL)
     {
@@ -178,7 +179,7 @@ void LinkedList::ListIterator::forward()
 /**
  * Returns TRUE if the iterator points to null, FALSE otherwise.
  */
-bool LinkedList::ListIterator::isNull()
+bool LinkedList::ListIterator::isNull() const
 {
     return (this->node == NULL);
 }

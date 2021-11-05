@@ -27,8 +27,8 @@ class RBTreeNode
         RBTreeNode(Color c, void *element, RBTreeNode *parent_node);
         void destroyDescendants();
         void destroyDescendants(DestroyFunc destroy);
-        RBTreeNode *sibling();
-        bool isLeftChild();
+        RBTreeNode *sibling() const;
+        bool isLeftChild() const;
         void replaceWithNewParent(RBTreeNode *new_parent);
         void swapColor(RBTreeNode *other);        
 };
@@ -51,8 +51,8 @@ class RedBlackTree
         RedBlackTree(CompareFunc comp);
         ~RedBlackTree();        
         void insert(void *element);
-        void *search(void *element);
-        unsigned int getNumElements();
+        void *search(void *element) const;
+        unsigned int getNumElements() const;
         void clear(DestroyFunc destroy);
 };
 

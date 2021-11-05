@@ -20,7 +20,7 @@ color(c), data(element), left(NULL), right(NULL), parent(parent_node) { }
 /**
  * Returns the sibling of the Node. If there is no sibling, NULL is returned.
  */
-RBTreeNode* RBTreeNode::sibling()
+RBTreeNode* RBTreeNode::sibling() const
 {
     if (this->parent == NULL) { return NULL; }
     if (this->isLeftChild())
@@ -76,7 +76,7 @@ void RBTreeNode::destroyDescendants(DestroyFunc destroy)
 /**
  * Indicates whether the Node is a Left Child.
  */
-bool RBTreeNode::isLeftChild()
+bool RBTreeNode::isLeftChild() const
 {
     if (this->parent == NULL) { return false; }
 
@@ -315,7 +315,7 @@ void RedBlackTree::insert(void *element)
  * based on the Tree comparison function.
  * @returns The found element, or NULL if it was not found. 
  */
-void* RedBlackTree::search(void *element)
+void* RedBlackTree::search(void *element) const
 {
     int cmp;
     RBTreeNode *current;
@@ -346,7 +346,7 @@ void* RedBlackTree::search(void *element)
 /**
  * Returns the number of elements in the Tree.
  */
-unsigned int RedBlackTree::getNumElements()
+unsigned int RedBlackTree::getNumElements() const
 {
     return this->num_elements;
 }
