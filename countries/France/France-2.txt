@@ -1,0 +1,2 @@
+6 John Papadopoulos France 52 H1N1 NO
+16 Jon Dupont France 76 H1N1 YES 30-10-2020
