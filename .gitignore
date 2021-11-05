@@ -1,23 +1,9 @@
 .vscode/*
 *.code-workspace
-recs
-inputFile*
-log_files/*
-fifo_pipes/*
-countries/*
-build/*
+test_files/*
 Monitor
 travelMonitor
 
 !app/*
 !lib/*
 !include/*
-
-app/parent_monitor
-app/monitor
-app/test_dates.cpp
-app/test_dates
-temp/*
-
-
-
