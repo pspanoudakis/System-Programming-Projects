@@ -42,7 +42,7 @@ LinkedList::~LinkedList()
  * Returns the first list element which is equal to the specified one,
  * based on the provided comparison function. Returns NULL if such element is not found.
  */
-void* LinkedList::getElement(void *element, CompareFunc compare)
+void* LinkedList::getElement(void *element, CompareFunc compare) const
 {
     ListNode* current = this->head;
     while (current != NULL)
@@ -81,7 +81,7 @@ void LinkedList::append(void *element)
 /**
  * Returns the last element in the list.
  */
-void* LinkedList::getLast()
+void* LinkedList::getLast() const
 {
     return last->data;
 }
@@ -89,7 +89,7 @@ void* LinkedList::getLast()
 /**
  * Returns an iterator to the head of the list.
  */
-LinkedList::ListIterator LinkedList::listHead()
+LinkedList::ListIterator LinkedList::listHead() const
 {
     return ListIterator(this->head);
 }
@@ -110,7 +110,7 @@ node(itr.node) { }
 /**
  * Returns the data of the node pointed by the iterator.
  */
-void* LinkedList::ListIterator::getData()
+void* LinkedList::ListIterator::getData() const
 {
     if (this->node == NULL)
     {
@@ -134,7 +134,7 @@ void LinkedList::ListIterator::forward()
 /**
  * Returns TRUE if the iterator points to null, FALSE otherwise.
  */
-bool LinkedList::ListIterator::isNull()
+bool LinkedList::ListIterator::isNull() const
 {
     return (this->node == NULL);
 }

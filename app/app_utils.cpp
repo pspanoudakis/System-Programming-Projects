@@ -73,14 +73,14 @@ void Date::set(unsigned short int d, unsigned short int m, unsigned short int y)
  * Checks if the Date is valid:
  * Day between 1-30, Month between 1-12, year between 1990-2100
  */
-bool Date::isValidDate()
+bool Date::isValidDate() const
 {
     return ( (day >= 1) && (day <= 30) && 
              (month >= 1) && (month <= 12) &&
              (year >= 1990) && (year <= 2100));
 }
 
-bool Date::isNullDate()
+bool Date::isNullDate() const
 {
     return (day == 0) && (month == 0) && (year == 0);
 }
@@ -153,7 +153,7 @@ CitizenRecord::~CitizenRecord()
 /**
  * Checks if the Citizen has the exact same stored information with the specified. 
  */
-bool CitizenRecord::hasInfo(unsigned int citizen_id, char *citizen_name, unsigned short int citizen_age, char *country_name)
+bool CitizenRecord::hasInfo(unsigned int citizen_id, char *citizen_name, unsigned short int citizen_age, char *country_name) const
 {
     // Checking ID
     if (this->id != citizen_id)    
@@ -564,7 +564,7 @@ void VirusCountryStatus::updatePopulation(CitizenRecord *citizen)
  * counts the number of vaccinated persons between the two Dates
  * and updates the population counter.
  */
-void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTreeNode *root)
+void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTreeNode *root) const
 {
     if (root == NULL) { return; }
     // Getting the root Record
@@ -598,7 +598,7 @@ void VirusCountryStatus::getTotalStatsRec(int &total, Date start, Date end, RBTr
  * and updates the age group counters.
  */
 void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
-                                        int &plus60, Date start, Date end, RBTreeNode *root)
+                                        int &plus60, Date start, Date end, RBTreeNode *root) const
 {
     if (root == NULL) { return; }
     // Getting the root Record
@@ -629,7 +629,7 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
  * and updates the age group counters.
  */
 void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
-                                        int &plus60, RBTreeNode *root)
+                                        int &plus60, RBTreeNode *root) const
 {
     if (root == NULL) { return; }
     // Getting the root Record
@@ -645,7 +645,7 @@ void VirusCountryStatus::getAgeStatsRec(int &bellow_20, int &between20_40, int &
 /**
  * Stores the number of vaccinated persons between the two Dates in the counter.
  */
-void VirusCountryStatus::getTotalVaccinationStats(int &total, Date start, Date end)
+void VirusCountryStatus::getTotalVaccinationStats(int &total, Date start, Date end) const
 {
     this->getTotalStatsRec(total, start, end, this->record_tree->root);
 }
@@ -653,7 +653,7 @@ void VirusCountryStatus::getTotalVaccinationStats(int &total, Date start, Date e
 /**
  * Stores the total number of vaccinated persons in the counter.
  */
-void VirusCountryStatus::getTotalVaccinationStats(int &total)
+void VirusCountryStatus::getTotalVaccinationStats(int &total) const
 {
     total = this->record_tree->getNumElements();
 }
@@ -662,7 +662,7 @@ void VirusCountryStatus::getTotalVaccinationStats(int &total)
  * Stores the number of vaccinated persons between the two Dates for each age group in the proper counter.
  */
 void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
-                                                   int &plus60, Date start, Date end)
+                                                   int &plus60, Date start, Date end) const
 {
     this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, start, end, this->record_tree->root);
 }
@@ -671,7 +671,7 @@ void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between2
  * Stores the number of vaccinated persons for each age group in the proper counter.
  */
 void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between20_40, int &between40_60,
-                                                   int &plus60)
+                                                   int &plus60) const
 {
     this->getAgeStatsRec(bellow_20, between20_40, between40_60, plus60, this->record_tree->root);
 }
@@ -685,7 +685,7 @@ void VirusCountryStatus::getVaccinationStatsByAge( int &bellow_20, int &between2
  * @param plus60 The counter for age group 60+
  */
 void VirusCountryStatus::updateAgeCounter(int age, int &bellow_20, int &between20_40, 
-                                          int &between40_60, int &plus60)
+                                          int &between40_60, int &plus60) const
 {
     if (age < 20)
     {
@@ -777,7 +777,7 @@ void CountryStatus::storeNewVaccinationRecord(VaccinationRecord *record)
  * Displays the age groups statuses in this Country regarding the specified Virus.
  * If the given Dates are valid, the results will be filtered accordingly.
  */
-void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
+void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end) const
 {
     // Number of vaccinated Citizens for each age group
     int bellow_20 = 0;
@@ -853,7 +853,7 @@ void CountryStatus::displayStatusByAge(char *virus_name, Date start, Date end)
  * Displays the Population Status in this Country regarding the specified virus.
  * If the given Dates are valid, the results will be filtered accordingly.
  */
-void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, Date end)
+void CountryStatus::displayTotalPopulationStatus(char *virus_name, Date start, Date end) const
 {
     int vaccinated_citizens = 0;            // Total number of vaccinated Citizens
     VirusCountryStatus *virus_tree;         // The Country information about the specified Virus will be stored here

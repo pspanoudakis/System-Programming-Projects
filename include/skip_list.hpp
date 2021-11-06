@@ -35,15 +35,15 @@ class SkipList
         int curr_layer;             // The currently higher level of the list.
         SkipListNode **layer_heads; // An array of pointers to the first node of each level.
         DestroyFunc destroyElement; // Used for destroying elements when the skip list is being destroyed.
-        int getRandomLayer(void);
+        int getRandomLayer(void) const;
         
     public:
         SkipList(int layers, DestroyFunc dest);
         ~SkipList();
-        void* find(void *element, CompareFunc compare);
+        void* find(void *element, CompareFunc compare) const;
         bool insert(void *element, void **present, CompareFunc compare);
         void remove(void *element, void **present, CompareFunc compare);
-        void displayElements(DisplayFunc print);
+        void displayElements(DisplayFunc print) const;
 };
 
 #endif

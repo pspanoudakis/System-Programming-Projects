@@ -33,8 +33,8 @@ class Date
         Date(const Date &date);
         void set(unsigned short int d, unsigned short int m, unsigned short int y);
         void set(Date &other);
-        bool isNullDate();
-        bool isValidDate();
+        bool isNullDate() const;
+        bool isValidDate() const;
         void setToCurrentDate();
 };
 
@@ -51,7 +51,7 @@ class CitizenRecord
         CountryStatus *country;     // The country of the citizen.
         CitizenRecord(unsigned int citizen_id, char *name, unsigned short int citizen_age, CountryStatus *c);
         ~CitizenRecord();
-        bool hasInfo(unsigned int id, char *name, unsigned short int age, char *country_name);
+        bool hasInfo(unsigned int id, char *name, unsigned short int age, char *country_name) const;
 };
 
 /**
@@ -96,13 +96,13 @@ class VirusRecords
 class VirusCountryStatus
 {
     private:
-        void getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root);
+        void getTotalStatsRec(int &total, Date start,  Date end, RBTreeNode *root) const;
         void getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
-                            int &plus60, Date start, Date end, RBTreeNode *root);
+                            int &plus60, Date start, Date end, RBTreeNode *root) const;
         void getAgeStatsRec(int &bellow_20, int &between20_40, int &between40_60,
-                            int &plus60, RBTreeNode *root);
+                            int &plus60, RBTreeNode *root) const;
         void updateAgeCounter(int age, int &bellow_20, int &between20_40, 
-                              int &between40_60, int &plus60);
+                              int &between40_60, int &plus60) const;
         RedBlackTree *record_tree;      // A Red-Black Tree that contains all the Vaccination Records
                                         // of *vaccinated* persons in the country for this Virus.
     public:
@@ -119,11 +119,11 @@ class VirusCountryStatus
         void storeVaccinationRecord(VaccinationRecord *record);
         void updatePopulation(CitizenRecord *citizen);
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
-                                      int &plus60, Date start, Date end);
+                                      int &plus60, Date start, Date end) const;
         void getVaccinationStatsByAge(int &bellow_20, int &between20_40, int &between40_60,
-                                      int &plus60);                                      
-        void getTotalVaccinationStats(int &total, Date start,  Date end);
-        void getTotalVaccinationStats(int &total);
+                                      int &plus60) const;                                      
+        void getTotalVaccinationStats(int &total, Date start,  Date end) const;
+        void getTotalVaccinationStats(int &total) const;
 };
 
 /**
@@ -140,8 +140,8 @@ class CountryStatus
         ~CountryStatus();
         void storeCitizenVaccinationRecord(VaccinationRecord *record);
         void storeNewVaccinationRecord(VaccinationRecord *record);
-        void displayTotalPopulationStatus(char *virus_name, Date start = Date(),  Date end = Date());
-        void displayStatusByAge(char *virus_name, Date start,  Date end);
+        void displayTotalPopulationStatus(char *virus_name, Date start = Date(), Date end = Date()) const;
+        void displayStatusByAge(char *virus_name, Date start, Date end) const;
 };
 
 /**

@@ -19,11 +19,11 @@ class BloomFilter
         const unsigned long numBits;        // The numer of bits in the Bloom Filter.
         unsigned char *bits;                // The bits of the Bloom Filter (an array of unsigned chars).
         void setBit(unsigned long n);
-        bool getBit(unsigned long n);
+        bool getBit(unsigned long n) const;
     public:
         BloomFilter(unsigned long n);
         ~BloomFilter();        
-        bool isPresent(void *data);
+        bool isPresent(void *data) const;
         void markAsPresent(void *data);
 };
 

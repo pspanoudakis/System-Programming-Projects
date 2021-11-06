@@ -38,17 +38,17 @@ class LinkedList {
             public:
                 ListIterator(ListNode *list_node);
                 ListIterator(const ListIterator &itr);
-                void* getData();
+                void* getData() const;
                 void forward();
-                bool isNull();
+                bool isNull() const;
         };
         
         LinkedList(DestroyFunc dest);
         ~LinkedList();
         void append(void *element);
-        void* getElement(void *element, CompareFunc compare);
-        void *getLast();
-        ListIterator listHead();
+        void* getElement(void *element, CompareFunc compare) const;
+        void *getLast() const;
+        ListIterator listHead() const;
 };
 
 #endif
