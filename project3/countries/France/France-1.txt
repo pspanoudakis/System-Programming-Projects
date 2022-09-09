@@ -1,0 +1,2 @@
+1 John Papadopoulos France 52 COVID-19 YES 27-12-2020
+201 John Papadopoulos France 52 H1N1 NO
