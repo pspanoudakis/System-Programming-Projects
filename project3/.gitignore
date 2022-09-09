@@ -1,0 +1,15 @@
+.vscode/*
+*.code-workspace
+
+temps/*
+
+Monitor
+travelMonitor
+monitor
+parent_monitor
+monitorServer
+travelMonitorClient
+
+!app/*
+!lib/*
+!include/*
