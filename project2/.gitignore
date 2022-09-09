@@ -1,0 +1,9 @@
+.vscode/*
+*.code-workspace
+test_files/*
+Monitor
+travelMonitor
+
+!app/*
+!lib/*
+!include/*
