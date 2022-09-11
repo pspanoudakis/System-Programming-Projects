@@ -24,9 +24,10 @@ Each project expands on this task, as explained below.
 - **Project 1**:\
 Development of the **base app**, which operates as explained above.
 The project also includes the development of two other data structures:
-    - **Bloom Filter**, a probabilistic structure to determine
-    whether a record does not exist or **possibly exists**.
-    - **Skip List**, to efficiently store and retrieve vaccination records regarding a specific virus.
+    - [**Bloom Filter**](https://en.wikipedia.org/wiki/Bloom_filter),
+    a probabilistic structure to determine whether a record does not exist or **possibly exists**.
+    - [**Skip List**](https://en.wikipedia.org/wiki/Skip_list),
+    to efficiently store and retrieve vaccination records regarding a specific virus.
 
     Both structures are also explained in `project1/task.pdf`.
     Finally, the project includes generating citizen records
